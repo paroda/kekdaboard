@@ -65,6 +65,8 @@ static uint kbd_btns_count = 0;
 static bool kbd_has_btns = false;
 static bool kbd_had_keys = false;
 static bool kbd_had_consumer_keys = false;
+
+static bool kbd_numlock_on = false;
 static kbd_layer kbd_active_layer = KBD_LAYER_BASE;
 
 /*------------- MAIN -------------*/
@@ -219,7 +221,10 @@ static void kbd_read_num_layer(bool pressed)
   if (!was_pressed && pressed)
   {
     kbd_active_layer = kbd_active_layer == KBD_LAYER_NUM ? KBD_LAYER_BASE : KBD_LAYER_NUM;
-    gpio_put(kbd_led_numlayer_gpio, kbd_active_layer == KBD_LAYER_NUM);
+    bool num = kbd_active_layer == KBD_LAYER_NUM;
+    gpio_put(kbd_led_numlayer_gpio, num);
+    // also set the num lock on
+    if (kbd_numlock_on != num && kbd_btns_count<6) kbd_btns[kbd_btns_count++]=HID_KEY_NUM_LOCK;
   }
 
   was_pressed = pressed;
@@ -399,7 +404,8 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
       uint8_t const kbd_leds = buffer[0];
 
       gpio_put(kbd_led_capslock_gpio, kbd_leds & KEYBOARD_LED_CAPSLOCK);
-      gpio_put(kbd_led_numlock_gpio, kbd_leds & KEYBOARD_LED_NUMLOCK);
+      kbd_numlock_on = kbd_leds & KEYBOARD_LED_NUMLOCK;
+      gpio_put(kbd_led_numlock_gpio, kbd_numlock_on);
     }
   }
 }
