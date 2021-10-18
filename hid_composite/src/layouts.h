@@ -23,12 +23,12 @@ extern "C"
 #define KBD_ROW_COUNT 7
 #define KBD_COL_COUNT 14
 
-    /* GPIO OUT pin for CapsLock LED */
-    const uint kbd_led_capslock_gpio = 28;
-    /* GPIO OUT pin for NumLock LED */
-    const uint kbd_led_numlock_gpio = 27;
-    /* GPIO OUT pin for NumLayer LED */
-    const uint kbd_led_numlayer_gpio = 26;
+    /* GPIO OUT pin for Caps_Lock LED */
+    const uint kbd_led_caps_lock_gpio = 28;
+    /* GPIO OUT pin for Num_Lock LED */
+    const uint kbd_led_num_lock_gpio = 27;
+    /* GPIO OUT pin for Num_Layer LED */
+    const uint kbd_led_num_layer_gpio = 26;
 
     /* GPIO OUT pin for row */
     const uint kbd_layout_row_gpio[KBD_ROW_COUNT] = {16, 17, 18, 19, 20, 21, 22};

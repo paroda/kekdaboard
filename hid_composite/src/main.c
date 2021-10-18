@@ -66,7 +66,7 @@ static bool kbd_has_btns = false;
 static bool kbd_had_keys = false;
 static bool kbd_had_consumer_keys = false;
 
-static bool kbd_numlock_on = false;
+static bool kbd_num_lock_on = false;
 static kbd_layer kbd_active_layer = KBD_LAYER_BASE;
 
 /*------------- MAIN -------------*/
@@ -214,7 +214,7 @@ static void send_hid_report(uint8_t report_id)
   }
 }
 
-static void kbd_read_num_layer(bool pressed)
+static void kbd_read_num_layer_btn(bool pressed)
 {
   static bool was_pressed = false;
 
@@ -222,9 +222,9 @@ static void kbd_read_num_layer(bool pressed)
   {
     kbd_active_layer = kbd_active_layer == KBD_LAYER_NUM ? KBD_LAYER_BASE : KBD_LAYER_NUM;
     bool num = kbd_active_layer == KBD_LAYER_NUM;
-    gpio_put(kbd_led_numlayer_gpio, num);
+    gpio_put(kbd_led_num_layer_gpio, num);
     // also set the num lock on
-    if (kbd_numlock_on != num && kbd_btns_count<6) kbd_btns[kbd_btns_count++]=HID_KEY_NUM_LOCK;
+    if (kbd_num_lock_on != num && kbd_btns_count<6) kbd_btns[kbd_btns_count++]=HID_KEY_NUM_LOCK;
   }
 
   was_pressed = pressed;
@@ -250,7 +250,7 @@ static void kbd_read_btn(const uint8_t key[2], bool pressed)
   // special key - num layer
   if (code == KBD_KEY_NUM_LAYER)
   {
-    kbd_read_num_layer(pressed);
+    kbd_read_num_layer_btn(pressed);
     return;
   }
 
@@ -285,15 +285,15 @@ static void hid_init(void)
   uint i, gpio;
 
   // set led out pins - out
-  gpio = kbd_led_capslock_gpio;
+  gpio = kbd_led_caps_lock_gpio;
   gpio_init(gpio);
   gpio_set_dir(gpio, GPIO_OUT);
 
-  gpio = kbd_led_numlock_gpio;
+  gpio = kbd_led_num_lock_gpio;
   gpio_init(gpio);
   gpio_set_dir(gpio, GPIO_OUT);
 
-  gpio = kbd_led_numlayer_gpio;
+  gpio = kbd_led_num_layer_gpio;
   gpio_init(gpio);
   gpio_set_dir(gpio, GPIO_OUT);
 
@@ -394,7 +394,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 
   if (report_type == HID_REPORT_TYPE_OUTPUT)
   {
-    // Set keyboard LED e.g. CapsLock, Numlock etc..
+    // Set keyboard LED e.g. Caps_Lock, Num_Lock etc..
     if (report_id == REPORT_ID_KEYBOARD)
     {
       // bufsize should be at least 1
@@ -403,9 +403,10 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 
       uint8_t const kbd_leds = buffer[0];
 
-      gpio_put(kbd_led_capslock_gpio, kbd_leds & KEYBOARD_LED_CAPSLOCK);
-      kbd_numlock_on = kbd_leds & KEYBOARD_LED_NUMLOCK;
-      gpio_put(kbd_led_numlock_gpio, kbd_numlock_on);
+      gpio_put(kbd_led_caps_lock_gpio, kbd_leds & KEYBOARD_LED_CAPSLOCK);
+
+      kbd_num_lock_on = kbd_leds & KEYBOARD_LED_NUMLOCK;
+      gpio_put(kbd_led_num_lock_gpio, kbd_num_lock_on);
     }
   }
 }
