@@ -41,11 +41,7 @@
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
+// blink interval in milliseconds to indicate device status
 enum
 {
   BLINK_NOT_MOUNTED = 100,
@@ -74,14 +70,12 @@ int main(void)
 {
   board_init();
   tusb_init();
-
   hid_init();
 
   while (1)
   {
     tud_task(); // tinyusb device task
     led_blinking_task();
-
     hid_task();
   }
 
@@ -146,7 +140,7 @@ static void send_hid_consumer_report()
     for (uint i = 0; i < kbd_btns_count && !btn; i++)
     {
       btn = kbd_btns[i];
-      switch (kbd_btns[i])
+      switch (btn)
       {
       case HID_KEY_VOLUME_DOWN:
         consumer_key = HID_USAGE_CONSUMER_VOLUME_DECREMENT;
@@ -236,7 +230,7 @@ static void kbd_read_btn(const uint8_t key[2], bool pressed)
   uint8_t code = key[1];
 
   // read modifier flag
-  if (pressed)
+  if (pressed && flag)
   {
     kbd_modifiers |= flag;
   }
@@ -335,6 +329,7 @@ static void hid_task(void)
   // read
   kbd_buttons_read();
 
+  // determine if has any buttons pressed
   kbd_has_btns = kbd_modifiers;
   for (uint i = 0; i < 6; i++)
   {
