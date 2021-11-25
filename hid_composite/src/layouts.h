@@ -64,10 +64,10 @@ extern "C"
                 {0, HID_KEY_F6},
 
                 /// Col 6
-                {0, HID_KEY_VOLUME_UP},
+                {0, HID_KEY_CAPS_LOCK},
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_VOLUME_UP},
 
                 /// Col 8
                 {0, HID_KEY_F7},
@@ -109,10 +109,10 @@ extern "C"
                 {0, HID_KEY_5},
 
                 /// Col 6
-                {0, HID_KEY_MUTE},
+                {0, HID_KEY_NUM_LOCK},
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_MUTE},
 
                 /// Col 8
                 {0, HID_KEY_6},
@@ -154,10 +154,10 @@ extern "C"
                 {0, HID_KEY_T},
 
                 /// Col 6
-                {0, HID_KEY_VOLUME_DOWN},
+                {0, KBD_KEY_NUM_LAYER}, /// special key - toggle num layer
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_VOLUME_DOWN},
 
                 /// Col 8
                 {0, HID_KEY_Y},
@@ -199,10 +199,10 @@ extern "C"
                 {0, HID_KEY_G},
 
                 /// Col 6
-                {0, HID_KEY_CAPS_LOCK},
+                {0, HID_KEY_ESCAPE},
 
                 /// Col 7
-                {0, KBD_KEY_NUM_LAYER}, /// special key - toggle num layer
+                {0, HID_KEY_PRINT_SCREEN},
 
                 /// Col 8
                 {0, HID_KEY_H},
@@ -244,10 +244,10 @@ extern "C"
                 {0, HID_KEY_B},
 
                 /// Col 6
-                {0, HID_KEY_PRINT_SCREEN},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_NUM_LOCK},
+                {0, 0},
 
                 /// Col 8
                 {0, HID_KEY_N},
@@ -271,46 +271,46 @@ extern "C"
             /// Row 5
             {
                 /// Col 0
-                {0, HID_KEY_KEYPAD_ADD},
+                {0, HID_KEY_ARROW_LEFT},
 
                 /// Col 1
-                {0, HID_KEY_KEYPAD_MULTIPLY},
+                {0, HID_KEY_ARROW_UP},
 
                 /// Col 2
-                {0, HID_KEY_ARROW_LEFT},
+                {0, HID_KEY_ARROW_DOWN},
 
                 /// Col 3
                 {0, HID_KEY_ARROW_RIGHT},
 
                 /// Col 4
-                {0, HID_KEY_SPACE},
+                {0, 0},
 
                 /// Col 5
-                {0, HID_KEY_ESCAPE},
+                {0, 0},
 
                 /// Col 6
-                {0, HID_KEY_HOME},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_PAGE_UP},
+                {0, 0},
 
                 /// Col 8
-                {0, HID_KEY_INSERT},
+                {0, 0},
 
                 /// Col 9
-                {0, HID_KEY_SPACE},
+                {0, 0},
 
                 /// Col 10
-                {0, HID_KEY_ARROW_UP},
-
-                /// Col 11
-                {0, HID_KEY_ARROW_DOWN},
-
-                /// Col 12
                 {0, HID_KEY_BRACKET_LEFT},
 
-                /// Col 13
+                /// Col 11
                 {0, HID_KEY_BRACKET_RIGHT},
+
+                /// Col 12
+                {0, HID_KEY_PAGE_UP},
+
+                /// Col 13
+                {0, HID_KEY_PAGE_DOWN},
             },
 
             /// Row 6
@@ -319,40 +319,41 @@ extern "C"
                 {0, HID_KEY_HOME},
 
                 /// Col 1
-                {0, HID_KEY_DELETE},
-
-                /// Col 2
-                {0, HID_KEY_BACKSPACE},
-
-                /// Col 3
-                {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT},
-
-                /// Col 4
                 {KEYBOARD_MODIFIER_LEFTALT, HID_KEY_ALT_LEFT},
 
-                /// Col 5
+                /// Col 2
+                {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT},
+
+                /// Col 3
                 {KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_CONTROL_LEFT},
 
+                /// Col 4
+                {0, HID_KEY_BACKSPACE},
+
+                /// Col 5
+                {0, HID_KEY_DELETE},
+
                 /// Col 6
-                {0, HID_KEY_END},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_PAGE_DOWN},
+                {0, 0},
 
                 /// Col 8
-                {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT},
+                {0, HID_KEY_ENTER},
 
                 /// Col 9
-                {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT},
-
-                /// Col 10
-                {0, HID_KEY_APPLICATION},
-
-                /// Col 11
                 {0, HID_KEY_SPACE},
 
+                /// Col 10
+                {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT},
+
+                /// Col 11
+                // {0, HID_KEY_APPLICATION},
+                {KEYBOARD_MODIFIER_RIGHTGUI, HID_KEY_GUI_RIGHT},
+
                 /// Col 12
-                {0, HID_KEY_ENTER},
+                {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT},
 
                 /// Col 13
                 {0, HID_KEY_END},
@@ -382,10 +383,10 @@ extern "C"
                 {0, HID_KEY_F6},
 
                 /// Col 6
-                {0, HID_KEY_VOLUME_UP},
+                {0, HID_KEY_CAPS_LOCK},
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_VOLUME_UP},
 
                 /// Col 8
                 {0, HID_KEY_F7},
@@ -427,25 +428,25 @@ extern "C"
                 {0, HID_KEY_5},
 
                 /// Col 6
-                {0, HID_KEY_MUTE},
+                {0, HID_KEY_NUM_LOCK},
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_MUTE},
 
                 /// Col 8
                 {0, HID_KEY_6},
 
                 /// Col 9
-                {0, HID_KEY_7},
+                {0, HID_KEY_KEYPAD_7},
 
                 /// Col 10
-                {0, HID_KEY_8},
+                {0, HID_KEY_KEYPAD_8},
 
                 /// Col 11
-                {0, HID_KEY_9},
+                {0, HID_KEY_KEYPAD_9},
 
                 /// Col 12
-                {0, HID_KEY_0},
+                {0, HID_KEY_KEYPAD_SUBTRACT},
 
                 /// Col 13
                 {0, HID_KEY_MINUS},
@@ -472,25 +473,25 @@ extern "C"
                 {0, HID_KEY_T},
 
                 /// Col 6
-                {0, HID_KEY_VOLUME_DOWN},
+                {0, KBD_KEY_NUM_LAYER}, /// special key - toggle num layer
 
                 /// Col 7
-                {0, 0},
+                {0, HID_KEY_VOLUME_DOWN},
 
                 /// Col 8
                 {0, HID_KEY_Y},
 
                 /// Col 9
-                {0, HID_KEY_KEYPAD_7},
+                {0, HID_KEY_KEYPAD_4},
 
                 /// Col 10
-                {0, HID_KEY_KEYPAD_8},
+                {0, HID_KEY_KEYPAD_5},
 
                 /// Col 11
-                {0, HID_KEY_KEYPAD_9},
+                {0, HID_KEY_KEYPAD_6},
 
                 /// Col 12
-                {0, HID_KEY_KEYPAD_SUBTRACT},
+                {0, HID_KEY_KEYPAD_ADD},
 
                 /// Col 13
                 {0, HID_KEY_BACKSLASH},
@@ -517,25 +518,25 @@ extern "C"
                 {0, HID_KEY_G},
 
                 /// Col 6
-                {0, HID_KEY_CAPS_LOCK},
+                {0, HID_KEY_ESCAPE},
 
                 /// Col 7
-                {0, KBD_KEY_NUM_LAYER}, /// special key - toggle num layer
+                {0, HID_KEY_PRINT_SCREEN},
 
                 /// Col 8
                 {0, HID_KEY_H},
 
                 /// Col 9
-                {0, HID_KEY_KEYPAD_4},
+                {0, HID_KEY_KEYPAD_1},
 
                 /// Col 10
-                {0, HID_KEY_KEYPAD_5},
+                {0, HID_KEY_KEYPAD_2},
 
                 /// Col 11
-                {0, HID_KEY_KEYPAD_6},
+                {0, HID_KEY_KEYPAD_3},
 
                 /// Col 12
-                {0, HID_KEY_KEYPAD_ADD},
+                {0, HID_KEY_KEYPAD_MULTIPLY},
 
                 /// Col 13
                 {0, HID_KEY_APOSTROPHE},
@@ -562,25 +563,25 @@ extern "C"
                 {0, HID_KEY_B},
 
                 /// Col 6
-                {0, HID_KEY_PRINT_SCREEN},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_NUM_LOCK},
+                {0, 0},
 
                 /// Col 8
                 {0, HID_KEY_N},
 
                 /// Col 9
-                {0, HID_KEY_KEYPAD_1},
+                {0, HID_KEY_KEYPAD_DECIMAL},
 
                 /// Col 10
-                {0, HID_KEY_KEYPAD_2},
+                {0, HID_KEY_KEYPAD_0},
 
                 /// Col 11
-                {0, HID_KEY_KEYPAD_3},
+                {0, HID_KEY_KEYPAD_ENTER},
 
                 /// Col 12
-                {0, HID_KEY_KEYPAD_MULTIPLY},
+                {0, HID_KEY_KEYPAD_DIVIDE},
 
                 /// Col 13
                 {KEYBOARD_MODIFIER_RIGHTSHIFT, HID_KEY_SHIFT_RIGHT},
@@ -589,46 +590,46 @@ extern "C"
             /// Row 5
             {
                 /// Col 0
-                {0, HID_KEY_KEYPAD_ADD},
+                {0, HID_KEY_ARROW_LEFT},
 
                 /// Col 1
-                {0, HID_KEY_KEYPAD_MULTIPLY},
+                {0, HID_KEY_ARROW_UP},
 
                 /// Col 2
-                {0, HID_KEY_ARROW_LEFT},
+                {0, HID_KEY_ARROW_DOWN},
 
                 /// Col 3
                 {0, HID_KEY_ARROW_RIGHT},
 
                 /// Col 4
-                {0, HID_KEY_SPACE},
+                {0, 0},
 
                 /// Col 5
-                {0, HID_KEY_ESCAPE},
+                {0, 0},
 
                 /// Col 6
-                {0, HID_KEY_HOME},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_PAGE_UP},
+                {0, 0},
 
                 /// Col 8
-                {0, HID_KEY_INSERT},
+                {0, 0},
 
                 /// Col 9
-                {0, HID_KEY_SPACE},
+                {0, 0},
 
                 /// Col 10
-                {0, HID_KEY_KEYPAD_DECIMAL},
+                {0, HID_KEY_BRACKET_LEFT},
 
                 /// Col 11
-                {0, HID_KEY_KEYPAD_0},
+                {0, HID_KEY_BRACKET_RIGHT},
 
                 /// Col 12
-                {0, HID_KEY_KEYPAD_ENTER},
+                {0, HID_KEY_PAGE_UP},
 
                 /// Col 13
-                {0, HID_KEY_KEYPAD_DIVIDE},
+                {0, HID_KEY_PAGE_DOWN},
             },
 
             /// Row 6
@@ -637,40 +638,41 @@ extern "C"
                 {0, HID_KEY_HOME},
 
                 /// Col 1
-                {0, HID_KEY_DELETE},
-
-                /// Col 2
-                {0, HID_KEY_BACKSPACE},
-
-                /// Col 3
-                {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT},
-
-                /// Col 4
                 {KEYBOARD_MODIFIER_LEFTALT, HID_KEY_ALT_LEFT},
 
-                /// Col 5
+                /// Col 2
+                {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT},
+
+                /// Col 3
                 {KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_CONTROL_LEFT},
 
+                /// Col 4
+                {0, HID_KEY_BACKSPACE},
+
+                /// Col 5
+                {0, HID_KEY_DELETE},
+
                 /// Col 6
-                {0, HID_KEY_END},
+                {0, 0},
 
                 /// Col 7
-                {0, HID_KEY_PAGE_DOWN},
+                {0, 0},
 
                 /// Col 8
-                {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT},
+                {0, HID_KEY_ENTER},
 
                 /// Col 9
-                {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT},
-
-                /// Col 10
-                {0, HID_KEY_APPLICATION},
-
-                /// Col 11
                 {0, HID_KEY_SPACE},
 
+                /// Col 10
+                {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT},
+
+                /// Col 11
+                // {0, HID_KEY_APPLICATION},
+                {KEYBOARD_MODIFIER_RIGHTGUI, HID_KEY_GUI_RIGHT},
+
                 /// Col 12
-                {0, HID_KEY_ENTER},
+                {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT},
 
                 /// Col 13
                 {0, HID_KEY_END},
