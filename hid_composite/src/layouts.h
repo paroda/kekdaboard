@@ -91,7 +91,7 @@ extern "C"
             /// Row 1
             {
                 /// Col 0
-                {0, HID_KEY_EQUAL},
+                {0, HID_KEY_GRAVE},
 
                 /// Col 1
                 {0, HID_KEY_1},
@@ -181,7 +181,7 @@ extern "C"
             /// Row 3
             {
                 /// Col 0
-                {0, HID_KEY_GRAVE},
+                {0, HID_KEY_EQUAL},
 
                 /// Col 1
                 {0, HID_KEY_A},
@@ -410,7 +410,7 @@ extern "C"
             /// Row 1
             {
                 /// Col 0
-                {0, HID_KEY_EQUAL},
+                {0, HID_KEY_GRAVE},
 
                 /// Col 1
                 {0, HID_KEY_1},
@@ -500,7 +500,7 @@ extern "C"
             /// Row 3
             {
                 /// Col 0
-                {0, HID_KEY_GRAVE},
+                {0, HID_KEY_EQUAL},
 
                 /// Col 1
                 {0, HID_KEY_A},
