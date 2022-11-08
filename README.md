@@ -32,3 +32,33 @@ make hid_composite
 ```
 
 It will generate the binary target`build/hid_composite/hid_composite.uf2` which you can deploy to the pico board.
+
+# Emacs support
+
+Insatall **rtags**
+
+``` sh
+sudo pacman -Sy clang llvm
+
+cd /tmp
+git clone https://github.com/Andersbakken/rtags.git
+cd rtags
+makepkg
+
+# copy the bin folder to ~/.dipu/rtags
+mkdir ~/.dipu/rtags
+cp -r bin ~/.dipu/rtags
+
+# link bin/rc, bin/rdm to ~/.bin folder
+ln -s ~/.dipu/rtags/bin/rc ~/.bin
+ln -s ~/.dipu/rtags/bin/rdm ~/.bin
+```
+
+Setup C/C++ development support packages
+
+- rtags
+
+``` emacs-lisp
+(require 'rtags)
+(require 'prelude-c)
+```
