@@ -1,16 +1,22 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.12)
 
 # initialize pico-sdk from submodule
 # note: this must happen before project()
 include(pico-sdk/pico_sdk_init.cmake)
 
+set(PICO_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/pico-sdk)
+
 project(pico_dipu_kbd C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+if (PICO_SDK_VERSION_STRING VERSION_LESS "1.3.0")
+  message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.3.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+endif()
+
 set(PICO_DIPU_KBD_PATH ${PROJECT_SOURCE_DIR})
 
-set(FAMILY rp2040)
+#set(FAMILY rp2040)
 
 # Initialize the SDK
 pico_sdk_init()
@@ -31,3 +37,9 @@ add_subdirectory(hello_gpio_irq)
 
 # add pwm trials
 add_subdirectory(hello_pwm)
+
+# add shift_register trials
+add_subdirectory(hello_shift_register)
+
+# add uart trials
+add_subdirectory(hello_uart)
