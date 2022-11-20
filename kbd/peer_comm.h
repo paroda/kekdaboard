@@ -45,7 +45,7 @@ extern "C"
      * The pico core-1 will be solely responsible for actual TX/RX. Periodically, it would
      * send the command byte INIT_CYCLE(0b11000000) to start one transfer cycle. When the
      * the transfer is complete, the last unit to receive the byte COMMAND would send the byte
-     * DONE_CYCLE(0b11010000) to let the other unit know as well that the cycle is finished.
+     * END_CYCLE(0b11010000) to let the other unit know as well that the cycle is finished.
      * The pico core-0 would set the data to transmit and core-1 would send them on its turn.
      *
      * PEER SETUP
@@ -62,13 +62,13 @@ extern "C"
 #define peer_comm_byte_PING          0b10100000
 #define peer_comm_byte_READY         0b10110000
 #define peer_comm_byte_INIT_CYCLE    0b11000000 // sent by primary unit to initiate one transfer cycle
-#define peer_comm_byte_DONE_CYCLE    0b11010000 // sent by primary unit to initiate one transfer cycle
+#define peer_comm_byte_END_CYCLE     0b11010000 // sent by primary unit to initiate one transfer cycle
 #define peer_comm_byte_DATA_ID_MASK  0b00001111
 #define peer_comm_byte_COMMAND_MASK  0b11110000
 #define peer_comm_byte_DATA_MASK     0b01111111  // only 7bits used for data
 
-#define peer_comm_DATA_ID_NONE 0xf0 // indicates initial state, to start with first out dataset
-#define peer_comm_DATA_ID_DONE 0xff // indicates finished state, no more datasets to send
+#define peer_comm_DATA_ID_BEGIN 0xf0 // indicates initial state, to start with first out dataset
+#define peer_comm_DATA_ID_END 0xff // indicates finished state, no more datasets to send
 
     typedef struct {
         uint8_t size; // number of predefined datasets (an array of bytes)
@@ -91,9 +91,9 @@ extern "C"
 
     void peer_comm_reset_state(peer_comm_config_t* pcc) {
         pcc->busy = false;
-        pcc->current_in_id = peer_comm_DATA_ID_NONE; // something >= 16 to indicate none
+        pcc->current_in_id = peer_comm_DATA_ID_BEGIN; // something >= 16 to indicate none
         pcc->current_in_pos = 0;
-        pcc->current_out_id = peer_comm_DATA_ID_NONE; // something >= 16 to indicate none
+        pcc->current_out_id = peer_comm_DATA_ID_BEGIN; // something >= 16 to indicate none
         pcc->current_out_pos = 0;
         pcc->last_state = 0;
     }
@@ -161,32 +161,39 @@ extern "C"
      * or data byte for next pos of current dataset out
      * Clears busy flag when done and informs the other unit
      */
-    void peer_comm_emit_next_byte(peer_comm_config_t* pcc, bool peer_done) {
+    void peer_comm_emit_next_byte(peer_comm_config_t* pcc, bool peer_empty) {
         uint8_t id = pcc->current_out_id;
         shared_buffer_t* sb = id<pcc->size ? pcc->datasets[id] : NULL;
 
         if(sb && pcc->current_in_pos < sb->size) {
+            // in the middle of sending a dataset
             pcc->put(sb->buff_out[pcc->current_out_pos++]);
             return;
         }
 
-        if(id != peer_comm_DATA_ID_DONE) {
-            for(id = (id==peer_comm_DATA_ID_NONE ? 0 : id+1); id < pcc->size; id++) {
-                if(pcc->data_inits[id]>0
-                   && update_shared_buffer_to_read(pcc->datasets[id])) {
+        // no dataset currently being sent
+        if(id != peer_comm_DATA_ID_END) {
+            for(id = (id==peer_comm_DATA_ID_BEGIN ? 0 : id+1); id < pcc->size; id++) {
+                sb = pcc->datasets[id];
+                if(pcc->data_inits[id]>0 && update_shared_buffer_to_read(sb)) {
+                    // found a dataset to send
                     pcc->current_out_id = id;
                     pcc->current_out_pos = 0;
                     pcc->put(pcc->data_inits[id]);
                     return;
                 }
             }
-            pcc->current_out_id = peer_comm_DATA_ID_DONE;
+            // no dataset found to send, done for this transfer cycle
+            pcc->current_out_id = peer_comm_DATA_ID_END;
         }
 
-        if(peer_done) {
-            pcc->put(peer_comm_byte_DONE_CYCLE);
+        // i have no dataset left to send
+        if(peer_empty) {
+            // peer too has nothing left to send
+            pcc->put(peer_comm_byte_END_CYCLE);
             pcc->busy = false;
         } else {
+            // peer still has something left to send
             pcc->put(peer_comm_byte_COMMAND);
         }
     }
@@ -202,7 +209,7 @@ extern "C"
             sb->buff_in[pcc->current_in_pos++] = d;
             if(pcc->current_in_pos >= sb->size) {
                 sb->ts_in_end = sb->ts_in_start;
-                pcc->current_in_id = peer_comm_DATA_ID_NONE;
+                pcc->current_in_id = peer_comm_DATA_ID_BEGIN;
             }
         }
     }
@@ -239,7 +246,7 @@ extern "C"
                 pcc->busy = true;
                 peer_comm_emit_next_byte(pcc, false);
                 break;
-            case peer_comm_byte_DONE_CYCLE:
+            case peer_comm_byte_END_CYCLE:
                 pcc->busy = false;
                 break;
             }

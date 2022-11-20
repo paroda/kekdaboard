@@ -21,17 +21,21 @@ extern "C"
     } device_input_t;
 
     typedef enum {
-        device_side_LEFT = 0,
-        device_side_RIGHT = 1
-    } device_side_t;
+        kbd_side_LEFT = 0,
+        kbd_side_RIGHT = 1
+    } kbd_side_t;
 
     typedef enum {
-        device_role_USB = 0, // primary unit talking to the USB host
-        device_role_AUX = 1  // secondary unit talking to the primary unit
-    } device_role_t;
+        kbd_side_role_USB = 0, // primary unit talking to the USB host
+        kbd_side_role_AUX = 1  // secondary unit talking to the primary unit
+    } kbd_side_role_t;
 
-    device_side_t my_side;
-    device_role_t my_role;
+    /*
+     * Global data
+     */
+
+    kbd_side_t my_side;
+    kbd_side_role_t my_role;
 
     device_input_t* left_input;
     device_input_t* right_input;
@@ -39,6 +43,10 @@ extern "C"
     shared_buffer_t* system_state;
 
     peer_comm_config_t* serial_transfer;
+
+    /*
+     * Model functions
+     */
 
     device_input_t* new_device_input(void) {
         device_input_t* di = (device_input_t*) malloc(sizeof(device_input_t));
@@ -75,25 +83,28 @@ extern "C"
         // TBD: actual size, assuming 8 bytes for now
         system_state = new_shared_buffer(8);
 
-        shared_buffer_t* sbs[5] = {system_state,
-                                   left_input->key_press,
-                                   left_input->ball_scroll,
-                                   right_input->key_press,
-                                   right_input->ball_scroll};
+        shared_buffer_t* sbs[5] = {
+            system_state,            // DATA_ID: 0
+            left_input->key_press,   //          1
+            left_input->ball_scroll, //          2
+            right_input->key_press,  //          3
+            right_input->ball_scroll //          4
+        };
         uint8_t data_inits[5] = {0, 0, 0, 0, 0};
         serial_transfer = new_peer_comm_config(5, sbs, data_inits, get, put, current_ts);
     }
 
-    void setup_side_and_role(device_side_t side, device_role_t role) {
+    void setup_role(kbd_side_role_t role) {
         uint8_t* dis = serial_transfer->data_inits;
-        if(side==device_side_LEFT) {
-            if(role==device_role_USB) {
+        if(my_side==kbd_side_LEFT) {
+            if(role==kbd_side_role_USB) {
                 dis[0] = peer_comm_byte_INIT_DATA | 0;
             } else {
                 dis[1] = peer_comm_byte_INIT_DATA | 1;
+                // dis[2] = peer_comm_byte_INIT_DATA | 2; // only right side has trackball
             }
         } else {
-            if(role==device_role_AUX) {
+            if(role==kbd_side_role_AUX) {
                 dis[0] = peer_comm_byte_INIT_DATA | 0;
             } else {
                 dis[3] = peer_comm_byte_INIT_DATA | 3;

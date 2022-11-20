@@ -43,3 +43,6 @@ add_subdirectory(hello_shift_register)
 
 # add uart trials
 add_subdirectory(hello_uart)
+
+# add clocks trials
+add_subdirectory(hello_clocks)

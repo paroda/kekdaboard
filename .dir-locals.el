@@ -11,6 +11,13 @@
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_usb_reset_interface/include"
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_util/include"
 
+             "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_clocks/include"
+             "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_uart/include"
+             "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_irq/include"
+
+             "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_regs/include"
+             "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_structs/include"
+
              ))
          (flycheck-clang-include-path
           . ("/home/dipu/my/pico/kbd/pico-sdk/src/common/boot_picoboot/include"
@@ -24,5 +31,12 @@
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_time/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_usb_reset_interface/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_util/include"
+
+             "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_clocks/include"
+             "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_uart/include"
+             "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/hardware_irq/include"
+
+             "/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_regs/include"
+             "/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_structs/include"
 
              )))))

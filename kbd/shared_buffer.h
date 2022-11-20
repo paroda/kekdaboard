@@ -37,8 +37,19 @@ extern "C"
         uint64_t ts_out_end;
     } shared_buffer_t;
 
+    void clear_shared_buffer(shared_buffer_t* sb) {
+        for(int i=0; i<sb->size; i++) {
+            sb->buff_in[i] = 0;
+            sb->buff_out[i] = 0;
+            sb->ts_in_start = 0;
+            sb->ts_in_end = 0;
+            sb->ts_out_start = 0;
+            sb->ts_out_end = 0;
+        }
+    }
+
     /*
-     * Must be called in reader thread.
+     * Allocate memory
      */
     shared_buffer_t* new_shared_buffer(size_t size) {
         shared_buffer_t* sb = (shared_buffer_t*) malloc(sizeof (shared_buffer_t));
@@ -56,6 +67,7 @@ extern "C"
     }
 
     /*
+     * Must be called in reader thread.
      * returns true if there is new data, else false
      */
     bool update_shared_buffer_to_read(shared_buffer_t* sb) {
