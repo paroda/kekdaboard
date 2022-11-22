@@ -1,3 +1,5 @@
+#define __PICO_BUILD__
+
 #include "data_model.h"
 
 #ifdef __cplusplus

@@ -46,3 +46,6 @@ add_subdirectory(hello_uart)
 
 # add clocks trials
 add_subdirectory(hello_clocks)
+
+# add kbd
+add_subdirectory(kbd)

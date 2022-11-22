@@ -4,7 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+#ifdef __PICO_BUILD__
+#include "pico/stdlib.h"
+#else
 #include <stdlib.h>
+#endif
 
 #ifdef __cplusplus
 extern "C"
@@ -38,14 +43,12 @@ extern "C"
     } shared_buffer_t;
 
     void clear_shared_buffer(shared_buffer_t* sb) {
-        for(int i=0; i<sb->size; i++) {
-            sb->buff_in[i] = 0;
-            sb->buff_out[i] = 0;
-            sb->ts_in_start = 0;
-            sb->ts_in_end = 0;
-            sb->ts_out_start = 0;
-            sb->ts_out_end = 0;
-        }
+        memset(sb->buff_in, 0, sb->size);
+        memset(sb->buff_out, 0, sb->size);
+        sb->ts_in_start = 0;
+        sb->ts_in_end = 0;
+        sb->ts_out_start = 0;
+        sb->ts_out_end = 0;
     }
 
     /*
