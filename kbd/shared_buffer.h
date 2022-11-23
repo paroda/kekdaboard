@@ -4,12 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
-#ifdef __PICO_BUILD__
-#include "pico/stdlib.h"
-#else
 #include <stdlib.h>
-#endif
 
 #ifdef __cplusplus
 extern "C"

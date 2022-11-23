@@ -13,19 +13,6 @@
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_usb_reset_interface/include"
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_util/include"
 
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_divider/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_gpio/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_sync/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_timer/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_uart/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_bit_ops/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_divider/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_multicore/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_platform/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_printf/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdio/include"
-             "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdlib/include"
-
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_regs/include"
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_structs/include"
 
@@ -79,6 +66,20 @@
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_stdlib/include"
              "-I/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_unique_id/include"
 
+             ;; alternate versions for host build (PICO_PLATFORM=host)
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_divider/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_gpio/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_sync/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_timer/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_uart/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_bit_ops/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_divider/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_multicore/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_platform/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_printf/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdio/include"
+             ;; "-I/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdlib/include"
+
              ))
          (flycheck-clang-include-path
           . ("/home/dipu/my/pico/kbd/build/generated/pico_base"
@@ -94,19 +95,6 @@
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_time/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_usb_reset_interface/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/common/pico_util/include"
-
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_divider/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_gpio/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_sync/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_timer/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_uart/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_bit_ops/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_divider/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_multicore/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_platform/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_printf/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdio/include"
-             "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdlib/include"
 
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_regs/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2040/hardware_structs/include"
@@ -160,5 +148,19 @@
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_stdio_usb/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_stdlib/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_unique_id/include"
+
+             ;; alternate versions for host build (PICO_PLATFORM=host)
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_divider/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_gpio/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_sync/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_timer/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/hardware_uart/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_bit_ops/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_divider/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_multicore/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_platform/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_printf/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdio/include"
+             ;; "/home/dipu/my/pico/kbd/pico-sdk/src/host/pico_stdlib/include"
 
              )))))

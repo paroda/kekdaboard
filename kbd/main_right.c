@@ -1,6 +1,4 @@
-#define __PICO_BUILD__
-
-#include "data_model.h"
+#include "kbd_process.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -8,9 +6,9 @@ extern "C"
 #endif
 
     int main(void) {
-        my_side = kbd_side_RIGHT;
+        my_data.side = kbd_side_RIGHT;
 
-        // TODO
+        kbd_process();
     }
 
 #ifdef __cplusplus
