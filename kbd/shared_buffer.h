@@ -11,90 +11,55 @@ extern "C"
 {
 #endif
 
-    /***
-
-     */
-
     /*
      * Shared buffer for concurrent operation - one writer, one reader.
-     *
-     * Writer can anytime write `ts_in_start`, `buff_in`, `ts_in_end` in that order.
-     * The same timestamp must be written to both `ts_in_start` and `ts_in_end`.
-     *
-     * Reader can anytime read `buff_out` consistently. It reflects the value
-     * of `buff_in` at the time of last run of `update_shared_buffer_to_read`,
-     * which should be called in the reader thread only.
+     * Use timestamp to track change.
      */
 
     typedef struct {
-        uint8_t* buff_in;
-        uint8_t* buff_out;
+        uint8_t* buff;
         size_t size;
         // timestamp - us since boot
-        uint64_t ts_in_start;
-        uint64_t ts_in_end;
-        uint64_t ts_out_start;
-        uint64_t ts_out_end;
+        volatile uint64_t ts_start;
+        volatile uint64_t ts_end;
     } shared_buffer_t;
 
     void clear_shared_buffer(shared_buffer_t* sb) {
-        memset(sb->buff_in, 0, sb->size);
-        memset(sb->buff_out, 0, sb->size);
-        sb->ts_in_start = 0;
-        sb->ts_in_end = 0;
-        sb->ts_out_start = 0;
-        sb->ts_out_end = 0;
+        memset(sb->buff, 0, sb->size);
+        sb->ts_start = 0;
+        sb->ts_end = 0;
     }
 
     /*
      * Allocate memory
      */
     shared_buffer_t* new_shared_buffer(size_t size) {
-        shared_buffer_t* sb = (shared_buffer_t*) malloc(sizeof (shared_buffer_t));
+        shared_buffer_t* sb = (shared_buffer_t*) malloc(sizeof(shared_buffer_t));
         sb->size = size;
-        sb->buff_in = (uint8_t*) malloc(2*size);
-        sb->buff_out = sb->buff_in + size;
-        sb->ts_in_start = sb->ts_in_end = sb->ts_out_start = sb->ts_out_end = 0;
+        sb->buff = (uint8_t*) malloc(sizeof(uint8_t) * size);
+        sb->ts_start = sb->ts_end = 0;
         return sb;
     }
 
     void free_shared_buffer(shared_buffer_t* sb) {
-        free(sb->buff_in);
-        free(sb->buff_out);
+        free(sb->buff);
         free(sb);
     }
 
-    /*
-     * Must be called in reader thread.
-     * returns true if there is new data, else false
-     */
-    bool update_shared_buffer_to_read(shared_buffer_t* sb) {
-        if(sb->ts_out_start == sb->ts_in_start) {
-            return false;
-        }
+    void read_shared_buffer(shared_buffer_t* sb, uint64_t* ts, uint8_t* dst) {
+        uint64_t ts_start = 0, ts_end = 0;
         do {
-            sb->ts_out_start = sb->ts_in_start;
-            memcpy(sb->buff_out, sb->buff_in, sb->size);
-            sb->ts_out_end = sb->ts_in_end;
-        } while(sb->ts_out_start != sb->ts_out_end);
-        return true;
+            ts_start = sb->ts_start;
+            memcpy(dst, sb->buff, sb->size);
+            ts_end = sb->ts_end;
+        } while(ts_start != ts_end);
+        *ts = ts_start;
     }
 
-    void write_shared_buffer(shared_buffer_t* sb, uint64_t ts, uint8_t* src) {
-        sb->ts_in_start = ts;
-        memcpy(sb->buff_in, src, sb->size);
-        sb->ts_in_end = ts;
-    }
-
-    /*
-     * returns true if new data was read, else false
-     */
-    bool read_shared_buffer(shared_buffer_t* sb, uint8_t *dst) {
-        if(update_shared_buffer_to_read(sb)) {
-            memcpy(dst, sb->buff_out, sb->size);
-            return true;
-        }
-        return false;
+    void write_shared_buffer(shared_buffer_t* sb, const uint64_t ts, const uint8_t* src) {
+        sb->ts_start = ts;
+        memcpy(sb->buff, src, sb->size);
+        sb->ts_end = ts;
     }
 
 #ifdef __cplusplus

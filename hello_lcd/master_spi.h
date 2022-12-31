@@ -10,6 +10,7 @@ extern "C" {
 #include "hardware/spi.h"
 
     typedef enum {
+        master_spi_write_mode_none,
         master_spi_write_mode_8bit,
         master_spi_write_mode_16bit
     } master_spi_write_mode_t;
@@ -19,17 +20,18 @@ extern "C" {
         uint8_t slave_count;
         uint8_t slave_count_max;
 
-        uint8_t active_slave_id; // 255 is reserved to indicate none
+        uint8_t active_slave_id; // 0xFF is reserved to indicate none
 
         master_spi_write_mode_t write_mode;
 
-        uint8_t gpio_DIN;
+        uint8_t gpio_MOSI;
+        uint8_t gpio_MISO;
         uint8_t gpio_CLK;
         uint8_t* gpio_CSn;
     } master_spi_t;
 
     master_spi_t* master_spi_create(spi_inst_t* spi, uint8_t slave_count_max,
-                                    uint8_t gpio_DIN, uint8_t gpio_CLK);
+                                    uint8_t gpio_MOSI, uint8_t MISO, uint8_t gpio_CLK);
 
     void master_spi_free(master_spi_t* m_spi);
 
@@ -42,6 +44,8 @@ extern "C" {
     void master_spi_write8(master_spi_t* m_spi, const uint8_t* src, size_t len);
 
     void master_spi_write16(master_spi_t* m_spi, const uint16_t* src, size_t len);
+
+    void print_master_spi(master_spi_t* m_spi);
 
 #ifdef __cplusplus
 }

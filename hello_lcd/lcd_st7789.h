@@ -9,7 +9,7 @@ extern "C" {
 #include <stdbool.h>
 
 #include "master_spi.h"
-#include "lcd_paint.h"
+#include "lcd_canvas.h"
 
     /*
      * The ST7789 driver has a resolution of 240(W)x320(H) pixels.
@@ -32,7 +32,7 @@ extern "C" {
         uint8_t spi_slave_id;
 
         uint8_t gpio_DC;
-        uint8_t gpio_RST;
+        uint8_t gpio_RST; // set 0xFF to use software reset
         uint8_t gpio_BL;
 
         uint8_t backlight_level; // 0-100%
@@ -70,7 +70,9 @@ extern "C" {
 
     void lcd_display_canvas(lcd_t* lcd, uint16_t xs, uint16_t ys, lcd_canvas_t* canvas);
 
-    void lcd_set_backlight_level(lcd_t* lcd, uint8_t value);
+    void lcd_set_backlight_level(lcd_t* lcd, uint8_t value); // value: 0-100%
+
+    void print_lcd(lcd_t* lcd);
 
 #ifdef __cplusplus
 }

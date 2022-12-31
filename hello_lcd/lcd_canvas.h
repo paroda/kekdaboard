@@ -1,5 +1,5 @@
-#ifndef __LCD_PAINT_H
-#define __LCD_PAINT_H
+#ifndef __LCD_CANVAS_H
+#define __LCD_CANVAS_H
 
 #ifdef __cplusplus
 extern "C" {

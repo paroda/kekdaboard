@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "lcd_paint.h"
+#include "lcd_canvas.h"
 
 
 #ifdef __cplusplus
@@ -40,7 +40,7 @@ extern "C"
 
     void lcd_canvas_point(lcd_canvas_t* canvas, uint16_t x, uint16_t y,
                           uint16_t color, uint8_t thickness) {
-        if(x > canvas->width || y > canvas->height) return;
+        if(x >= canvas->width || y >= canvas->height) return;
         int t1 = thickness >> 2;
         int t2 = thickness - t1;
         for(int dx = -t1; dx < t2; dx++) {
@@ -56,7 +56,6 @@ extern "C"
 
     void lcd_canvas_line(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, uint16_t xe, uint16_t ye,
                          uint16_t color, uint8_t thickness, bool dotted) {
-        if(xs>canvas->width || xe>canvas->width || ys>canvas->height || ye>canvas->height) return;
         uint16_t x = xs;
         uint16_t y = ys;
         int dx = (int)xe - (int)xs >= 0 ? xe - xs : xs - xe;
@@ -86,19 +85,76 @@ extern "C"
         }
     }
 
-    void lcd_canvas_rect(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+    void lcd_canvas_rect(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, uint16_t w, uint16_t h,
                          uint16_t color, uint8_t thickness, bool fill) {
+        if(xs >= canvas->width || ys >= canvas->height) return;
+        uint16_t xe = xs + w - 1;
+        uint16_t ye = ys + h - 1;
 
+        if(fill) {
+            for(uint64_t y = ys; y <= ye; y++)
+                lcd_canvas_line(canvas, xs, y, xe, y, color, thickness, false);
+        } else {
+            lcd_canvas_line(canvas, xs, ys, xe, ys, color, thickness, false);
+            lcd_canvas_line(canvas, xs, ye, xe, ye, color, thickness, false);
+            lcd_canvas_line(canvas, xs, ys, xs, ye, color, thickness, false);
+            lcd_canvas_line(canvas, xe, ys, xe, ye, color, thickness, false);
+        }
     }
 
     void lcd_canvas_circle(lcd_canvas_t* canvas, uint16_t cx, uint16_t cy, uint16_t r,
                            uint16_t color, uint8_t thickness, bool fill) {
+        if(cx-r > canvas->width || cy-r > canvas->height) return;
 
+        uint16_t x = 0, y = r;
+
+        int16_t err = 3 - (r << 1);
+
+        int16_t iy;
+        if(fill) {
+            while(x <= y) {
+                for(iy = x; iy <= y; iy++) {
+                    lcd_canvas_point(canvas,cx + x, cy + iy, color, thickness);
+                    lcd_canvas_point(canvas,cx - x, cy + iy, color, thickness);
+                    lcd_canvas_point(canvas,cx - iy, cy + x, color, thickness);
+                    lcd_canvas_point(canvas,cx - iy, cy - x, color, thickness);
+                    lcd_canvas_point(canvas,cx - x, cy - iy, color, thickness);
+                    lcd_canvas_point(canvas,cx + x, cy - iy, color, thickness);
+                    lcd_canvas_point(canvas,cx + iy, cy - x, color, thickness);
+                    lcd_canvas_point(canvas,cx + iy, cy + x, color, thickness);
+                }
+                if(err < 0)
+                    err += 4 * x + 6;
+                else {
+                    err += 10 + 4 * (x - y);
+                    y--;
+                }
+                x++;
+            }
+        } else {
+            while (x <= y ) {
+                lcd_canvas_point(canvas, cx + x, cy + y, color, thickness);
+                lcd_canvas_point(canvas, cx - x, cy + y, color, thickness);
+                lcd_canvas_point(canvas, cx - y, cy + x, color, thickness);
+                lcd_canvas_point(canvas, cx - y, cy - x, color, thickness);
+                lcd_canvas_point(canvas, cx - x, cy - y, color, thickness);
+                lcd_canvas_point(canvas, cx + x, cy - y, color, thickness);
+                lcd_canvas_point(canvas, cx + y, cy - x, color, thickness);
+                lcd_canvas_point(canvas, cx + y, cy + x, color, thickness);
+                if (err < 0 )
+                    err += 4 * x + 6;
+                else {
+                    err += 10 + 4 * (x - y);
+                    y--;
+                }
+                x++;
+            }
+        }
     }
 
     static void lcd_canvas_char(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, const char c,
                                 lcd_font_t* font, uint16_t color, uint16_t background) {
-        if(xs > canvas->width || ys > canvas->height) return;
+        if(xs >= canvas->width || ys >= canvas->height) return;
 
         uint32_t char_offset = (c - ' ') * font->size;
         const unsigned char *p = font->table + char_offset;

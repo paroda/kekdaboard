@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
@@ -31,6 +32,8 @@
 #define LCD_CMD_RAMWRC    0x3C
 #define LCD_CMD_RAMRDC    0x3E
 
+#define GPIO_NONE 0xFF
+
 /*
  * PWM wrap value of 65500 with 125Mz clock result in 1.9 kHz frequency.
  * With further clock divider 19 1/16 it would be close to 100Hz.
@@ -58,6 +61,7 @@ extern "C" {
         pwm_set_wrap(lcd->pwm_slice_num_BL, LCD_BL_LEVEL_MAX);
         pwm_set_chan_level(lcd->pwm_slice_num_BL, lcd->pwm_chan_BL, LCD_BL_LEVEL_MAX);
         pwm_set_enabled(lcd->pwm_slice_num_BL, true);
+        /* printf("\nlcd_init_backlight, gpio_BL=%d", lcd->gpio_BL); */
     }
 
     static inline void lcd_set_cmd_mode(lcd_t* lcd) {
@@ -65,6 +69,7 @@ extern "C" {
         gpio_put(lcd->gpio_DC, false);
         lcd->on_DC = false;
         sleep_us(1);
+        /* printf("\nlcd_set_cmd_mode, on_DC=%d", lcd->on_DC); */
     }
 
     static inline void lcd_set_data_mode(lcd_t* lcd) {
@@ -72,15 +77,7 @@ extern "C" {
         gpio_put(lcd->gpio_DC, true);
         lcd->on_DC = true;
         sleep_us(1);
-    }
-
-    static void lcd_reset(lcd_t* lcd) {
-        gpio_put(lcd->gpio_RST, true);
-        sleep_ms(100);
-        gpio_put(lcd->gpio_RST, false);
-        sleep_ms(100);
-        gpio_put(lcd->gpio_RST, true);
-        sleep_ms(100);
+        /* printf("\nlcd_set_data_mode, on_DC=%d", lcd->on_DC); */
     }
 
     // assumes master_spi slave already selected
@@ -88,6 +85,7 @@ extern "C" {
         lcd_set_cmd_mode(lcd);
         master_spi_write8(lcd->m_spi, &cmd, 1);
         sleep_us(1);
+        /* printf("\nlcd_send_cmd, cmd=%d", cmd); */
     }
 
     // assumes master_spi slave already selected
@@ -95,6 +93,7 @@ extern "C" {
         lcd_set_data_mode(lcd);
         master_spi_write8(lcd->m_spi, data, len);
         sleep_us(1);
+        /* printf("\nlcd_send_data_bytes, len=%d", len); */
     }
 
     // assumes master_spi slave already selected
@@ -102,6 +101,7 @@ extern "C" {
         lcd_set_data_mode(lcd);
         master_spi_write16(lcd->m_spi, data, len);
         sleep_us(1);
+        /* printf("\nlcd_send_data_words, len=%d", len); */
     }
 
     // assumes master_spi slave already selected
@@ -125,6 +125,7 @@ extern "C" {
         };
         lcd_send_cmd(lcd, LCD_CMD_RASET);
         lcd_send_data_bytes(lcd, y_data, 4);
+        /* printf("\nlcd_set_window, xs=%d, ys=%d, width=%d, height=%d", xs, ys, width, height); */
     }
 
     static void lcd_command(lcd_t* lcd, uint8_t cmd, const uint8_t* data, size_t len) {
@@ -132,6 +133,28 @@ extern "C" {
         lcd_send_cmd(lcd, cmd);
         lcd_send_data_bytes(lcd, data, len);
         master_spi_end_send(lcd->m_spi, lcd->spi_slave_id);
+        /* printf("\nlcd_command, cmd=%d, data len=%d", cmd, len); */
+    }
+
+    static void lcd_reset(lcd_t* lcd) {
+        if(lcd->gpio_RST==GPIO_NONE) {
+            // Software reset
+            lcd_command(lcd, LCD_CMD_SWRESET, NULL, 0);
+            sleep_ms(150);
+            // Sleep out
+            lcd_command(lcd, LCD_CMD_SLPOUT, NULL, 0);
+            sleep_ms(50);
+            /* printf("\nlcd_reset, software reset"); */
+        } else {
+            // Hardware reset
+            gpio_put(lcd->gpio_RST, true);
+            sleep_ms(100);
+            gpio_put(lcd->gpio_RST, false);
+            sleep_ms(100);
+            gpio_put(lcd->gpio_RST, true);
+            sleep_ms(100);
+            /* printf("\nlcd_reset, hardware reset, %d", lcd->gpio_RST); */
+        }
     }
 
     static void lcd_init_device(lcd_t* lcd, uint8_t gpio_CS,
@@ -139,22 +162,26 @@ extern "C" {
         // register the lcd as a slave with master spi
         lcd->spi_slave_id = master_spi_add_slave(lcd->m_spi, gpio_CS);
 
+        // Initialize DC pin
         lcd->gpio_DC = gpio_DC;
-        lcd->gpio_RST = gpio_RST;
-
         gpio_init(lcd->gpio_DC);
-        gpio_init(lcd->gpio_RST);
-
         gpio_set_dir(lcd->gpio_DC, GPIO_OUT);
-        gpio_set_dir(lcd->gpio_RST, GPIO_OUT);
-
         gpio_put(lcd->gpio_DC, true);
-        gpio_put(lcd->gpio_RST, true);
+        lcd->on_DC = true;
+
+        // Initialize RST pin when not GPIO_NONE (use software reset)
+        lcd->gpio_RST = gpio_RST;
+        if(lcd->gpio_RST != GPIO_NONE) {
+            gpio_init(lcd->gpio_RST);
+            gpio_set_dir(lcd->gpio_RST, GPIO_OUT);
+            gpio_put(lcd->gpio_RST, true);
+        }
 
         // Initialize backlight PWM
         lcd_init_backlight(lcd, gpio_BL);
 
         sleep_ms(100);
+        /* printf("\nlcd_init_device, gpio_DC=%d, on_DC=%d, gpio_RST=%d", lcd->gpio_DC, lcd->on_DC, lcd->gpio_RST); */
     }
 
     static void lcd_resolution(lcd_t* lcd, uint16_t width, uint16_t height, lcd_orient_t orient) {
@@ -181,6 +208,7 @@ extern "C" {
 
         // set the read/write scan direction and RGB format
         lcd_command(lcd, LCD_CMD_MADCTL, &memory_access, 1);
+        /* printf("\nlcd_resolution, width=%d, height=%d, orient=%d", lcd->width, lcd->height, lcd->orient); */
     }
 
     lcd_t* lcd_create(master_spi_t* m_spi,
@@ -192,12 +220,8 @@ extern "C" {
         // Prepare the SPI port
         lcd_init_device(lcd, gpio_CS, gpio_DC, gpio_RST, gpio_BL);
 
-        // Hardware reset
+        // Reset
         lcd_reset(lcd);
-
-        // Software reset
-        /* lcd_command(lcd, LCD_CMD_SWRESET, NULL, 0); */
-        /* sleep_ms(150); */
 
         // Set the resolution and scanning method of the screen
         lcd_resolution(lcd, width, height, orient);
@@ -232,10 +256,12 @@ extern "C" {
     }
 
     void lcd_orient(lcd_t* lcd, lcd_orient_t orient) {
+        lcd->orient = orient;
         if(lcd->orient == lcd_orient_Normal)
             lcd_resolution(lcd, lcd->width, lcd->height, orient);
         else
             lcd_resolution(lcd, lcd->height, lcd->width, orient);
+        /* printf("\nlcd_orient, %d", lcd->orient); */
     }
 
     void lcd_clear(lcd_t* lcd, uint16_t color) {
@@ -249,6 +275,7 @@ extern "C" {
         for(uint i=0; i < lcd->height; i++)
             lcd_send_data_words(lcd, row, lcd->width);
         master_spi_end_send(lcd->m_spi, lcd->spi_slave_id);
+        /* printf("\nlcd_clear"); */
     }
 
     void lcd_display_canvas(lcd_t* lcd, uint16_t xs, uint16_t ys, lcd_canvas_t* canvas) {
@@ -263,6 +290,24 @@ extern "C" {
         if(level > 100) level=100; // max 100%
         lcd->backlight_level = level;
         pwm_set_chan_level(lcd->pwm_slice_num_BL, lcd->pwm_chan_BL, (LCD_BL_LEVEL_MAX/100u)*level);
+        /* printf("\nlcd_set_backlight_level, %d", lcd->backlight_level); */
+    }
+
+    void print_lcd(lcd_t* lcd) {
+        printf("\n\nLCD:");
+        printf("\nlcd->spi_slave_id = %d", lcd->spi_slave_id);
+        printf("\nlcd->gpio_DC = %d", lcd->gpio_DC);
+        printf("\nlcd->gpio_RST = %d", lcd->gpio_RST);
+        printf("\nlcd->gpio_BL = %d", lcd->gpio_BL);
+        printf("\nlcd->backlight_level = %d", lcd->backlight_level);
+        printf("\nlcd->on_DC = %d", lcd->on_DC);
+        printf("\nlcd->pwm_slice_num_BL = %d", lcd->pwm_slice_num_BL);
+        printf("\nlcd->pwm_chan_BL = %d", lcd->pwm_chan_BL);
+        printf("\nlcd->width = %d", lcd->width);
+        printf("\nlcd->height = %d", lcd->height);
+        printf("\nlcd->orient = %d", lcd->orient);
+        printf("\nlcd->origin_x = %d", lcd->origin_x);
+        printf("\nlcd->origin_y = %d", lcd->origin_y);
     }
 
 #ifdef __cplusplus
