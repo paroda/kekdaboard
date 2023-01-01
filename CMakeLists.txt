@@ -50,5 +50,8 @@ add_subdirectory(hello_clocks)
 # add lcd trials
 add_subdirectory(hello_lcd)
 
+# add lcd trials
+add_subdirectory(hello_track_ball)
+
 # add kbd
 add_subdirectory(kbd)
