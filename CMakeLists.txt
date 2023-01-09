@@ -53,5 +53,8 @@ add_subdirectory(hello_lcd)
 # add lcd trials
 add_subdirectory(hello_track_ball)
 
+# add multiple device trials (flash, sd_card, clock)
+add_subdirectory(hello_spi_i2c)
+
 # add kbd
 add_subdirectory(kbd)
