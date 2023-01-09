@@ -208,6 +208,9 @@ void task_flash(flash_t* f, bool* action) {
         uint32_t id = flash_get_id(f);
         printf("\n\nFlash device ID: %#010x\n", id);
 
+        uint32_t baud = spi_get_baudrate(f->m_spi->spi);
+        printf("\nBaud: %lu", baud);
+
         start_us = time_us_64();
         flash_read(f, addr, buf, FLASH_PAGE_SIZE);
         end_us = time_us_64();

@@ -25,7 +25,7 @@
 #define FLASH_MODE_W25QXX 0 // Mode 0 or 3 supported by W25QXX
 
 /*
- * @ 48 MHz approximate operation duration
+ * @ 31.25 MHz approximate operation duration
  * :  one page read - 200 us
  * :  4 bytes read - 90 us
  * :  one page write - 300 - 600 us, depending on count of 0-bits
@@ -34,8 +34,11 @@
  * :  one 32K block erase - 130 ms
  * :  one 64K block erase - 160 ms
  * :  whole chip erase - 6-7 seconds
+ *
+ * At the max baud rate 62.5 MHz data gets corrupted.
+ * Using next lower value 31.25 MHz.
  */
-#define FLASH_BAUD_W25QXX (48 * 1000 * 1000) // data gets corrupted over 60 MHz
+#define FLASH_BAUD_W25QXX (32 * 1000 * 1000) // SPI will choose closest possible 31.25 MHz
 
 static void __not_in_flash_func(flash_write_enable)(flash_t* f) {
     master_spi_select_slave(f->m_spi, f->spi_slave_id);
