@@ -1,5 +1,5 @@
-#ifndef __W25QXX_H
-#define __W25QXX_H
+#ifndef __FLASH_W25QXX_H
+#define __FLASH_W25QXX_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +18,6 @@ extern "C" {
 
 #define FLASH_PAGE_SIZE 256
 #define FLASH_SECTOR_SIZE 4096 // 4K-byte
-#define FLASH_BLOCK_SIZE 32768 // 32K-byte
 
     typedef struct {
         master_spi_t* m_spi;

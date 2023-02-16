@@ -129,10 +129,10 @@ extern "C" {
     }
 
     static void lcd_command(lcd_t* lcd, uint8_t cmd, const uint8_t* data, size_t len) {
-        master_spi_begin_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_select_slave(lcd->m_spi, lcd->spi_slave_id);
         lcd_send_cmd(lcd, cmd);
         lcd_send_data_bytes(lcd, data, len);
-        master_spi_end_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_release_slave(lcd->m_spi, lcd->spi_slave_id);
         /* printf("\nlcd_command, cmd=%d, data len=%d", cmd, len); */
     }
 
@@ -160,7 +160,8 @@ extern "C" {
     static void lcd_init_device(lcd_t* lcd, uint8_t gpio_CS,
                                 uint8_t gpio_DC, uint8_t gpio_RST, uint8_t gpio_BL) {
         // register the lcd as a slave with master spi
-        lcd->spi_slave_id = master_spi_add_slave(lcd->m_spi, gpio_CS);
+        lcd->spi_slave_id = master_spi_add_slave(lcd->m_spi, gpio_CS, 0, 0);
+        master_spi_set_baud(lcd->m_spi, lcd->spi_slave_id);
 
         // Initialize DC pin
         lcd->gpio_DC = gpio_DC;
@@ -256,6 +257,7 @@ extern "C" {
     }
 
     void lcd_orient(lcd_t* lcd, lcd_orient_t orient) {
+        master_spi_set_baud(lcd->m_spi, lcd->spi_slave_id);
         lcd->orient = orient;
         if(lcd->orient == lcd_orient_Normal)
             lcd_resolution(lcd, lcd->width, lcd->height, orient);
@@ -265,25 +267,27 @@ extern "C" {
     }
 
     void lcd_clear(lcd_t* lcd, uint16_t color) {
+        master_spi_set_baud(lcd->m_spi, lcd->spi_slave_id);
         uint16_t row[lcd->width];
         for(uint i=0; i < lcd->width; i++)
             row[i] = color;
 
-        master_spi_begin_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_select_slave(lcd->m_spi, lcd->spi_slave_id);
         lcd_set_window(lcd, 0, 0, lcd->width, lcd->height);
         lcd_send_cmd(lcd, LCD_CMD_RAMWR);
         for(uint i=0; i < lcd->height; i++)
             lcd_send_data_words(lcd, row, lcd->width);
-        master_spi_end_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_release_slave(lcd->m_spi, lcd->spi_slave_id);
         /* printf("\nlcd_clear"); */
     }
 
     void lcd_display_canvas(lcd_t* lcd, uint16_t xs, uint16_t ys, lcd_canvas_t* canvas) {
-        master_spi_begin_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_set_baud(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_select_slave(lcd->m_spi, lcd->spi_slave_id);
         lcd_set_window(lcd, xs, ys, canvas->width, canvas->height);
         lcd_send_cmd(lcd, LCD_CMD_RAMWR);
         lcd_send_data_words(lcd, canvas->buff, canvas->width * canvas->height);
-        master_spi_end_send(lcd->m_spi, lcd->spi_slave_id);
+        master_spi_release_slave(lcd->m_spi, lcd->spi_slave_id);
     }
 
     void lcd_set_backlight_level(lcd_t* lcd, uint8_t level) {

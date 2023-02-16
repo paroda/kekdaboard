@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "pico/stdlib.h"
-#include "w25qxx.h"
+#include "flash_w25qxx.h"
 
 /*
  * Note: The command Program Page only applies the 0 bits.

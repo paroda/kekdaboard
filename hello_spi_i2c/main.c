@@ -4,7 +4,8 @@
 
 #include "pico/stdlib.h"
 #include "master_spi.h"
-#include "w25qxx.h"
+#include "flash_w25qxx.h"
+#include "rtc_ds3231.h"
 
 #include "blink_led.h"
 
@@ -233,20 +234,64 @@ void task_flash(flash_t* f, bool* action) {
 
 }
 
+void print_datetime(rtc_datetime_t* dt) {
+    printf("%d-%02d-%02d (%d:%s) %02d:%02d:%02d",
+           dt->year, dt->month, dt->date,
+           dt->weekday, rtc_week[dt->weekday],
+           dt->hour, dt->minute, dt->second);
+}
+
+void task_rtc(rtc_t* rtc, bool* action) {
+    static uint32_t interval_ms = 5000;
+    static uint32_t start_ms = 0;
+    if(start_ms == 0) start_ms = board_millis();
+
+    rtc_datetime_t dt;
+    int8_t temp;
+    if(board_millis() - start_ms > interval_ms) {
+        start_ms += interval_ms;
+        printf("\n\nRTC Trials");
+
+        rtc_read_time(rtc, &dt);
+        printf("\nRTC time: "); print_datetime(&dt);
+        temp = rtc_get_temperature(rtc);
+        printf("\nRTC temperature: %d", temp);
+
+        if(*action) {
+            // TODO: action
+            dt.year = 2023;
+            dt.month = 2;
+            dt.date = 16;
+            dt.weekday = 5;
+            dt.hour = 13;
+            dt.minute = 20;
+            dt.second = 0;
+            rtc_set_time(rtc, &dt);
+            *action = false;
+        }
+    }
+}
+
 int main(void) {
     stdio_init_all();
 
     sleep_ms(5000);
     printf("\nHello from PICO. Booting up..");
 
-    // map to track-ball's pins
+    // master SPI
     uint8_t gpio_CLK = 2; // GP2 SPI0 SCK
     uint8_t gpio_MOSI = 3; // GP3 SPI0 TX
     uint8_t gpio_MISO = 4; // GP4 SPI0 RX
-    uint8_t gpio_CS_w25qxx  = 5; // GP6
-    uint8_t gpio_CS_sd_card  = 7; // GP6
-    uint8_t gpio_SCL = 27; // GP27 I2C SCL
-    uint8_t gpio_SDA = 26; // GP26 I2C SDA
+
+    // flash
+    uint8_t gpio_CS_w25qxx  = 5; // GP5
+
+    // SD card
+    uint8_t gpio_CS_sd_card  = 7; // GP7
+
+    // RTC
+    uint8_t gpio_SCL = 27; // GP27 I2C1 SCL
+    uint8_t gpio_SDA = 26; // GP26 I2C1 SDA
 
     uint8_t gpio_BTN = 15; // GP15 action button
     init_btn_action(gpio_BTN);
@@ -255,13 +300,16 @@ int main(void) {
 
     flash_t* f = flash_create(m_spi, gpio_CS_w25qxx);
 
+    rtc_t* r = rtc_create(i2c1, gpio_SCL, gpio_SDA);
+
     while(true) {
         sleep_ms(1);
         led_blinking_task();
 
         static bool action_flash = false;
+        static bool action_rtc = false;
         if(scan_btn_action(gpio_BTN)) {
-            action_flash = true;
+            action_rtc = true;
         }
 
         static uint32_t start_ms = 0;
@@ -272,9 +320,11 @@ int main(void) {
             start_ms += 1000;
 
             printf("\nHello again from PICO. still beating..");
-            print_master_spi(m_spi);
+            //print_master_spi(m_spi);
 
             task_flash(f, &action_flash);
+
+            task_rtc(r, &action_rtc);
         }
 
         tight_loop_contents();
