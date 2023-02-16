@@ -46,6 +46,10 @@ extern "C" {
 
     void master_spi_write16(master_spi_t* m_spi, const uint16_t* src, size_t len);
 
+    void master_spi_write8_read8(master_spi_t* m_spi, const uint8_t* src, uint8_t* dst, size_t len);
+
+    void master_spi_write16_read16(master_spi_t* m_spi, const uint16_t* src, uint16_t* dst, size_t len);
+
     void master_spi_read8(master_spi_t* m_spi, uint8_t* dst, size_t len);
 
     void master_spi_read16(master_spi_t* m_spi, uint16_t* dst, size_t len);

@@ -122,6 +122,16 @@ extern "C" {
         /* printf("\nmaster_spi_write16, len=%d", len); */
     }
 
+    void master_spi_write8_read8(master_spi_t* m_spi, const uint8_t* src, uint8_t* dst, size_t len) {
+        master_spi_set_format(m_spi, 8);
+        spi_write_read_blocking(m_spi->spi, src, dst, len);
+    }
+
+    void master_spi_write16_read16(master_spi_t* m_spi, const uint16_t* src, uint16_t* dst, size_t len) {
+        master_spi_set_format(m_spi, 16);
+        spi_write16_read16_blocking(m_spi->spi, src, dst, len);
+    }
+
     void master_spi_read8(master_spi_t* m_spi, uint8_t* dst, size_t len) {
         master_spi_set_format(m_spi, 8);
         spi_read_blocking(m_spi->spi, 0, dst, len);
