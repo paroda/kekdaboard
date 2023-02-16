@@ -11,22 +11,18 @@
 
 #include "../master_spi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct {
+    master_spi_t* m_spi;
+    uint8_t spi_slave_id;
+    uint8_t ss_gpio; // CS pin
 
-    typedef struct {
-        master_spi_t* m_spi;
-        uint8_t spi_slave_id;
-        uint8_t ss_gpio; // CS pin
+    uint64_t sectors; // assigned dynamically
+    int card_type;    // assigned dynamically
 
-        uint64_t sectors; // assigned dynamically
-        int card_type;    // assigned dynamically
-
-        const char* pcName;  // drive name
-        FATFS fatfs; // fatfs.fs_type==0 means unmounted
-        int status;  // card status
-    } sd_card_t;
+    const char* pcName;  // drive name
+    FATFS fatfs; // fatfs.fs_type==0 means unmounted
+    int status;  // card status
+} sd_card_t;
 
 #define SD_BLOCK_DEVICE_ERROR_NONE 0
 #define SD_BLOCK_DEVICE_ERROR_WOULD_BLOCK -5001 /*!< operation would block */
@@ -43,30 +39,26 @@ extern "C" {
 
 #define SPI_FILL_CHAR (0xFF)
 
-    /*
-     * // Disk Status Bits (DSTATUS)
-     * See diskio.h.
-     * enum {
-     *   STA_NOINIT = 0x01, // Drive not initialized
-     *   STA_NODISK = 0x02, // No medium in the drive
-     *   STA_PROTECT = 0x04 // Write protected
-     * };
-     */
+/*
+ * // Disk Status Bits (DSTATUS)
+ * See diskio.h.
+ * enum {
+ *   STA_NOINIT = 0x01, // Drive not initialized
+ *   STA_NODISK = 0x02, // No medium in the drive
+ *   STA_PROTECT = 0x04 // Write protected
+ * };
+ */
 
-    sd_card_t* sd_create(master_spi_t* m_spi, uint8_t gpio_CS);
+sd_card_t* sd_create(master_spi_t* m_spi, uint8_t gpio_CS);
 
-    void sd_free(sd_card_t* sd);
+void sd_free(sd_card_t* sd);
 
-    int sd_write_blocks(sd_card_t *pSD, const uint8_t *buffer, uint64_t ulSectorNumber, uint32_t blockCnt);
+int sd_write_blocks(sd_card_t *pSD, const uint8_t *buffer, uint64_t ulSectorNumber, uint32_t blockCnt);
 
-    int sd_read_blocks(sd_card_t *pSD, uint8_t *buffer, uint64_t ulSectorNumber, uint32_t ulSectorCount);
+int sd_read_blocks(sd_card_t *pSD, uint8_t *buffer, uint64_t ulSectorNumber, uint32_t ulSectorCount);
 
-    uint64_t sd_sectors(sd_card_t *pSD);
+uint64_t sd_sectors(sd_card_t *pSD);
 
-    void sd_print(sd_card_t* sd);
-
-#ifdef __cplusplus
-}
-#endif
+void sd_print(sd_card_t* sd);
 
 #endif

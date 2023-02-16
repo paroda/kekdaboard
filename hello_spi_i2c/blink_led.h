@@ -39,12 +39,4 @@ static void led_blinking_task(void) {
     led_state = 1 - led_state; // toggle
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif

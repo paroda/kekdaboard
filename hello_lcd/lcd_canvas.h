@@ -1,10 +1,6 @@
 #ifndef __LCD_CANVAS_H
 #define __LCD_CANVAS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdbool.h>
 #include "lcd_fonts.h"
 
@@ -23,38 +19,34 @@ extern "C" {
 #define BRRED          0XFC07
 #define GRAY           0X8430
 
-    typedef struct {
-        uint16_t* buff;
-        uint16_t width;
-        uint16_t height;
-        uint16_t color;
-    } lcd_canvas_t;
+typedef struct {
+    uint16_t* buff;
+    uint16_t width;
+    uint16_t height;
+    uint16_t color;
+} lcd_canvas_t;
 
-    lcd_canvas_t* lcd_new_canvas(uint16_t width, uint16_t height, uint16_t color);
+lcd_canvas_t* lcd_new_canvas(uint16_t width, uint16_t height, uint16_t color);
 
-    void lcd_free_canvas(lcd_canvas_t* canvas);
+void lcd_free_canvas(lcd_canvas_t* canvas);
 
-    void lcd_canvas_clear(lcd_canvas_t* canvas);
+void lcd_canvas_clear(lcd_canvas_t* canvas);
 
-    void lcd_canvas_set_pixel(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t color);
+void lcd_canvas_set_pixel(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t color);
 
-    void lcd_canvas_point(lcd_canvas_t* canvas, uint16_t x, uint16_t y,
-                          uint16_t color, uint8_t thickness);
+void lcd_canvas_point(lcd_canvas_t* canvas, uint16_t x, uint16_t y,
+                      uint16_t color, uint8_t thickness);
 
-    void lcd_canvas_line(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, uint16_t xe, uint16_t ye,
-                         uint16_t color, uint8_t thickness, bool dotted);
+void lcd_canvas_line(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, uint16_t xe, uint16_t ye,
+                     uint16_t color, uint8_t thickness, bool dotted);
 
-    void lcd_canvas_rect(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
-                         uint16_t color, uint8_t thickness, bool fill);
+void lcd_canvas_rect(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+                     uint16_t color, uint8_t thickness, bool fill);
 
-    void lcd_canvas_circle(lcd_canvas_t* canvas, uint16_t cx, uint16_t cy, uint16_t r,
-                           uint16_t color, uint8_t thickness, bool fill);
+void lcd_canvas_circle(lcd_canvas_t* canvas, uint16_t cx, uint16_t cy, uint16_t r,
+                       uint16_t color, uint8_t thickness, bool fill);
 
-    void lcd_canvas_text(lcd_canvas_t* canvas, uint16_t x, uint16_t y, const char* text,
-                         lcd_font_t* font, uint16_t color, uint16_t background);
-
-#ifdef __cplusplus
-}
-#endif
+void lcd_canvas_text(lcd_canvas_t* canvas, uint16_t x, uint16_t y, const char* text,
+                     lcd_font_t* font, uint16_t color, uint16_t background);
 
 #endif
