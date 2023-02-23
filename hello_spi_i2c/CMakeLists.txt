@@ -1,8 +1,8 @@
 add_executable(hello_spi_i2c
   main.c
-  master_spi.c
-  flash_w25qxx.c
-  rtc_ds3231.c
+  ../kbd/master_spi.c
+  ../kbd/flash_w25qxx.c
+  ../kbd/rtc_ds3231.c
 )
 
 # pull in common dependencies and additional uart hardware support
@@ -34,8 +34,8 @@ add_subdirectory(sd_card build)
 
 add_executable(ex_sd
   sd_card/sd_example.c
-  master_spi.c
-  rtc_ds3231.c
+  ../kbd/master_spi.c
+  ../kbd/rtc_ds3231.c
 )
 
 target_link_libraries(ex_sd

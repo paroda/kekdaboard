@@ -1,9 +1,9 @@
 add_executable(hello_lcd
   main.c
-  master_spi.c
-  lcd_st7789.c
-  lcd_canvas.c
-  lcd_fonts.c
+  ../kbd/master_spi.c
+  ../kbd/lcd_st7789.c
+  ../kbd/lcd_canvas.c
+  ../kbd/lcd_fonts.c
 )
 
 # pull in common dependencies and additional uart hardware support

@@ -9,7 +9,7 @@
 
 #include "ff15/ff.h"
 
-#include "../master_spi.h"
+#include "../../kbd/master_spi.h"
 
 typedef struct {
     master_spi_t* m_spi;

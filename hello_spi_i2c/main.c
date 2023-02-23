@@ -3,9 +3,9 @@
 #include <stdbool.h>
 
 #include "pico/stdlib.h"
-#include "master_spi.h"
-#include "flash_w25qxx.h"
-#include "rtc_ds3231.h"
+#include "../kbd/master_spi.h"
+#include "../kbd/flash_w25qxx.h"
+#include "../kbd/rtc_ds3231.h"
 
 #include "blink_led.h"
 

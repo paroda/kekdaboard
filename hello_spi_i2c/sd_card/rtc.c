@@ -1,5 +1,5 @@
 #include "ff15/ff.h"
-#include "../rtc_ds3231.h"
+#include "../../kbd/rtc_ds3231.h"
 
 // Called by FatFs:
 DWORD get_fattime(void) {

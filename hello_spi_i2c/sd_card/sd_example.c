@@ -4,7 +4,7 @@
 #include "ff15/ff.h"
 #include "pico/stdlib.h"
 #include "sd_card.h"
-#include "../rtc_ds3231.h"
+#include "../../kbd/rtc_ds3231.h"
 
 int main() {
     stdio_init_all();

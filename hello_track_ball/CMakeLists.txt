@@ -1,8 +1,8 @@
 add_executable(hello_track_ball
   main.c
-  master_spi.c
-  srom_pmw3389.c
-  tb_pmw3389.c
+  ../kbd/master_spi.c
+  ../kbd/srom_pmw3389.c
+  ../kbd/tb_pmw3389.c
 )
 
 # pull in common dependencies and additional uart hardware support

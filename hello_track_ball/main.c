@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 
 #include "blink_led.h"
-#include "tb_pmw3389.h"
+#include "../kbd/tb_pmw3389.h"
 
 int main(void) {
     stdio_init_all();

@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 
 #include "blink_led.h"
-#include "lcd_st7789.h"
+#include "../kbd/lcd_st7789.h"
 
 int main(void) {
     stdio_init_all();
