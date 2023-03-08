@@ -35,9 +35,7 @@ uart_comm_t* uart_comm_create(uart_inst_t* uart, uint8_t gpio_TX, uint8_t gpio_R
     // instance specific callback/handlers (TODO: make dynamic instead of fixed)
     comms[0] = comm;
     comm->on_rx = on_uart_rx_0;
-    config->get = get_0;
-    config->put = put_0;
-    config->current_ts = time_us_64;
+    peer_comm_set_handlers(config, get_0, put_0, time_us_64);
 
     comm->baud_rate = uart_init(comm->uart, BAUD_RATE);
 

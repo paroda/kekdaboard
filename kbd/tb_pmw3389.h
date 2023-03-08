@@ -14,8 +14,8 @@ typedef struct {
 
     uint8_t spi_slave_id;
 
-    uint8_t gpio_MT;
-    uint8_t gpio_RST;
+    uint8_t gpio_MT;  // not used, set 0xFF
+    uint8_t gpio_RST; // not used, set 0xFF
 
     uint8_t cpi_index;
 

@@ -92,15 +92,14 @@ typedef struct {
     uint64_t (*current_ts) (void); // function to get the current time in us
 } peer_comm_config_t;
 
-peer_comm_config_t* new_peer_comm_config(uint8_t size,
-                                         shared_buffer_t** datasets,
-                                         uint8_t* data_inits,
-                                         uint8_t (*get) (void),
-                                         void (*put) (uint8_t),
-                                         uint64_t (*current_ts) (void));
+peer_comm_config_t* new_peer_comm_config(uint8_t size, shared_buffer_t** datasets, uint8_t* data_inits);
+
+void peer_comm_set_handlers(peer_comm_config_t* pcc,
+                            uint8_t (*get) (void), void (*put) (uint8_t), uint64_t (*current_ts) (void));
 
 void free_peer_comm_config(peer_comm_config_t* pcc);
 
+uint8_t peer_comm_cmd_init_data(uint8_t data_id);
 /*
  * To be called by the master unit, periodically, to start one transfer cycle
  */

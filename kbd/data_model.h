@@ -71,12 +71,12 @@ typedef struct {
     shared_buffer_t* right_key_press;
     shared_buffer_t* right_ball_scroll;
     shared_buffer_t* system_state;
-    shared_buffer_t* left_task_requests;
-    shared_buffer_t* right_task_requests;
-    shared_buffer_t* left_task_responses;
-    shared_buffer_t* right_task_responses;
+    shared_buffer_t* left_task_request;
+    shared_buffer_t* right_task_request;
+    shared_buffer_t* left_task_response;
+    shared_buffer_t* right_task_response;
 
-    peer_comm_config_t* peer_comm;
+    peer_comm_config_t* comm;
 } kbd_system_t;
 
 extern kbd_system_t kbd_system;
@@ -85,10 +85,8 @@ extern kbd_system_t kbd_system;
  * Model functions
  */
 
-void setup_data_model(uint8_t (*get) (void),
-                      void (*put) (uint8_t),
-                      uint64_t (*current_ts) (void));
+void init_data_model();
 
-void setup_role(kbd_side_role_t role);
+void set_role(kbd_side_role_t role);
 
 #endif

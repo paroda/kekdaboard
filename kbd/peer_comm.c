@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "peer_comm.h"
 
 #define peer_comm_byte_DATA_MASK         0b01111111 // 7 bits for data
@@ -24,10 +26,7 @@ static void peer_comm_reset_state(peer_comm_config_t* pcc) {
 
 peer_comm_config_t* new_peer_comm_config(uint8_t size,
                                          shared_buffer_t** datasets,
-                                         uint8_t* data_inits,
-                                         uint8_t (*get) (void),
-                                         void (*put) (uint8_t),
-                                         uint64_t (*current_ts) (void)) {
+                                         uint8_t* data_inits) {
     peer_comm_config_t* pcc = (peer_comm_config_t*) malloc(sizeof(peer_comm_config_t));
 
     pcc->size = size;
@@ -43,10 +42,14 @@ peer_comm_config_t* new_peer_comm_config(uint8_t size,
     pcc->peer_ready = false;
     peer_comm_reset_state(pcc);
 
+    return pcc;
+}
+
+void peer_comm_set_handlers(peer_comm_config_t* pcc,
+                            uint8_t (*get) (void), void (*put) (uint8_t), uint64_t (*current_ts) (void)) {
     pcc->get = get;
     pcc->put = put;
     pcc->current_ts = current_ts;
-    return pcc;
 }
 
 void free_peer_comm_config(peer_comm_config_t* pcc) {
@@ -56,6 +59,11 @@ void free_peer_comm_config(peer_comm_config_t* pcc) {
     free(pcc);
 }
 
+uint8_t peer_comm_cmd_init_data(uint8_t data_id) {
+    if(data_id>>5) return 0; // invalid id, max 5 bits
+    return peer_comm_byte_INIT_DATA | data_id;
+}
+
 void peer_comm_init_cycle(peer_comm_config_t* pcc) {
     if(pcc->busy) {
         uint32_t current_state;
@@ -63,7 +71,7 @@ void peer_comm_init_cycle(peer_comm_config_t* pcc) {
         p[0] = pcc->in_id;
         p[1] = pcc->in_pos;
         p[2] = pcc->out_id;
-        p[2] = pcc->out_pos;
+        p[3] = pcc->out_pos;
         // no need to intervene if state has changed indicating no hanged state
         if(pcc->last_state!=current_state) {
             pcc->last_state = current_state;
@@ -202,10 +210,9 @@ static void peer_comm_save_next_data_byte(peer_comm_config_t* pcc, uint8_t d) {
 static void peer_comm_set_msbs(peer_comm_config_t* pcc, uint8_t msbs) {
     if(!pcc->in_active) return; // must be active
 
-    uint8_t mask = 1;
     int pos = pcc->in_pos-1;
-    for(; mask <= 0b00100000 && pos>=0; mask<<=1, pos--) {
-        if(msbs & mask) pcc->in_buff[pos] |= 0b10000000; // set the first bit
+    for(; msbs && pos>=0; msbs>>=1, pos--) {
+        if(msbs & 1) pcc->in_buff[pos] |= 0b10000000; // set the first bit
     }
 }
 
