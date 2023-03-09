@@ -11,11 +11,13 @@
 #define peer_comm_byte_DATA_ID_MASK      0b00011111 // 5 bits for buffer id
 
 #define peer_comm_byte_NO_DATA           0xF0
-#define peer_comm_byte_PING              0xF1
+#define peer_comm_byte_SEEK_PEER         0xF1
 #define peer_comm_byte_PEER_READY        0xF2
-#define peer_comm_byte_INIT_CYCLE        0xF3
-#define peer_comm_byte_END_CYCLE         0xF4
-#define peer_comm_byte_END_DATA          0xF5
+#define peer_comm_byte_SEEK_SLAVE        0xF3
+#define peer_comm_byte_SLAVE_READY       0xF4
+#define peer_comm_byte_INIT_CYCLE        0xF5
+#define peer_comm_byte_END_CYCLE         0xF6
+#define peer_comm_byte_END_DATA          0xF7
 
 static void peer_comm_reset_state(peer_comm_config_t* pcc) {
     pcc->busy = false;
@@ -40,6 +42,7 @@ peer_comm_config_t* new_peer_comm_config(uint8_t size,
     }
 
     pcc->peer_ready = false;
+    pcc->role = peer_comm_role_NONE;
     peer_comm_reset_state(pcc);
 
     return pcc;
@@ -84,8 +87,15 @@ void peer_comm_init_cycle(peer_comm_config_t* pcc) {
     pcc->put(peer_comm_byte_INIT_CYCLE);
 }
 
-void peer_comm_ping(peer_comm_config_t* pcc) {
-    pcc->put(peer_comm_byte_PING);
+void peer_comm_try_peer(peer_comm_config_t* pcc) {
+    if(pcc->peer_ready) return;
+    pcc->put(peer_comm_byte_SEEK_PEER);
+}
+
+void peer_comm_try_master(peer_comm_config_t* pcc, bool left) {
+    if(pcc->role != peer_comm_role_NONE) return;
+    pcc->role = left ? peer_comm_role_MASTER_LEFT : peer_comm_role_MASTER_RIGHT;
+    pcc->put(peer_comm_byte_SEEK_SLAVE);
 }
 
 static uint8_t peer_comm_select_next_out(peer_comm_config_t* pcc, uint8_t start) {
@@ -254,13 +264,24 @@ void peer_comm_on_receive(peer_comm_config_t* pcc) {
     } else {
         // other command byte
         switch(b) {
-        case peer_comm_byte_PING: {
+        case peer_comm_byte_SEEK_PEER: {
             pcc->peer_ready = true;
             pcc->put(peer_comm_byte_PEER_READY);
             break;
         }
         case peer_comm_byte_PEER_READY: {
             pcc->peer_ready = true;
+            break;
+        }
+        case peer_comm_byte_SEEK_SLAVE: {
+            if(pcc->role == peer_comm_role_NONE || pcc->role == peer_comm_role_MASTER_RIGHT)
+                pcc->role = peer_comm_role_SLAVE;
+            if(pcc->role == peer_comm_role_SLAVE)
+                pcc->put(peer_comm_byte_SLAVE_READY);
+            break;
+        }
+        case peer_comm_byte_SLAVE_READY: {
+            pcc->role = peer_comm_role_MASTER;
             break;
         }
         case peer_comm_byte_INIT_CYCLE: {

@@ -47,7 +47,7 @@
  * END_CYCLE(0xF4) to let the other unit know as well that the cycle is finished.
  * The pico core-0 would set the data to transmit and core-1 would send them on its turn.
  *
- * PEER SETUP
+ * PEER SETUP TODO
  *
  * The unit that successfully establishes the USB host connection, would be the master unit.
  * It would then send out a PING(0xF1).
@@ -56,9 +56,20 @@
  * After that, both units know the other to be ready, and can do there periodic transmission.
  * The transmission would always be initiated by the master unit at a fixed interval, and then
  * both unit will continue sending their bytes one by one, till they have sent all they have.
+ *
+ * MASTER/SLAVE SETUP TODO
+ *
  */
 
 #define peer_comm_BUFF_SIZE 256 // the maximum size of temp buffer to hold data being transmitted
+
+typedef enum {
+    peer_comm_role_NONE = 0,
+    peer_comm_role_MASTER_LEFT = 0x01,
+    peer_comm_role_MASTER_RIGHT = 0x02,
+    peer_comm_role_MASTER = 0xF1,
+    peer_comm_role_SLAVE = 0xF2
+} peer_comm_role_t;
 
 typedef struct {
     uint8_t size; // number of predefined datasets
@@ -87,6 +98,8 @@ typedef struct {
 
     volatile bool peer_ready; // indicates comm established with the other unit
 
+    volatile peer_comm_role_t role; // indicates role of this unit
+
     uint8_t (*get) (void); // function to get the incoming byte
     void (*put) (uint8_t); // function to put the outgoing byte
     uint64_t (*current_ts) (void); // function to get the current time in us
@@ -105,7 +118,9 @@ uint8_t peer_comm_cmd_init_data(uint8_t data_id);
  */
 void peer_comm_init_cycle(peer_comm_config_t* pcc);
 
-void peer_comm_ping(peer_comm_config_t* pcc);
+void peer_comm_try_peer(peer_comm_config_t* pcc);
+
+void peer_comm_try_master(peer_comm_config_t* pcc, bool left);
 
 void peer_comm_on_receive(peer_comm_config_t* pcc);
 

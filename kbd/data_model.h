@@ -52,20 +52,26 @@ typedef enum {
 } kbd_side_t;
 
 typedef enum {
-    kbd_side_role_NONE = 0,
-    kbd_side_role_MASTER = 1, // primary unit talking to the USB host
-    kbd_side_role_SLAVE = 2  // secondary unit talking to the primary unit
-} kbd_side_role_t;
+    kbd_role_NONE = 0,
+    kbd_role_MASTER = 1, // primary unit talking to the USB host
+    kbd_role_SLAVE = 2  // secondary unit talking to the primary unit
+} kbd_role_t;
+
+typedef enum {
+    kbd_tud_state_UNMOUNTED = 0,
+    kbd_tud_state_MOUNTED = 1,
+    kbd_tud_state_SUSPENDED = 2
+} kbd_tud_state_t;
 
 /*
  * Global data
  */
 
 typedef struct {
-    kbd_side_t side;
-    kbd_side_role_t side_role;
+    volatile kbd_side_t side;
+    volatile kbd_role_t role;
 
-    bool ready;
+    volatile bool ready;
 
     shared_buffer_t* left_key_press;
     shared_buffer_t* right_key_press;
@@ -75,6 +81,8 @@ typedef struct {
     shared_buffer_t* right_task_request;
     shared_buffer_t* left_task_response;
     shared_buffer_t* right_task_response;
+
+    volatile kbd_tud_state_t tud_state;
 
     peer_comm_config_t* comm;
 } kbd_system_t;
@@ -87,6 +95,8 @@ extern kbd_system_t kbd_system;
 
 void init_data_model();
 
-void set_role(kbd_side_role_t role);
+void set_kbd_side(kbd_side_t side);
+
+void set_kbd_role(kbd_role_t role);
 
 #endif

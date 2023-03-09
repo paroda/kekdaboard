@@ -30,7 +30,7 @@
 #define hw_gpio_CS_flash 5
 #define hw_gpio_CS_sd_card 7
 
-#define hw_gpio_led 28
+#define hw_gpio_LED 28
 
 #define hw_gpio_row1 15
 #define hw_gpio_row2 14

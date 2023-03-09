@@ -2,7 +2,7 @@
 
 kbd_system_t kbd_system = {
     .side = kbd_side_NONE,
-    .side_role = kbd_side_role_NONE,
+    .role = kbd_role_NONE,
     .ready = false,
     .left_key_press = NULL,
     .right_key_press = NULL,
@@ -12,6 +12,7 @@ kbd_system_t kbd_system = {
     .right_task_request = NULL,
     .left_task_response = NULL,
     .right_task_response = NULL,
+    .tud_state = kbd_tud_state_UNMOUNTED,
     .comm = NULL
 };
 
@@ -41,11 +42,15 @@ void init_data_model() {
     kbd_system.comm = new_peer_comm_config(8, sbs, data_inits);
 }
 
-void setup_role(kbd_side_role_t role) {
+void set_kbd_side(kbd_side_t side) {
+    kbd_system.side = side;
+}
+
+void set_kbd_role(kbd_role_t role) {
     uint8_t* dis = kbd_system.comm->data_inits;
-    kbd_system.side_role = role;
+    kbd_system.role = role;
     if(kbd_system.side==kbd_side_LEFT) {
-        if(role==kbd_side_role_MASTER) {
+        if(role==kbd_role_MASTER) {
             dis[0] = peer_comm_cmd_init_data(0);
             dis[5] = peer_comm_cmd_init_data(5);
         } else { // SLAVE
@@ -53,7 +58,7 @@ void setup_role(kbd_side_role_t role) {
             dis[6] = peer_comm_cmd_init_data(6);
         }
     } else { // RIGHT
-        if(role==kbd_side_role_MASTER) {
+        if(role==kbd_role_MASTER) {
             dis[0] = peer_comm_cmd_init_data(0);
             dis[4] = peer_comm_cmd_init_data(4);
         } else { // SLAVE
