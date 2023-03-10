@@ -58,14 +58,70 @@ typedef enum {
 } kbd_role_t;
 
 typedef enum {
-    kbd_tud_state_UNMOUNTED = 0,
-    kbd_tud_state_MOUNTED = 1,
-    kbd_tud_state_SUSPENDED = 2
-} kbd_tud_state_t;
+    kbd_usb_hid_state_UNMOUNTED = 0,
+    kbd_usb_hid_state_MOUNTED = 1,
+    kbd_usb_hid_state_SUSPENDED = 2
+} kbd_usb_hid_state_t;
+
+/*
+ * HID report
+ */
+
+typedef struct {
+    bool NumLock;
+    bool CapsLock;
+    bool ScrollLock;
+    bool Compose;
+    bool Kana;
+} hid_report_in_keyboard_t;
+
+typedef struct {
+    hid_report_in_keyboard_t keyboard;
+} hid_report_in_t;
+
+typedef struct {
+    bool left;
+    bool right;
+    bool middle;
+    bool backward;
+    bool forward;
+    int8_t deltaX;
+    int8_t deltaY;
+    int8_t scrollX;
+    int8_t scrollY;
+} hid_report_out_mouse_t;
+
+typedef struct {
+    bool leftCtrl;
+    bool leftShift;
+    bool leftAlt;
+    bool leftGui;
+    bool rightCtrl;
+    bool rightShift;
+    bool rightAlt;
+    bool rightGui;
+    uint8_t key_codes[6];
+} hid_report_out_keyboard_t;
+
+typedef struct {
+    bool has_events;
+    hid_report_out_mouse_t mouse;
+    hid_report_out_keyboard_t keyboard;
+} hid_report_out_t;
 
 /*
  * Global data
  */
+
+typedef enum {
+    kbd_led_state_ON = 0,
+    kbd_led_state_OFF = 1,
+    kbd_led_state_BLINK_LOW,    // 100, 900
+    kbd_led_state_BLINK_HIGH,   // 900, 100
+    kbd_led_state_BLINK_SLOW,   // 1000, 1000
+    kbd_led_state_BLINK_NORMAL, // 500, 500
+    kbd_led_state_BLINK_FAST    // 100, 100
+} kbd_led_state_t;
 
 typedef struct {
     volatile kbd_side_t side;
@@ -82,7 +138,13 @@ typedef struct {
     shared_buffer_t* left_task_response;
     shared_buffer_t* right_task_response;
 
-    volatile kbd_tud_state_t tud_state;
+    hid_report_in_t hid_report_in;  // incoming from usb host
+    hid_report_out_t hid_report_out; // outgoing to usb host
+
+    volatile kbd_usb_hid_state_t usb_hid_state;
+
+    volatile kbd_led_state_t led;
+    volatile kbd_led_state_t ledB;
 
     peer_comm_config_t* comm;
 } kbd_system_t;

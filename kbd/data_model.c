@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "data_model.h"
 
 kbd_system_t kbd_system = {
@@ -12,7 +16,9 @@ kbd_system_t kbd_system = {
     .right_task_request = NULL,
     .left_task_response = NULL,
     .right_task_response = NULL,
-    .tud_state = kbd_tud_state_UNMOUNTED,
+    .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
+    .led = false,
+    .ledB = false,
     .comm = NULL
 };
 
@@ -28,18 +34,21 @@ void init_data_model() {
     kbd_system.left_task_response = new_shared_buffer(32);
     kbd_system.right_task_response = new_shared_buffer(32);
 
-    shared_buffer_t* sbs[8] = {
+    memset((void*)&(kbd_system.hid_report_in), 0, sizeof(hid_report_in_t));
+    memset((void*)&(kbd_system.hid_report_out), 0, sizeof(hid_report_out_t));
+
+    shared_buffer_t* sbs[10] = {
         kbd_system.system_state,        // DATA_ID: 0
         kbd_system.left_key_press,      //          1
         kbd_system.right_key_press,     //          2
         kbd_system.right_ball_scroll,   //          3
-        kbd_system.left_task_request,  //          4
-        kbd_system.right_task_request, //          5
-        kbd_system.left_task_response, //          6
-        kbd_system.right_task_response //          7
+        kbd_system.left_task_request,   //          4
+        kbd_system.right_task_request,  //          5
+        kbd_system.left_task_response,  //          6
+        kbd_system.right_task_response  //          7
     };
-    uint8_t data_inits[8] = {0, 0, 0, 0,  0, 0, 0, 0};
-    kbd_system.comm = new_peer_comm_config(8, sbs, data_inits);
+    uint8_t data_inits[10] = {0, 0, 0, 0,  0, 0, 0, 0,  0, 0};
+    kbd_system.comm = new_peer_comm_config(10, sbs, data_inits);
 }
 
 void set_kbd_side(kbd_side_t side) {
@@ -49,6 +58,7 @@ void set_kbd_side(kbd_side_t side) {
 void set_kbd_role(kbd_role_t role) {
     uint8_t* dis = kbd_system.comm->data_inits;
     kbd_system.role = role;
+    // define which datasets are to be sent out to the peer
     if(kbd_system.side==kbd_side_LEFT) {
         if(role==kbd_role_MASTER) {
             dis[0] = peer_comm_cmd_init_data(0);

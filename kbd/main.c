@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "tusb.h"
-
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
+
+#include "hardware/uart.h"
+#include "hardware/i2c.h"
+#include "hardware/spi.h"
+#include "hardware/gpio.h"
 
 #include "usb_descriptors.h"
 
@@ -18,6 +21,7 @@
 #include "flash_w25qxx.h"
 #include "lcd_st7789.h"
 #include "tb_pmw3389.h"
+#include "usb_hid.h"
 
 /*
  * Process Overview
@@ -38,9 +42,12 @@
  * - loop tasks
  *   - role master ->
  *     - process inputs (key_scan, ball_scroll, responses)
- *       - send usb hid_report
  *       - update system_state
+ *       - send usb hid_report
  *       - set request
+ *   - role slave ->
+ *     - process requests
+ *       - set responses
  *   - side left ->
  *     - write LCD
  *   - side right ->
@@ -68,24 +75,44 @@ uint32_t board_millis() {
     return to_ms_since_boot(get_absolute_time());
 }
 
+void update_led(uint8_t gpio, kbd_led_state_t state, uint64_t* ms) {
+    if(board_millis() > next_ms) next_ms += 1;
+    else return;
+
+    // TODO
+}
+
 void led_task() {
     static uint32_t next_ms = 0;
     if(next_ms==0) next_ms = board_millis();
 
-    if(board_millis() > next_ms) next_ms += 1;
-    else return;
-
-    // TODO: set leds
+    update_led(kbd_hw.gpio_LED, kbd_system.led, &next_ms);
 }
 
-void core1_task() {
+
+void ledB_task() {
+    static uint32_t next_ms = 0;
+    if(next_ms==0) next_ms = board_millis();
+
+    update_led(kbd_hw.gpio_LEDB, kbd_system.ledB, &next_ms);
+}
+
+void key_scan_task() {
     static uint32_t next_ms = 0;
     if(next_ms==0) next_ms = board_millis();
 
     if(board_millis() > next_ms) next_ms += 2;
     else return;
 
-    // TODO: key scan
+    // TODO
+}
+
+void comm_task() {
+    static uint32_t next_ms = 0;
+    if(next_ms==0) next_ms = board_millis();
+
+    if(board_millis() > next_ms) next_ms += 2;
+    else return;
 
     peer_comm_init_cycle(kbd_system.comm);
 }
@@ -105,7 +132,9 @@ void core1_main(void) {
 
     while(true) {
         led_task();
-        core1_task();
+        ledB_task();
+        key_scan_task();
+        comm_task();
     }
 }
 
@@ -131,25 +160,8 @@ void init_hw_common() {
     }
 
     // init key scanner
-    uint8_t gpio_rows[KEY_ROW_COUNT] = {
-        hw_gpio_row1,
-        hw_gpio_row2,
-        hw_gpio_row3,
-        hw_gpio_row4,
-        hw_gpio_row5,
-        hw_gpio_row6
-    };
-
-    uint8_t gpio_cols[KEY_COL_COUNT] = {
-        hw_gpio_col1,
-        hw_gpio_col2,
-        hw_gpio_col3,
-        hw_gpio_col4,
-        hw_gpio_col5,
-        hw_gpio_col6,
-        hw_gpio_col7
-    };
-
+    uint8_t gpio_rows[KEY_ROW_COUNT] = hw_gpio_rows;
+    uint8_t gpio_cols[KEY_COL_COUNT] = hw_gpio_cols;
     kbd_hw.ks = key_scan_create(gpio_rows, gpio_cols);
 }
 
@@ -181,25 +193,46 @@ void init_hw_right() {
                           0, true, false, true);
 }
 
-void core0_task() {
+void lcd_task() {
     static uint32_t next_ms = 0;
     if(next_ms==0) next_ms = board_millis();
 
     if(board_millis() > next_ms) next_ms += 10;
     else return;
 
-    tud_task();
-
-    // TODO do the stuff
+    // TODO
 }
 
-void tud_mount_cb(void) { kbd_system.tud_state = kbd_tud_state_MOUNTED; }
+void tb_task() {
+    static uint32_t next_ms = 0;
+    if(next_ms==0) next_ms = board_millis();
 
-void tud_umount_cb(void) { kbd_system.tud_state = kbd_tud_state_UNMOUNTED; }
+    if(board_millis() > next_ms) next_ms += 10;
+    else return;
 
-void tud_suspend_cb(bool remote_wakeup_en) { kbd_system.tud_state = kbd_tud_state_SUSPENDED; }
+    // TODO
+}
 
-void tud_resume_cb(void) { kbd_system.tud_state = kbd_tud_state_MOUNTED; }
+void process_inputs() {
+    static uint32_t next_ms = 0;
+    if(next_ms==0) next_ms = board_millis();
+
+    if(board_millis() > next_ms) next_ms += 10;
+    else return;
+
+    // TODO key_press + ball_scroll + response -> system_state + request
+
+    usb_hid_task();
+}
+
+void process_requests() {
+    // TODO
+}
+
+void update_system() {
+    // TODO
+}
+
 
 int main(void) {
     stdio_init_all();
@@ -208,7 +241,7 @@ int main(void) {
 
     init_hw_common();
 
-    tusb_init();
+    usb_hid_init();
 
     init_core1();
 
@@ -221,7 +254,7 @@ int main(void) {
     // negotiate role with peer
     while(kbd_system.comm->role & 0xF0 != 0xF0) {
         sleep_ms(100);
-        if(kbd_system.tud_state == kbd_tud_state_MOUNTED && kbd_system.comm->peer_ready)
+        if(kbd_system.usb_hid_state == kbd_usb_hid_state_MOUNTED && kbd_system.comm->peer_ready)
             peer_comm_try_master(kbd_system.comm, kbd_system.side==kbd_side_LEFT);
     }
 
@@ -232,6 +265,13 @@ int main(void) {
     while(!kbd_system.ready) sleep_ms(10); // wait for core1
 
     while(true) {
-        core0_task();
+        if(kbd_system.side == kbd_side_LEFT) lcd_task();
+        else tb_task();
+
+        if(kbd_system.role == kbd_role_MASTER) process_inputs();
+
+        update_system();
+
+        process_requests();
     }
 }

@@ -1,19 +1,15 @@
 #ifndef _HW_CONFIG_H
 #define _HW_CONFIG_H
 
-#include "hardware/uart.h"
-#include "hardware/i2c.h"
-#include "hardware/spi.h"
-
-#define hw_inst_UART uart0
+#define hw_inst_UART 0
 #define hw_gpio_TX 0
 #define hw_gpio_RX 1
 
-#define hw_inst_I2C i2c1
+#define hw_inst_I2C 1
 #define hw_gpio_SCL 27
 #define hw_gpio_SDA 26
 
-#define hw_inst_SPI spi0
+#define hw_inst_SPI 0
 #define hw_gpio_CLK 2
 #define hw_gpio_MOSI 3
 #define hw_gpio_MISO 4
@@ -32,20 +28,11 @@
 
 #define hw_gpio_LED 28
 
-#define hw_gpio_row1 15
-#define hw_gpio_row2 14
-#define hw_gpio_row3 13
-#define hw_gpio_row4 12
-#define hw_gpio_row5 11
-#define hw_gpio_row6 10
+#define KEY_ROW_COUNT 6
+#define hw_gpio_rows  {15, 14, 13, 12, 11, 10} // 6 rows
 
-#define hw_gpio_col1 22
-#define hw_gpio_col2 21
-#define hw_gpio_col3 20
-#define hw_gpio_col4 19
-#define hw_gpio_col5 18
-#define hw_gpio_col6 17
-#define hw_gpio_col7 16
+#define KEY_COL_COUNT 7
+#define hw_gpio_cols {22, 21, 20, 19, 18, 17, 16} // 7 cols
 
 // FLASH 1st page (256 bytes) (permanent)
 // byes 0x00-0x0F 16bytes for my name

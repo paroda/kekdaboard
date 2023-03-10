@@ -5,6 +5,10 @@
 
 #include "pico/stdlib.h"
 
+#include "hardware/uart.h"
+#include "hardware/i2c.h"
+#include "hardware/spi.h"
+
 #include "hw_config.h"
 #include "master_spi.h"
 #include "flash_w25qxx.h"
