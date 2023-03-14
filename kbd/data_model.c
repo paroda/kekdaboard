@@ -3,52 +3,64 @@
 #include <string.h>
 
 #include "data_model.h"
+#include "hw_config.h"
+
+kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
+    kbd_info_screen_home,
+};
+
+kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
+    kbd_config_screen_date,
+};
 
 kbd_system_t kbd_system = {
     .side = kbd_side_NONE,
     .role = kbd_role_NONE,
     .ready = false,
-    .left_key_press = NULL,
-    .right_key_press = NULL,
-    .right_ball_scroll = NULL,
-    .system_state = NULL,
-    .left_task_request = NULL,
-    .right_task_request = NULL,
-    .left_task_response = NULL,
-    .right_task_response = NULL,
+    .state_ts = 0,
+    .state.caps_lock = false,
+    .state.screen = kbd_info_screen_home,
+    .sb_state = NULL,
+    .sb_left_key_press = NULL,
+    .sb_right_key_press = NULL,
+    .sb_right_tb_motion = NULL,
+    .sb_left_task_request = NULL,
+    .sb_right_task_request = NULL,
+    .sb_left_task_response = NULL,
+    .sb_right_task_response = NULL,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
-    .led = false,
-    .ledB = false,
+    .led = kbd_led_state_OFF,
+    .ledB = kbd_led_state_OFF,
     .comm = NULL
 };
 
 void init_data_model() {
-    kbd_system.left_key_press = new_shared_buffer(6);  // 6x7 buttons
-    kbd_system.right_key_press = new_shared_buffer(6); // 6x7 buttons
-    kbd_system.right_ball_scroll = new_shared_buffer(4); // dx(16bit), dy(16bit)
+    kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t));
+    write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, (uint8_t*)&kbd_system.state);
 
-    // TBD: actual size, assuming 32 bytes for now
-    kbd_system.system_state = new_shared_buffer(32);
-    kbd_system.left_task_request = new_shared_buffer(32);
-    kbd_system.right_task_request = new_shared_buffer(32);
-    kbd_system.left_task_response = new_shared_buffer(32);
-    kbd_system.right_task_response = new_shared_buffer(32);
+    kbd_system.sb_left_key_press = new_shared_buffer(KEY_ROW_COUNT);  // 1 byte per row
+    kbd_system.sb_right_key_press = new_shared_buffer(KEY_ROW_COUNT); // 1 byte per row
+    kbd_system.sb_right_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t));
+    kbd_system.sb_left_task_request = new_shared_buffer(32);
+    kbd_system.sb_right_task_request = new_shared_buffer(32);
+    kbd_system.sb_left_task_response = new_shared_buffer(32);
+    kbd_system.sb_right_task_response = new_shared_buffer(32);
 
     memset((void*)&(kbd_system.hid_report_in), 0, sizeof(hid_report_in_t));
     memset((void*)&(kbd_system.hid_report_out), 0, sizeof(hid_report_out_t));
 
-    shared_buffer_t* sbs[10] = {
-        kbd_system.system_state,        // DATA_ID: 0
-        kbd_system.left_key_press,      //          1
-        kbd_system.right_key_press,     //          2
-        kbd_system.right_ball_scroll,   //          3
-        kbd_system.left_task_request,   //          4
-        kbd_system.right_task_request,  //          5
-        kbd_system.left_task_response,  //          6
-        kbd_system.right_task_response  //          7
+    shared_buffer_t* sbs[KBD_SB_COUNT] = {
+        kbd_system.sb_state,               // DATA_ID: 0
+        kbd_system.sb_left_key_press,      //          1
+        kbd_system.sb_right_key_press,     //          2
+        kbd_system.sb_right_tb_motion,     //          3
+        kbd_system.sb_left_task_request,   //          4
+        kbd_system.sb_right_task_request,  //          5
+        kbd_system.sb_left_task_response,  //          6
+        kbd_system.sb_right_task_response  //          7
     };
-    uint8_t data_inits[10] = {0, 0, 0, 0,  0, 0, 0, 0,  0, 0};
-    kbd_system.comm = new_peer_comm_config(10, sbs, data_inits);
+    uint8_t data_inits[KBD_SB_COUNT] = {0, 0, 0, 0,  0, 0, 0, 0};
+    kbd_system.comm = new_peer_comm_config(KBD_SB_COUNT, sbs, data_inits);
 }
 
 void set_kbd_side(kbd_side_t side) {

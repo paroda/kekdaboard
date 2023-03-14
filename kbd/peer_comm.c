@@ -140,7 +140,7 @@ static void peer_comm_emit_next_byte(peer_comm_config_t* pcc, bool peer_empty) {
             pcc->msbs = 0;
             pcc->put(msbs);
         } else {
-            uint pos = pcc->out_pos;
+            uint8_t pos = pcc->out_pos;
             uint8_t d = pcc->out_buff[pos++];
             pcc->msbs <<= 1;
             if(d & 0b10000000) pcc->msbs |= 1;

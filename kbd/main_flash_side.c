@@ -61,7 +61,8 @@ int main(void) {
     sleep_ms(5000);
     printf("\nHello from PICO. Booting up..");
 
-    master_spi_t* m_spi = master_spi_create(hw_inst_SPI, 1, hw_gpio_MOSI, hw_gpio_MISO, hw_gpio_CLK);
+    spi_inst_t* spi = hw_inst_SPI == 0 ? spi0 : spi1;
+    master_spi_t* m_spi = master_spi_create(spi, 1, hw_gpio_MOSI, hw_gpio_MISO, hw_gpio_CLK);
 
     flash_t* f = flash_create(m_spi, hw_gpio_CS_flash);
 

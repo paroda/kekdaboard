@@ -56,9 +56,10 @@ set(BOARD pico_sdk)
 
 add_executable(kbd_main
   main.c
-  usb_descriptors.c
   data_model.c
   flash_w25qxx.c
+  input_processor.c
+  key_layout.c
   key_scan.c
   lcd_canvas.c
   lcd_fonts.c
@@ -70,6 +71,8 @@ add_executable(kbd_main
   srom_pmw3389.c
   tb_pmw3389.c
   uart_comm.c
+  usb_descriptors.c
+  usb_hid.c
 )
 
 # Make sure TinyUSB can find tusb_config.h
@@ -82,7 +85,7 @@ target_link_libraries(kbd_main PUBLIC
   pico_stdlib
   pico_multicore
   pico_bootsel_via_double_reset # Double tap reset into bootrom
-  hardware_spi hardware_i2c hardware_uart
+  hardware_spi hardware_i2c hardware_uart hardware_pwm
   tinyusb_device tinyusb_board
 )
 
@@ -90,7 +93,7 @@ target_compile_definitions(flash_right PRIVATE
   PICO_BOOTSEL_VIA_DOUBLE_RESET_ACTIVITY_LED=25
 )
 
-pico_enable_stdio_usb(kbd_main 1)
+pico_enable_stdio_usb(kbd_main 0)
 pico_enable_stdio_uart(kbd_main 0)
 
 # create map/bin/hex file etc.

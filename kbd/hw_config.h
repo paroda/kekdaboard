@@ -1,6 +1,9 @@
 #ifndef _HW_CONFIG_H
 #define _HW_CONFIG_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #define hw_inst_UART 0
 #define hw_gpio_TX 0
 #define hw_gpio_RX 1

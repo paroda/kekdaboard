@@ -10,7 +10,7 @@
 #include "usb_descriptors.h"
 #include "usb_hid.h"
 
-static void send_hid_gamepad_reprot() {
+static void send_hid_gamepad_report() {
     // Not Used
 }
 
@@ -19,7 +19,7 @@ static void send_hid_consumer_report() {
 }
 
 static void send_hid_mouse_report() {
-    struct hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
+    hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
 
     uint8_t buttons = 0 |
         (m->left     ? MOUSE_BUTTON_LEFT     : 0) |
@@ -32,7 +32,7 @@ static void send_hid_mouse_report() {
 }
 
 static void send_hid_keyboard_report() {
-    struct hid_report_out_keyboard_t* k = &(kbd_system.hid_report_out.keyboard);
+    hid_report_out_keyboard_t* k = &(kbd_system.hid_report_out.keyboard);
 
     uint8_t modifiers = 0 |
         (k->leftCtrl   ? KEYBOARD_MODIFIER_LEFTCTRL   : 0) |
@@ -191,7 +191,6 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
             if (bufsize < 1)
                 return;
 
-            uint64_t ts = time_us_64();
             uint8_t const kbd_leds = buffer[0];
             kbd_system.hid_report_in.keyboard.NumLock = kbd_leds & KEYBOARD_LED_NUMLOCK;
             kbd_system.hid_report_in.keyboard.CapsLock = kbd_leds & KEYBOARD_LED_CAPSLOCK;

@@ -1,8 +1,10 @@
+#include <pico/platform.h>
+
 #include "lcd_fonts.h"
 
 // Courier New
 
-const uint8_t Font8_Table[] = {
+const uint8_t __in_flash() Font8_Table[] = {
 	// @0 ' ' (5 pixels wide)
 	0x00, //
 	0x00, //
@@ -961,7 +963,7 @@ lcd_font_t lcd_font8 = {
     8  // size 1x8
 };
 
-const uint8_t Font16_Table[] = {
+const uint8_t __in_flash() Font16_Table[] = {
 	// @0 ' ' (11 pixels wide)
 	0x00, 0x00, //
 	0x00, 0x00, //
@@ -2681,7 +2683,7 @@ lcd_font_t lcd_font16 = {
 };
 
 
-const uint8_t Font24_Table [] = {
+const uint8_t __in_flash() Font24_Table [] = {
 	// @0 ' ' (17 pixels wide)
 	0x00, 0x00, 0x00, //
 	0x00, 0x00, 0x00, //
