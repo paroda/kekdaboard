@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "shared_buffer.h"
+#include "../shared_buffer.h"
 
 #define DATA_SIZE 30
 
@@ -15,6 +15,8 @@ void set_array_data(uint8_t* dst, uint8_t value) {
 }
 
 void* thread_write(void* vargp) {
+    (void)vargp;
+
     static uint8_t d = 1;
 
     /* sleep(1); */
@@ -35,7 +37,8 @@ void test(void) {
     /* sleep(1); */
     for(int j=0; j<100; j++) {
         uint8_t data_out[DATA_SIZE];
-        read_shared_buffer(sb, data_out);
+        uint64_t ts;
+        read_shared_buffer(sb, &ts, data_out);
         printf("\ndata_out=[ ");
         for(int i=0; i<DATA_SIZE; i++) printf("%d, ", data_out[i]);
         printf("]\n");

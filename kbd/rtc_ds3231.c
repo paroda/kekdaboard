@@ -20,7 +20,7 @@ rtc_t* rtc_create(i2c_inst_t* i2c, uint8_t gpio_SCL, uint8_t gpio_SDA) {
     rtc->gpio_SCL = gpio_SCL;
     rtc->gpio_SDA = gpio_SDA;
 
-    i2c_init(rtc->i2c,100*1000);
+    i2c_init(rtc->i2c, 100*1000);
 	gpio_set_function(rtc->gpio_SCL, GPIO_FUNC_I2C);
 	gpio_set_function(rtc->gpio_SDA, GPIO_FUNC_I2C);
 	gpio_pull_up(rtc->gpio_SCL);

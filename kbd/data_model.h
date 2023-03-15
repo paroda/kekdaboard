@@ -1,7 +1,9 @@
 #ifndef _DATA_MODEL_H
 #define _DATA_MODEL_H
 
+#include "hw_config.h"
 #include "peer_comm.h"
+#include "rtc_model.h"
 
 /*
  * Tasks (10ms process cycle)
@@ -45,6 +47,19 @@
  *                                left:led (status)
  */
 
+
+#define KBD_SB_COUNT 8
+
+#define KBD_TASK_REQUEST_SIZE 16
+#define KBD_TASK_RESPONSE_SIZE 16
+
+#define KBD_CONFIG_SCREEN_MASK 0x80
+#define KBD_INFO_SCREEN_COUNT 1
+#define KBD_CONFIG_SCREEN_COUNT 1
+
+#define KEY_CODE_MAX 6 // same as in TinyUSB
+
+
 typedef enum {
     kbd_side_NONE = 0,
     kbd_side_LEFT = 1,
@@ -64,11 +79,58 @@ typedef enum {
 } kbd_usb_hid_state_t;
 
 typedef struct {
+    // be careful about the size due to packing/alignment
+    // order members larger to smaller
     bool has_motion;
     bool on_surface;
     int16_t dx;
     int16_t dy;
 } kbd_tb_motion_t;
+
+typedef enum {
+    kbd_led_state_OFF,
+    kbd_led_state_ON,
+    kbd_led_state_BLINK_LOW,    // 100(on), 900(off)
+    kbd_led_state_BLINK_HIGH,   // 900, 100
+    kbd_led_state_BLINK_SLOW,   // 1000, 1000
+    kbd_led_state_BLINK_NORMAL, // 500, 500
+    kbd_led_state_BLINK_FAST    // 100, 100
+} kbd_led_state_t;
+
+typedef enum {
+    kbd_info_screen_welcome = 0x00,
+    kbd_info_screen_home = 0x01,
+    kbd_config_screen_date = 0x80
+} kbd_screen_t;
+
+typedef enum {
+    kbd_screen_event_NONE = 0,
+    // only info screen
+    kbd_screen_event_CONFIG, // SUN+L.MOON
+    // only config screen
+    kbd_screen_event_UP,     // ArrowUp
+    kbd_screen_event_DOWN,   // ArrowDown
+    kbd_screen_event_LEFT,   // ArrowLeft
+    kbd_screen_event_RIGHT,  // ArrowRight
+    kbd_screen_event_SEL_NEXT,  // Space
+    kbd_screen_event_SEL_PREV,  // Space+L.MOON
+    kbd_screen_event_SAVE,   // Enter
+    kbd_screen_event_EXIT,   // Escape
+    // both info and config screens
+    kbd_screen_event_NEXT,   // SUN
+    kbd_screen_event_PREV,   // SUN+R.MOON
+} kbd_screen_event_t;
+
+typedef struct {
+    // be careful about the size due to packing/alignment
+    // order members larger to smaller
+    // note that we are using memcmp to detect change
+    // keep it small and simple
+    kbd_screen_t screen;
+    bool caps_lock;
+    bool num_lock;
+    bool scroll_lock;
+} kbd_state_t;
 
 /*
  * HID report
@@ -98,8 +160,6 @@ typedef struct {
     int8_t scrollY;
 } hid_report_out_mouse_t;
 
-#define KEY_CODE_MAX 6 // same as in TinyUSB
-
 typedef struct {
     bool leftCtrl;
     bool leftShift;
@@ -119,57 +179,8 @@ typedef struct {
 } hid_report_out_t;
 
 /*
- * Global data
+ * KBD System
  */
-
-typedef enum {
-    kbd_led_state_OFF,
-    kbd_led_state_ON,
-    kbd_led_state_BLINK_LOW,    // 100(on), 900(off)
-    kbd_led_state_BLINK_HIGH,   // 900, 100
-    kbd_led_state_BLINK_SLOW,   // 1000, 1000
-    kbd_led_state_BLINK_NORMAL, // 500, 500
-    kbd_led_state_BLINK_FAST    // 100, 100
-} kbd_led_state_t;
-
-#define KBD_CONFIG_SCREEN_MASK 0x80
-
-typedef enum {
-    kbd_info_screen_home = 0x00,
-    kbd_config_screen_date = 0x80
-} kbd_screen_t;
-
-#define KBD_INFO_SCREEN_COUNT 1
-extern kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT];
-
-#define KBD_CONFIG_SCREEN_COUNT 1
-extern kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT];
-
-typedef enum {
-    kbd_screen_event_NONE = 0,
-    // only info screen
-    kbd_screen_event_CONFIG, // SUN+L.MOON
-    // only config screen
-    kbd_screen_event_UP,     // ArrowUp
-    kbd_screen_event_DOWN,   // ArrowDown
-    kbd_screen_event_LEFT,   // ArrowLeft
-    kbd_screen_event_RIGHT,  // ArrowRight
-    kbd_screen_event_SEL_NEXT,  // Space
-    kbd_screen_event_SEL_PREV,  // Space+L.MOON
-    kbd_screen_event_SAVE,   // Enter
-    kbd_screen_event_EXIT,   // Escape
-    // both info and config screens
-    kbd_screen_event_NEXT,   // SUN
-    kbd_screen_event_PREV,   // SUN+R.MOON
-} kbd_screen_event_t;
-
-typedef struct {
-    bool caps_lock;
-    kbd_screen_t screen;
-
-} kbd_state_t;
-
-#define KBD_SB_COUNT 8
 
 typedef struct {
     volatile kbd_side_t side;
@@ -177,8 +188,30 @@ typedef struct {
 
     volatile bool ready;
 
+    rtc_datetime_t date;
+    uint8_t temperature;
+
     uint64_t state_ts;
     kbd_state_t state;
+
+    uint8_t left_key_press[KEY_ROW_COUNT];
+    uint8_t right_key_press[KEY_ROW_COUNT];
+    kbd_tb_motion_t right_tb_motion;
+
+    hid_report_in_t hid_report_in;  // incoming from usb host
+    hid_report_out_t hid_report_out; // outgoing to usb host
+
+    uint64_t left_task_request_ts;
+    uint8_t left_task_request[KBD_TASK_REQUEST_SIZE];
+
+    uint64_t right_task_request_ts;
+    uint8_t right_task_request[KBD_TASK_REQUEST_SIZE];
+
+    uint64_t left_task_response_ts;
+    uint8_t left_task_response[KBD_TASK_RESPONSE_SIZE];
+
+    uint64_t right_task_response_ts;
+    uint8_t right_task_response[KBD_TASK_RESPONSE_SIZE];
 
     /*
      * Processing:
@@ -199,9 +232,6 @@ typedef struct {
     shared_buffer_t* sb_left_task_response;
     shared_buffer_t* sb_right_task_response;
 
-    hid_report_in_t hid_report_in;  // incoming from usb host
-    hid_report_out_t hid_report_out; // outgoing to usb host
-
     volatile kbd_usb_hid_state_t usb_hid_state;
 
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock
@@ -210,7 +240,14 @@ typedef struct {
     peer_comm_config_t* comm;
 } kbd_system_t;
 
+/*
+ * Global vars
+ */
+
 extern kbd_system_t kbd_system;
+
+extern kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT];
+extern kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT];
 
 /*
  * Model functions

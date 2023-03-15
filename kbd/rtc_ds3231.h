@@ -4,21 +4,13 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
+#include "rtc_model.h"
+
 typedef struct {
     i2c_inst_t* i2c;
     uint8_t gpio_SCL;
     uint8_t gpio_SDA;
 } rtc_t;
-
-typedef struct {
-    uint16_t year;
-    uint8_t month;
-    uint8_t date;
-    uint8_t weekday;
-    uint8_t hour;
-    uint8_t minute;
-    uint8_t second;
-} rtc_datetime_t;
 
 extern rtc_t* rtc_default_instance;
 

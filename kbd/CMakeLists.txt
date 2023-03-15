@@ -67,6 +67,9 @@ add_executable(kbd_main
   master_spi.c
   peer_comm.c
   rtc_ds3231.c
+  screen_date.c
+  screen_home.c
+  screen_processor.c
   shared_buffer.c
   srom_pmw3389.c
   tb_pmw3389.c

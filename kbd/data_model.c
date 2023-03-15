@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "data_model.h"
-#include "hw_config.h"
 
 kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
     kbd_info_screen_home,
@@ -17,9 +16,13 @@ kbd_system_t kbd_system = {
     .side = kbd_side_NONE,
     .role = kbd_role_NONE,
     .ready = false,
+    .date = {2000, 1, 1, 1, 0, 0, 0},
+    .temperature = 0,
     .state_ts = 0,
-    .state.caps_lock = false,
-    .state.screen = kbd_info_screen_home,
+    .left_task_request_ts = 0,
+    .right_task_request_ts = 0,
+    .left_task_response_ts = 0,
+    .right_task_response_ts = 0,
     .sb_state = NULL,
     .sb_left_key_press = NULL,
     .sb_right_key_press = NULL,
@@ -36,18 +39,32 @@ kbd_system_t kbd_system = {
 
 void init_data_model() {
     kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t));
-    write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, (uint8_t*)&kbd_system.state);
-
     kbd_system.sb_left_key_press = new_shared_buffer(KEY_ROW_COUNT);  // 1 byte per row
     kbd_system.sb_right_key_press = new_shared_buffer(KEY_ROW_COUNT); // 1 byte per row
     kbd_system.sb_right_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t));
-    kbd_system.sb_left_task_request = new_shared_buffer(32);
-    kbd_system.sb_right_task_request = new_shared_buffer(32);
-    kbd_system.sb_left_task_response = new_shared_buffer(32);
-    kbd_system.sb_right_task_response = new_shared_buffer(32);
+    kbd_system.sb_left_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE);
+    kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE);
+    kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE);
+    kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE);
 
-    memset((void*)&(kbd_system.hid_report_in), 0, sizeof(hid_report_in_t));
-    memset((void*)&(kbd_system.hid_report_out), 0, sizeof(hid_report_out_t));
+    memset(&kbd_system.state, 0, sizeof(kbd_state_t));
+    kbd_system.state.screen = kbd_info_screen_welcome;
+    kbd_system.state.caps_lock = false;
+    kbd_system.state.num_lock = false;
+    kbd_system.state.scroll_lock = false;
+    write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.state);
+
+    memset(kbd_system.left_key_press, 0, KEY_ROW_COUNT);
+    memset(kbd_system.right_key_press, 0, KEY_ROW_COUNT);
+    memset(&kbd_system.right_tb_motion, 0, sizeof(kbd_tb_motion_t));
+
+    memset(&kbd_system.hid_report_in, 0, sizeof(hid_report_in_t));
+    memset(&kbd_system.hid_report_out, 0, sizeof(hid_report_out_t));
+
+    memset(kbd_system.left_task_request, 0, KBD_TASK_REQUEST_SIZE);
+    memset(kbd_system.right_task_request, 0, KBD_TASK_REQUEST_SIZE);
+    memset(kbd_system.left_task_response, 0, KBD_TASK_RESPONSE_SIZE);
+    memset(kbd_system.right_task_response, 0, KBD_TASK_RESPONSE_SIZE);
 
     shared_buffer_t* sbs[KBD_SB_COUNT] = {
         kbd_system.sb_state,               // DATA_ID: 0

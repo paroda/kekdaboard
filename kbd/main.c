@@ -10,9 +10,9 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
-#include "hw_config.h"
 #include "data_model.h"
 #include "input_processor.h"
+#include "screen_processor.h"
 #include "key_scan.h"
 #include "uart_comm.h"
 #include "rtc_ds3231.h"
@@ -188,6 +188,7 @@ void init_core1() { multicore_launch_core1(core1_main); }
 void init_hw_common() {
     i2c_inst_t* i2c = hw_inst_I2C == 0 ? i2c0 : i2c1;
     kbd_hw.rtc = rtc_create(i2c, hw_gpio_SCL, hw_gpio_SDA);
+    rtc_set_default_instance(kbd_hw.rtc);
 
     spi_inst_t* spi = hw_inst_SPI == 0 ? spi0 : spi1;
     kbd_hw.m_spi = master_spi_create(spi, 3, hw_gpio_MOSI, hw_gpio_MISO, hw_gpio_CLK);
@@ -242,6 +243,13 @@ void init_hw_right() {
                           0, true, false, true);
 }
 
+void rtc_task(void* param) {
+    (void)param;
+
+    rtc_read_time(kbd_hw.rtc, &kbd_system.date);
+    kbd_system.temperature = rtc_get_temperature(kbd_hw.rtc);
+}
+
 void lcd_display_task(void* param) {
     (void)param;
     // TODO
@@ -258,7 +266,7 @@ void tb_scan_task(void* param) {
         .dy = 0
     };
     d.has_motion = tb_check_motion(kbd_hw.tb, &d.on_surface, &d.dx, &d.dy);
-    write_shared_buffer(kbd_system.sb_right_tb_motion, time_us_64(), (uint8_t*)&d);
+    write_shared_buffer(kbd_system.sb_right_tb_motion, time_us_64(), &d);
 }
 
 /*
@@ -274,33 +282,72 @@ void tb_scan_task(void* param) {
 void process_inputs(void* param) {
     (void)param;
 
+    kbd_state_t old_state = kbd_system.state;
+
     // use the hid_report_in
     kbd_system.state.caps_lock = kbd_system.hid_report_in.keyboard.CapsLock;
+    kbd_system.state.num_lock = kbd_system.hid_report_in.keyboard.NumLock;
+    kbd_system.state.scroll_lock = kbd_system.hid_report_in.keyboard.ScrollLock;
 
-    uint64_t ts;  // unused
+    // read the task responses
+    if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts_start)
+        read_shared_buffer(kbd_system.sb_left_task_response,
+                           &kbd_system.left_task_response_ts, kbd_system.left_task_response);
+    if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts_start)
+        read_shared_buffer(kbd_system.sb_right_task_response,
+                           &kbd_system.right_task_response_ts, kbd_system.right_task_response);
 
-    uint8_t left_key_press[KEY_ROW_COUNT];
-    read_shared_buffer(kbd_system.sb_left_key_press, &ts, left_key_press);
-
-    uint8_t right_key_press[KEY_ROW_COUNT];
-    read_shared_buffer(kbd_system.sb_right_key_press, &ts, right_key_press);
-
-    kbd_tb_motion_t tb_motion;
-    read_shared_buffer(kbd_system.sb_right_tb_motion, &ts, (uint8_t*)&tb_motion);
+    // read the inputs
+    uint64_t ts; // unused, we read the input always
+    read_shared_buffer(kbd_system.sb_left_key_press, &ts, kbd_system.left_key_press);
+    read_shared_buffer(kbd_system.sb_right_key_press, &ts, kbd_system.right_key_press);
+    read_shared_buffer(kbd_system.sb_right_tb_motion, &ts, &kbd_system.right_tb_motion);
 
     // process inputs to update the hid_report_out and generate event
-    kbd_screen_event_t event = execute_input_processor(left_key_press, right_key_press, &tb_motion);
+    kbd_screen_event_t event = execute_input_processor();
 
-    // TODO send events to screens processor
-    (void)event;
+    // send events to screens processor to process the responses and raise requests if any
+    execute_screen_processor(event);
 
-    write_shared_buffer(kbd_system.sb_state, time_us_64(), (uint8_t*)&kbd_system.state);
+    // set the task requests
+    if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts_start)
+        write_shared_buffer(kbd_system.sb_left_task_request,
+                            kbd_system.left_task_request_ts, kbd_system.left_task_request);
+    if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts_start)
+        write_shared_buffer(kbd_system.sb_right_task_request,
+                            kbd_system.right_task_request_ts, kbd_system.right_task_request);
+
+    // update the state if changed
+    if(memcmp(&old_state, &kbd_system.state, sizeof(kbd_state_t)) != 0)
+        write_shared_buffer(kbd_system.sb_state, time_us_64(), &kbd_system.state);
 
     usb_hid_task();
 }
 
 void process_requests() {
+    // read the task request
+    if(kbd_system.side == kbd_side_LEFT) {
+        if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts_start)
+            read_shared_buffer(kbd_system.sb_left_task_request,
+                               &kbd_system.left_task_request_ts, kbd_system.left_task_request);
+    } else { // RIGHT
+        if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts_start)
+            read_shared_buffer(kbd_system.sb_right_task_request,
+                               &kbd_system.right_task_request_ts, kbd_system.right_task_request);
+    }
+
     // TODO
+
+    // set the task responses
+    if(kbd_system.side == kbd_side_LEFT) {
+        if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts_start)
+            write_shared_buffer(kbd_system.sb_left_task_response,
+                                kbd_system.left_task_response_ts, kbd_system.left_task_response);
+    } else { // RIGHT
+        if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts_start)
+            write_shared_buffer(kbd_system.sb_right_task_response,
+                                kbd_system.right_task_response_ts, kbd_system.right_task_response);
+    }
 }
 
 int main(void) {
@@ -350,12 +397,16 @@ int main(void) {
     while(true) {
         // get state
         if(kbd_system.state_ts != kbd_system.sb_state->ts_start)
-            read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, (uint8_t*)&kbd_system.state);
+            read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
+
+        // get date & temperature, once a second
+        static uint32_t rtc_last_ms = 0;
+        do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
 
         if(kbd_system.side == kbd_side_LEFT) {
-            // set lcd display
+            // set lcd display, @ 100 ms
             static uint32_t lcd_last_ms = 0;
-            do_if_elapsed(&lcd_last_ms, 10, NULL, lcd_display_task);
+            do_if_elapsed(&lcd_last_ms, 100, NULL, lcd_display_task);
 
             // set system led
             switch(kbd_system.usb_hid_state) {
@@ -370,7 +421,7 @@ int main(void) {
             }
         }
         else { // RIGHT
-            // scan track ball scroll
+            // scan track ball scroll, @ 10 ms
             static uint32_t tb_last_ms = 0;
             do_if_elapsed(&tb_last_ms, 10, NULL, tb_scan_task);
 
@@ -378,7 +429,7 @@ int main(void) {
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
         }
 
-        // process inputs(key+tb+hid_in) -> outputs(state+requests+hid_out)
+        // process inputs(key+tb+hid_in) -> outputs(state+requests+hid_out), @ 10 ms
         if(kbd_system.role == kbd_role_MASTER) {
             static uint32_t proc_last_ms = 0;
             do_if_elapsed(&proc_last_ms, 10, NULL, process_inputs);

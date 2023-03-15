@@ -164,7 +164,7 @@ const uint8_t key_layout[KEY_LAYOUT_ROW_COUNT][KEY_LAYOUT_COL_COUNT][3] = {
         {0, HID_KEY_ARROW_DOWN, HID_KEY_PAGE_DOWN},
 
         /// Col 7
-        {0, KBD_KEY_MOUSE_LEFT, 0},
+        {0, KBD_KEY_MOUSE_LEFT, KBD_KEY_MOUSE_MIDDLE},
 
         /// Col 8
         {0, HID_KEY_H, 0},
