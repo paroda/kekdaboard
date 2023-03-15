@@ -47,11 +47,12 @@
  *                                left:led (status)
  */
 
+#define KBD_VERSION 0x01 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
-#define KBD_TASK_REQUEST_SIZE 16
-#define KBD_TASK_RESPONSE_SIZE 16
+#define KBD_TASK_REQUEST_SIZE 32
+#define KBD_TASK_RESPONSE_SIZE 32
 
 #define KBD_CONFIG_SCREEN_MASK 0x80
 #define KBD_INFO_SCREEN_COUNT 1
@@ -130,6 +131,7 @@ typedef struct {
     bool caps_lock;
     bool num_lock;
     bool scroll_lock;
+    uint8_t version;
 } kbd_state_t;
 
 /*
@@ -183,6 +185,8 @@ typedef struct {
  */
 
 typedef struct {
+    uint8_t version;
+
     volatile kbd_side_t side;
     volatile kbd_role_t role;
 

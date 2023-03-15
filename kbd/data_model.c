@@ -13,6 +13,7 @@ kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
 };
 
 kbd_system_t kbd_system = {
+    .version = 0,
     .side = kbd_side_NONE,
     .role = kbd_role_NONE,
     .ready = false,
@@ -52,6 +53,7 @@ void init_data_model() {
     kbd_system.state.caps_lock = false;
     kbd_system.state.num_lock = false;
     kbd_system.state.scroll_lock = false;
+    kbd_system.state.version = 0;
     write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.state);
 
     memset(kbd_system.left_key_press, 0, KEY_ROW_COUNT);
@@ -77,7 +79,7 @@ void init_data_model() {
         kbd_system.sb_right_task_response  //          7
     };
     uint8_t data_inits[KBD_SB_COUNT] = {0, 0, 0, 0,  0, 0, 0, 0};
-    kbd_system.comm = new_peer_comm_config(KBD_SB_COUNT, sbs, data_inits);
+    kbd_system.comm = new_peer_comm_config(KBD_VERSION, KBD_SB_COUNT, sbs, data_inits);
 }
 
 void set_kbd_side(kbd_side_t side) {

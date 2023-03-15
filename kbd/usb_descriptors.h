@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -27,11 +27,11 @@
 
 enum
 {
-    REPORT_ID_KEYBOARD = 1,
-    REPORT_ID_MOUSE,
-    REPORT_ID_CONSUMER_CONTROL,
-    REPORT_ID_GAMEPAD,
-    REPORT_ID_COUNT
+  REPORT_ID_KEYBOARD = 1,
+  REPORT_ID_MOUSE,
+  REPORT_ID_CONSUMER_CONTROL,
+  REPORT_ID_GAMEPAD,
+  REPORT_ID_COUNT
 };
 
 #endif /* USB_DESCRIPTORS_H_ */

@@ -10,6 +10,9 @@
 #define peer_comm_byte_INIT_DATA         0b11000000 // command to select destination dataset
 #define peer_comm_byte_DATA_ID_MASK      0b00011111 // 5 bits for buffer id
 
+#define peer_comm_byte_VERSION           0b11100000 // command to send version
+#define peer_comm_byte_VERSION_MASK      0b00001111 // 4 bits for version
+
 #define peer_comm_byte_NO_DATA           0xF0
 #define peer_comm_byte_SEEK_PEER         0xF1
 #define peer_comm_byte_PEER_READY        0xF2
@@ -26,11 +29,12 @@ static void peer_comm_reset_state(peer_comm_config_t* pcc) {
     pcc->last_state = 0;
 }
 
-peer_comm_config_t* new_peer_comm_config(uint8_t size,
+peer_comm_config_t* new_peer_comm_config(uint8_t version,
+                                         uint8_t size,
                                          shared_buffer_t** datasets,
                                          uint8_t* data_inits) {
     peer_comm_config_t* pcc = (peer_comm_config_t*) malloc(sizeof(peer_comm_config_t));
-
+    pcc->version = version;
     pcc->size = size;
     pcc->datasets = (shared_buffer_t**) malloc(sizeof(shared_buffer_t*) * size);
     pcc->data_inits = (uint8_t*) malloc(sizeof(uint8_t) * size);
@@ -96,6 +100,11 @@ void peer_comm_try_master(peer_comm_config_t* pcc, bool left) {
     if(pcc->role != peer_comm_role_NONE) return;
     pcc->role = left ? peer_comm_role_MASTER_LEFT : peer_comm_role_MASTER_RIGHT;
     pcc->put(peer_comm_byte_SEEK_SLAVE);
+}
+
+void peer_comm_try_version(peer_comm_config_t* pcc) {
+    if(pcc->peer_version) return;
+    pcc->put(peer_comm_byte_VERSION | pcc->version);
 }
 
 static uint8_t peer_comm_select_next_out(peer_comm_config_t* pcc, uint8_t start) {
@@ -261,6 +270,12 @@ void peer_comm_on_receive(peer_comm_config_t* pcc) {
         uint8_t id = b & peer_comm_byte_DATA_ID_MASK;
         peer_comm_start_incoming_dataset(pcc, id);
         peer_comm_emit_next_byte(pcc, false);
+    } else if(0 == (b & 0b00010000)) {
+        // received version
+        if(!pcc->peer_version) {
+            pcc->peer_version = b & peer_comm_byte_VERSION_MASK;
+            pcc->put(pcc->version);
+        }
     } else {
         // other command byte
         switch(b) {

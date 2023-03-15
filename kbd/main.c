@@ -110,11 +110,11 @@ int32_t led_millis_to_toggle(kbd_led_t* led, kbd_led_state_t state) {
     case kbd_led_state_BLINK_HIGH:   // 900, 100
         return led->on ? 900 : 100;
     case kbd_led_state_BLINK_SLOW:   // 1000, 1000
-        return led->on ? 1000 : 1000;
+        return led->on ? 2000 : 2000;
     case kbd_led_state_BLINK_NORMAL: // 500, 500
         return led->on ? 500 : 500;
     case kbd_led_state_BLINK_FAST:   // 100, 100
-        return led->on ? 100 : 100;
+        return led->on ? 50 : 50;
     }
     return -1;
 }
@@ -163,6 +163,17 @@ void core1_main(void) {
         led_task();
         tight_loop_contents();
     }
+
+    while(!kbd_system.comm->peer_version) {
+        led_task();
+        if(kbd_system.role==kbd_role_MASTER) peer_comm_try_version(kbd_system.comm);
+        tight_loop_contents();
+    }
+
+    // note the combined version
+    kbd_system.version = kbd_system.side == kbd_side_LEFT ?
+        (kbd_system.comm->version << 4) | kbd_system.comm->peer_version :
+        (kbd_system.comm->peer_version << 4) | kbd_system.comm->version;
 
     kbd_system.ready = true;
 
@@ -230,9 +241,10 @@ void init_hw_left() {
                             lcd_orient_Normal);
 
     lcd_clear(kbd_hw.lcd, BROWN);
-    lcd_canvas_t* cv = lcd_new_canvas(180, 30, BROWN);
-    lcd_canvas_text(cv, 30, 105, "Welcome Pradyumna!", &lcd_font16, WHITE, BROWN);
-    lcd_display_canvas(kbd_hw.lcd, 10, 7, cv);
+    lcd_canvas_t* cv = lcd_new_canvas(240, 20, BROWN);
+    // w:18x11=198 h:16, x:21-219
+    lcd_canvas_text(cv, 21, 2, "Welcome Pradyumna!", &lcd_font16, WHITE, BROWN);
+    lcd_display_canvas(kbd_hw.lcd, 0, 110, cv);
     lcd_free_canvas(cv);
 }
 
@@ -250,9 +262,48 @@ void rtc_task(void* param) {
     kbd_system.temperature = rtc_get_temperature(kbd_hw.rtc);
 }
 
-void lcd_display_task(void* param) {
+void lcd_display_head_task(void* param) {
     (void)param;
-    // TODO
+
+    char txt[8];
+    uint16_t bg = BLACK;
+    uint16_t fg = WHITE;
+    uint16_t fg1 = YELLOW;
+    uint16_t bg2 = GRAY;
+    uint16_t fgcl = RED;
+    uint16_t fgnl = GREEN;
+
+    // 2 rows 240x(20+20)
+    static lcd_canvas_t* cv = NULL;
+    if(!cv) cv = lcd_new_canvas(240, 40, bg);
+
+    // row1: version, time, weekday
+    // version : w:11x2=22 h:16, x:10-32
+    sprintf(txt, "%02x", kbd_system.version);
+    lcd_canvas_text(cv, 10, 3, txt, &lcd_font16, fg, bg);
+    // time (2 rows) : w:17x5=85 h:24, x:77-162, y:8
+    sprintf(txt, "%02d:%02d", kbd_system.date.hour, kbd_system.date.minute);
+    lcd_canvas_text(cv, 52, 3, txt, &lcd_font24, fg1, bg);
+    // weekday: w:11x3=33 h:16, x:197-230
+    char* wd = rtc_week[kbd_system.date.weekday%8];
+    lcd_canvas_text(cv, 197, 3, wd, &lcd_font16, fg, bg);
+
+    // row2: locksx2, temperature, MM/dd
+    // locksx3: w:20x2=40 h:16, x:5-45
+    lcd_canvas_rect(cv, 5, 22, 20, 16, bg2, 1, true);
+    if(kbd_system.state.caps_lock)
+        lcd_canvas_circle(cv, 15, 30, 5, fgcl, 1, true);
+    lcd_canvas_rect(cv, 25, 22, 20, 16, bg2, 1, true);
+    if(kbd_system.state.num_lock)
+        lcd_canvas_circle(cv, 35, 30, 5, fgnl, 1, true);
+    // temperature: w:11x2=22 h:16, x:50-72
+    sprintf(txt, "%02d", kbd_system.temperature);
+    lcd_canvas_text(cv, 50, 22, txt, &lcd_font16, fg, bg);
+    // MM/dd: w:11x5=55 h:16, x:180-235
+    sprintf(txt, "%02d/%02d", kbd_system.date.month, kbd_system.date.date);
+    lcd_canvas_text(cv, 180, 22, txt, &lcd_font16, fg, bg);
+
+    lcd_display_canvas(kbd_hw.lcd, 0, 0, cv);
 }
 
 void tb_scan_task(void* param) {
@@ -376,6 +427,8 @@ int main(void) {
 
     // negotiate role with peer
     while((kbd_system.comm->role & 0xF0) != 0xF0) {
+        usb_hid_task();
+
         if(kbd_system.usb_hid_state == kbd_usb_hid_state_MOUNTED && kbd_system.comm->peer_ready)
             peer_comm_try_master(kbd_system.comm, kbd_system.side==kbd_side_LEFT);
         tight_loop_contents();
@@ -404,9 +457,9 @@ int main(void) {
         do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
 
         if(kbd_system.side == kbd_side_LEFT) {
-            // set lcd display, @ 100 ms
+            // update lcd display head, @ 500 ms
             static uint32_t lcd_last_ms = 0;
-            do_if_elapsed(&lcd_last_ms, 100, NULL, lcd_display_task);
+            do_if_elapsed(&lcd_last_ms, 500, NULL, lcd_display_head_task);
 
             // set system led
             switch(kbd_system.usb_hid_state) {

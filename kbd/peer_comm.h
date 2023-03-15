@@ -72,6 +72,9 @@ typedef enum {
 } peer_comm_role_t;
 
 typedef struct {
+    uint8_t version;      // range 0x01 - 0x0F
+    uint8_t peer_version; // range 0x01 - 0x0F
+
     uint8_t size; // number of predefined datasets
     shared_buffer_t** datasets;
 
@@ -105,7 +108,8 @@ typedef struct {
     uint64_t (*current_ts) (void); // function to get the current time in us
 } peer_comm_config_t;
 
-peer_comm_config_t* new_peer_comm_config(uint8_t size, shared_buffer_t** datasets, uint8_t* data_inits);
+peer_comm_config_t* new_peer_comm_config(uint8_t version,
+                                         uint8_t size, shared_buffer_t** datasets, uint8_t* data_inits);
 
 void peer_comm_set_handlers(peer_comm_config_t* pcc,
                             uint8_t (*get) (void), void (*put) (uint8_t), uint64_t (*current_ts) (void));
@@ -121,6 +125,8 @@ void peer_comm_init_cycle(peer_comm_config_t* pcc);
 void peer_comm_try_peer(peer_comm_config_t* pcc);
 
 void peer_comm_try_master(peer_comm_config_t* pcc, bool left);
+
+void peer_comm_try_version(peer_comm_config_t* pcc);
 
 void peer_comm_on_receive(peer_comm_config_t* pcc);
 
