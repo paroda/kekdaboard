@@ -147,8 +147,8 @@ kbd_screen_event_t execute_input_processor() {
 
     if(kbd_system.right_tb_motion.has_motion) {
         if(moon) {
-            outm.scrollX = kbd_system.right_tb_motion.dx;
-            outm.scrollY = kbd_system.right_tb_motion.dy;
+            outm.scrollX = kbd_system.right_tb_motion.dx/20;
+            outm.scrollY = kbd_system.right_tb_motion.dy/20;
         } else {
             outm.deltaX = kbd_system.right_tb_motion.dx;
             outm.deltaY = kbd_system.right_tb_motion.dy;

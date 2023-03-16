@@ -39,21 +39,25 @@ kbd_system_t kbd_system = {
 };
 
 void init_data_model() {
-    kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t));
-    kbd_system.sb_left_key_press = new_shared_buffer(KEY_ROW_COUNT);  // 1 byte per row
-    kbd_system.sb_right_key_press = new_shared_buffer(KEY_ROW_COUNT); // 1 byte per row
-    kbd_system.sb_right_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t));
-    kbd_system.sb_left_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE);
-    kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE);
-    kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE);
-    kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE);
+    int spin_lock_num = spin_lock_claim_unused(true);
+    spin_lock_t* spin_lock = spin_lock_init(spin_lock_num);
+
+    kbd_system.spin_lock = spin_lock;
+
+    kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t), spin_lock);
+    kbd_system.sb_left_key_press = new_shared_buffer(KEY_ROW_COUNT, spin_lock);  // 1 byte per row
+    kbd_system.sb_right_key_press = new_shared_buffer(KEY_ROW_COUNT, spin_lock); // 1 byte per row
+    kbd_system.sb_right_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t), spin_lock);
+    kbd_system.sb_left_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE, spin_lock);
+    kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE, spin_lock);
+    kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE, spin_lock);
+    kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE, spin_lock);
 
     memset(&kbd_system.state, 0, sizeof(kbd_state_t));
     kbd_system.state.screen = kbd_info_screen_welcome;
     kbd_system.state.caps_lock = false;
     kbd_system.state.num_lock = false;
     kbd_system.state.scroll_lock = false;
-    kbd_system.state.version = 0;
     write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.state);
 
     memset(kbd_system.left_key_press, 0, KEY_ROW_COUNT);

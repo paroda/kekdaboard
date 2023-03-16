@@ -179,16 +179,19 @@ void core1_main(void) {
 
     kbd_system.ledB = kbd_led_state_BLINK_NORMAL;
 
+    uint32_t ks_last_ms = 0;
+    uint32_t comm_last_ms = 0;
+
     while(true) {
         led_task();
 
         // scan key presses
-        static uint32_t ks_last_ms = 0;
-        do_if_elapsed(&ks_last_ms, 2, NULL, key_scan_task);
+        do_if_elapsed(&ks_last_ms, 3, NULL, key_scan_task);
 
-        // transfer data to/from peer
-        static uint32_t comm_last_ms = 0;
-        do_if_elapsed(&comm_last_ms, 2, NULL, comm_task);
+        // transfer data to/from peer, initiated by master only
+        if(kbd_system.role == kbd_role_MASTER) {
+            do_if_elapsed(&comm_last_ms, 3, NULL, comm_task);
+        }
 
         tight_loop_contents();
     }
@@ -252,7 +255,7 @@ void init_hw_right() {
     // setup track ball
     kbd_hw.tb = tb_create(kbd_hw.m_spi,
                           hw_gpio_CS_tb, hw_gpio_tb_MT, hw_gpio_tb_RST,
-                          0, true, false, true);
+                          1, true, false, false);
 }
 
 void rtc_task(void* param) {
@@ -272,34 +275,39 @@ void lcd_display_head_task(void* param) {
     uint16_t bg2 = GRAY;
     uint16_t fgcl = RED;
     uint16_t fgnl = GREEN;
+    uint16_t fgsl = BLUE;
 
     // 2 rows 240x(20+20)
     static lcd_canvas_t* cv = NULL;
     if(!cv) cv = lcd_new_canvas(240, 40, bg);
+    lcd_canvas_clear(cv);
 
-    // row1: version, time, weekday
-    // version : w:11x2=22 h:16, x:10-32
+    // row1: version, temperature, time, weekday
+    // version : w:11x2=22 h:16, x:5-27
     sprintf(txt, "%02x", kbd_system.version);
-    lcd_canvas_text(cv, 10, 3, txt, &lcd_font16, fg, bg);
+    lcd_canvas_text(cv, 5, 4, txt, &lcd_font16, fg, bg);
+    // temperature: w:11x2=22 h:16, x:40-62
+    sprintf(txt, "%02d", kbd_system.temperature);
+    lcd_canvas_text(cv, 40, 4, txt, &lcd_font16, fg, bg);
     // time (2 rows) : w:17x5=85 h:24, x:77-162, y:8
     sprintf(txt, "%02d:%02d", kbd_system.date.hour, kbd_system.date.minute);
-    lcd_canvas_text(cv, 52, 3, txt, &lcd_font24, fg1, bg);
+    lcd_canvas_text(cv, 77, 9, txt, &lcd_font24, fg1, bg);
     // weekday: w:11x3=33 h:16, x:197-230
     char* wd = rtc_week[kbd_system.date.weekday%8];
-    lcd_canvas_text(cv, 197, 3, wd, &lcd_font16, fg, bg);
+    lcd_canvas_text(cv, 197, 4, wd, &lcd_font16, fg, bg);
 
     // row2: locksx2, temperature, MM/dd
     // locksx3: w:20x2=40 h:16, x:5-45
     lcd_canvas_rect(cv, 5, 22, 20, 16, bg2, 1, true);
     if(kbd_system.state.caps_lock)
-        lcd_canvas_circle(cv, 15, 30, 5, fgcl, 1, true);
+        lcd_canvas_circle(cv, 15, 30, 3, fgcl, 1, true);
     lcd_canvas_rect(cv, 25, 22, 20, 16, bg2, 1, true);
     if(kbd_system.state.num_lock)
-        lcd_canvas_circle(cv, 35, 30, 5, fgnl, 1, true);
-    // temperature: w:11x2=22 h:16, x:50-72
-    sprintf(txt, "%02d", kbd_system.temperature);
-    lcd_canvas_text(cv, 50, 22, txt, &lcd_font16, fg, bg);
-    // MM/dd: w:11x5=55 h:16, x:180-235
+        lcd_canvas_circle(cv, 35, 30, 3, fgnl, 1, true);
+    lcd_canvas_rect(cv, 45, 22, 20, 16, bg2, 1, true);
+    if(kbd_system.state.scroll_lock)
+        lcd_canvas_circle(cv, 55, 30, 3, fgsl, 1, true);
+     // MM/dd: w:11x5=55 h:16, x:180-235
     sprintf(txt, "%02d/%02d", kbd_system.date.month, kbd_system.date.date);
     lcd_canvas_text(cv, 180, 22, txt, &lcd_font16, fg, bg);
 
@@ -341,10 +349,10 @@ void process_inputs(void* param) {
     kbd_system.state.scroll_lock = kbd_system.hid_report_in.keyboard.ScrollLock;
 
     // read the task responses
-    if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts_start)
+    if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts)
         read_shared_buffer(kbd_system.sb_left_task_response,
                            &kbd_system.left_task_response_ts, kbd_system.left_task_response);
-    if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts_start)
+    if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts)
         read_shared_buffer(kbd_system.sb_right_task_response,
                            &kbd_system.right_task_response_ts, kbd_system.right_task_response);
 
@@ -361,10 +369,10 @@ void process_inputs(void* param) {
     execute_screen_processor(event);
 
     // set the task requests
-    if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts_start)
+    if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts)
         write_shared_buffer(kbd_system.sb_left_task_request,
                             kbd_system.left_task_request_ts, kbd_system.left_task_request);
-    if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts_start)
+    if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts)
         write_shared_buffer(kbd_system.sb_right_task_request,
                             kbd_system.right_task_request_ts, kbd_system.right_task_request);
 
@@ -378,11 +386,11 @@ void process_inputs(void* param) {
 void process_requests() {
     // read the task request
     if(kbd_system.side == kbd_side_LEFT) {
-        if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts_start)
+        if(kbd_system.left_task_request_ts != kbd_system.sb_left_task_request->ts)
             read_shared_buffer(kbd_system.sb_left_task_request,
                                &kbd_system.left_task_request_ts, kbd_system.left_task_request);
     } else { // RIGHT
-        if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts_start)
+        if(kbd_system.right_task_request_ts != kbd_system.sb_right_task_request->ts)
             read_shared_buffer(kbd_system.sb_right_task_request,
                                &kbd_system.right_task_request_ts, kbd_system.right_task_request);
     }
@@ -391,11 +399,11 @@ void process_requests() {
 
     // set the task responses
     if(kbd_system.side == kbd_side_LEFT) {
-        if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts_start)
+        if(kbd_system.left_task_response_ts != kbd_system.sb_left_task_response->ts)
             write_shared_buffer(kbd_system.sb_left_task_response,
                                 kbd_system.left_task_response_ts, kbd_system.left_task_response);
     } else { // RIGHT
-        if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts_start)
+        if(kbd_system.right_task_response_ts != kbd_system.sb_right_task_response->ts)
             write_shared_buffer(kbd_system.sb_right_task_response,
                                 kbd_system.right_task_response_ts, kbd_system.right_task_response);
     }
@@ -447,18 +455,21 @@ int main(void) {
 
     kbd_system.led = kbd_led_state_BLINK_NORMAL;
 
+    uint32_t rtc_last_ms = 0;
+    uint32_t lcd_last_ms = 0;
+    uint32_t tb_last_ms = 0;
+    uint32_t proc_last_ms = 0;
+
     while(true) {
         // get state
-        if(kbd_system.state_ts != kbd_system.sb_state->ts_start)
+        if(kbd_system.state_ts != kbd_system.sb_state->ts)
             read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
 
         // get date & temperature, once a second
-        static uint32_t rtc_last_ms = 0;
         do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
 
         if(kbd_system.side == kbd_side_LEFT) {
             // update lcd display head, @ 500 ms
-            static uint32_t lcd_last_ms = 0;
             do_if_elapsed(&lcd_last_ms, 500, NULL, lcd_display_head_task);
 
             // set system led
@@ -475,7 +486,6 @@ int main(void) {
         }
         else { // RIGHT
             // scan track ball scroll, @ 10 ms
-            static uint32_t tb_last_ms = 0;
             do_if_elapsed(&tb_last_ms, 10, NULL, tb_scan_task);
 
             // set caps lock led
@@ -484,7 +494,6 @@ int main(void) {
 
         // process inputs(key+tb+hid_in) -> outputs(state+requests+hid_out), @ 10 ms
         if(kbd_system.role == kbd_role_MASTER) {
-            static uint32_t proc_last_ms = 0;
             do_if_elapsed(&proc_last_ms, 10, NULL, process_inputs);
         }
 

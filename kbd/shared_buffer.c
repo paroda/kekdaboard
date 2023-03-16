@@ -3,15 +3,17 @@
 #include "shared_buffer.h"
 
 void clear_shared_buffer(shared_buffer_t* sb) {
+    uint32_t saved_irq = spin_lock_blocking(sb->spin_lock);
     memset(sb->buff, 0, sb->size);
-    sb->ts_start = 0;
-    sb->ts_end = 0;
+    sb->ts = 0;
+    spin_unlock(sb->spin_lock, saved_irq);
 }
 
-shared_buffer_t* new_shared_buffer(size_t size) {
+shared_buffer_t* new_shared_buffer(size_t size, spin_lock_t* spin_lock) {
     shared_buffer_t* sb = (shared_buffer_t*) malloc(sizeof(shared_buffer_t));
     sb->size = size;
     sb->buff = (uint8_t*) malloc(sizeof(uint8_t) * size);
+    sb->spin_lock = spin_lock;
     clear_shared_buffer(sb);
     return sb;
 }
@@ -22,17 +24,15 @@ void free_shared_buffer(shared_buffer_t* sb) {
 }
 
 void read_shared_buffer(shared_buffer_t* sb, uint64_t* ts, void* dst) {
-    uint64_t ts_start = 0, ts_end = 0;
-    do {
-        ts_start = sb->ts_start;
-        memcpy(dst, sb->buff, sb->size);
-        ts_end = sb->ts_end;
-    } while(ts_start != ts_end);
-    *ts = ts_start;
+    uint32_t saved_irq = spin_lock_blocking(sb->spin_lock);
+    memcpy(dst, sb->buff, sb->size);
+    *ts = sb->ts;
+    spin_unlock(sb->spin_lock, saved_irq);
 }
 
 void write_shared_buffer(shared_buffer_t* sb, const uint64_t ts, const void* src) {
-    sb->ts_start = ts;
+    uint32_t saved_irq = spin_lock_blocking(sb->spin_lock);
+    sb->ts = ts;
     memcpy(sb->buff, src, sb->size);
-    sb->ts_end = ts;
+    spin_unlock(sb->spin_lock, saved_irq);
 }

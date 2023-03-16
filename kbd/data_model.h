@@ -47,7 +47,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x01 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x0Bu // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -131,7 +131,6 @@ typedef struct {
     bool caps_lock;
     bool num_lock;
     bool scroll_lock;
-    uint8_t version;
 } kbd_state_t;
 
 /*
@@ -242,6 +241,7 @@ typedef struct {
     volatile kbd_led_state_t ledB; // left/right: core1 state
 
     peer_comm_config_t* comm;
+    spin_lock_t* spin_lock;
 } kbd_system_t;
 
 /*

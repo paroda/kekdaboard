@@ -11,15 +11,17 @@
 #include "usb_descriptors.h"
 #include "usb_hid.h"
 
-static void send_hid_gamepad_report() {
+static bool send_hid_gamepad_report() {
     // Not Used
+    return true;
 }
 
-static void send_hid_consumer_report() {
+static bool send_hid_consumer_report() {
     // Not Used
+    return true;
 }
 
-static void send_hid_mouse_report() {
+static bool send_hid_mouse_report() {
     hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
 
     uint8_t buttons = 0 |
@@ -29,10 +31,10 @@ static void send_hid_mouse_report() {
         (m->backward ? MOUSE_BUTTON_BACKWARD : 0) |
         (m->forward  ? MOUSE_BUTTON_FORWARD  : 0);
 
-    tud_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollX, m->scrollY);
+    return tud_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX);
 }
 
-static void send_hid_keyboard_report() {
+static bool send_hid_keyboard_report() {
     hid_report_out_keyboard_t* k = &(kbd_system.hid_report_out.keyboard);
 
     uint8_t modifiers = 0 |
@@ -45,7 +47,7 @@ static void send_hid_keyboard_report() {
         (k->rightAlt   ? KEYBOARD_MODIFIER_RIGHTALT   : 0) |
         (k->rightGui   ? KEYBOARD_MODIFIER_RIGHTGUI   : 0);
 
-    tud_hid_keyboard_report(REPORT_ID_KEYBOARD, modifiers, k->key_codes);
+    return tud_hid_keyboard_report(REPORT_ID_KEYBOARD, modifiers, k->key_codes);
 }
 
 static bool send_hid_report(uint8_t report_id) {
@@ -58,26 +60,16 @@ static bool send_hid_report(uint8_t report_id) {
     switch (report_id)
     {
     case REPORT_ID_KEYBOARD:
-        send_hid_keyboard_report();
-        break;
-
+        return send_hid_keyboard_report();
     case REPORT_ID_MOUSE:
-        send_hid_mouse_report();
-        break;
-
+        return send_hid_mouse_report();
     case REPORT_ID_CONSUMER_CONTROL:
-        send_hid_consumer_report();
-        break;
-
+        return send_hid_consumer_report();
     case REPORT_ID_GAMEPAD:
-        send_hid_gamepad_report();
-        break;
-
+        return send_hid_gamepad_report();
     default:
-        break;
+        return false;
     }
-
-    return true;
 }
 
 static void hid_task(void) {
@@ -97,8 +89,8 @@ static void hid_task(void) {
         } else {
             // report end of previous envents
             if(had_events)
-                send_hid_report(REPORT_ID_KEYBOARD);
-            had_events = false;
+                if(send_hid_report(REPORT_ID_KEYBOARD))
+                    had_events = false;
         }
     }
 }

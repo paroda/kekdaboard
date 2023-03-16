@@ -35,6 +35,7 @@ peer_comm_config_t* new_peer_comm_config(uint8_t version,
                                          uint8_t* data_inits) {
     peer_comm_config_t* pcc = (peer_comm_config_t*) malloc(sizeof(peer_comm_config_t));
     pcc->version = version;
+    pcc->peer_version = 0;
     pcc->size = size;
     pcc->datasets = (shared_buffer_t**) malloc(sizeof(shared_buffer_t*) * size);
     pcc->data_inits = (uint8_t*) malloc(sizeof(uint8_t) * size);
@@ -111,7 +112,7 @@ static uint8_t peer_comm_select_next_out(peer_comm_config_t* pcc, uint8_t start)
     for(uint8_t id=start; id<pcc->size; id++) {
         shared_buffer_t* sb = pcc->datasets[id];
         uint8_t data_init = pcc->data_inits[id];
-        if(data_init && sb->ts_start!=pcc->data_ts[id]) {
+        if(data_init && sb->ts!=pcc->data_ts[id]) {
             read_shared_buffer(sb, &(pcc->data_ts[id]), pcc->out_buff);
             pcc->out_size = sb->size;
             pcc->out_id = id;
@@ -158,7 +159,7 @@ static void peer_comm_emit_next_byte(peer_comm_config_t* pcc, bool peer_empty) {
             } else {
                 pcc->out_stage = 2;
             }
-            pcc->put(d);
+            pcc->put(d & peer_comm_byte_DATA_MASK);
         }
         break;
     }
@@ -274,7 +275,7 @@ void peer_comm_on_receive(peer_comm_config_t* pcc) {
         // received version
         if(!pcc->peer_version) {
             pcc->peer_version = b & peer_comm_byte_VERSION_MASK;
-            pcc->put(pcc->version);
+            pcc->put(peer_comm_byte_VERSION | pcc->version);
         }
     } else {
         // other command byte

@@ -5,17 +5,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <hardware/sync.h>
+
 /*
  * Shared buffer for concurrent operation - one writer, one reader.
  * Use timestamp to track change.
  */
 
 typedef struct {
-    uint8_t* buff;
     size_t size;
-    // timestamp - us since boot
-    volatile uint64_t ts_start;
-    volatile uint64_t ts_end;
+    uint8_t* buff;
+    volatile uint64_t ts;
+
+    spin_lock_t* spin_lock;
 } shared_buffer_t;
 
 void clear_shared_buffer(shared_buffer_t* sb);
@@ -23,7 +25,7 @@ void clear_shared_buffer(shared_buffer_t* sb);
 /*
  * Allocate memory
  */
-shared_buffer_t* new_shared_buffer(size_t size);
+shared_buffer_t* new_shared_buffer(size_t size, spin_lock_t* spin_lock);
 
 void free_shared_buffer(shared_buffer_t* sb);
 
