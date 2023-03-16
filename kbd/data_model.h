@@ -47,7 +47,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x0Bu // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x02 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -55,7 +55,7 @@
 #define KBD_TASK_RESPONSE_SIZE 32
 
 #define KBD_CONFIG_SCREEN_MASK 0x80
-#define KBD_INFO_SCREEN_COUNT 1
+#define KBD_INFO_SCREEN_COUNT 2
 #define KBD_CONFIG_SCREEN_COUNT 1
 
 #define KEY_CODE_MAX 6 // same as in TinyUSB
@@ -99,13 +99,16 @@ typedef enum {
 } kbd_led_state_t;
 
 typedef enum {
+    // info screens
     kbd_info_screen_welcome = 0x00,
-    kbd_info_screen_home = 0x01,
+    kbd_info_screen_scan,
+    // config screens
     kbd_config_screen_date = 0x80
 } kbd_screen_t;
 
 typedef enum {
     kbd_screen_event_NONE = 0,
+    kbd_screen_event_INIT,
     // only info screen
     kbd_screen_event_CONFIG, // SUN+L.MOON
     // only config screen

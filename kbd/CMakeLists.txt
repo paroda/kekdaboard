@@ -71,8 +71,9 @@ target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/peer_comm.c
   ${CMAKE_CURRENT_LIST_DIR}/rtc_ds3231.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_date.c
-  ${CMAKE_CURRENT_LIST_DIR}/screen_home.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_processor.c
+  ${CMAKE_CURRENT_LIST_DIR}/screen_scan.c
+  ${CMAKE_CURRENT_LIST_DIR}/screen_welcome.c
   ${CMAKE_CURRENT_LIST_DIR}/shared_buffer.c
   ${CMAKE_CURRENT_LIST_DIR}/srom_pmw3389.c
   ${CMAKE_CURRENT_LIST_DIR}/tb_pmw3389.c

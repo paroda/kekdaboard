@@ -5,7 +5,8 @@
 #include "data_model.h"
 
 kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
-    kbd_info_screen_home,
+    kbd_info_screen_welcome,
+    kbd_info_screen_scan,
 };
 
 kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {

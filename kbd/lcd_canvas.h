@@ -4,20 +4,30 @@
 #include <stdbool.h>
 #include "lcd_fonts.h"
 
+/*
+ * 0 0000  8 1000
+ * 1 0001  9 1001
+ * 2 0010  A 1010
+ * 3 0011  B 1011
+ * 4 0100  C 1100
+ * 5 0101  D 1101
+ * 6 0110  E 1110
+ * 7 0111  F 1111
+ */
+
+// 16bit RGB colors (5-6-5)
 #define WHITE          0xFFFF
 #define BLACK          0x0000
-#define BLUE           0x001F
-#define BRED           0XF81F
-#define GRED           0XFFE0
-#define GBLUE          0X07FF
 #define RED            0xF800
-#define MAGENTA        0xF81F
 #define GREEN          0x07E0
+#define BLUE           0x001F
+#define MAGENTA        0xF81F // red blue
+#define YELLOW         0xFFE0 // red green
+#define TEAL           0x07FF // green blue
 #define CYAN           0x7FFF
-#define YELLOW         0xFFE0
-#define BROWN          0XBC40
-#define BRRED          0XFC07
-#define GRAY           0X8430
+#define BROWN          0xBC40
+#define GRAY           0x8430
+#define DARK_GRAY      0x4108
 
 typedef struct {
     uint16_t* buff;

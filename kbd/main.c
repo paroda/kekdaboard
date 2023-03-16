@@ -2,24 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pico/stdlib.h"
-#include "pico/multicore.h"
-
-#include "hardware/uart.h"
-#include "hardware/i2c.h"
-#include "hardware/spi.h"
-#include "hardware/gpio.h"
+#include "hw_model.h"
 
 #include "data_model.h"
 #include "input_processor.h"
 #include "screen_processor.h"
-#include "key_scan.h"
-#include "uart_comm.h"
-#include "rtc_ds3231.h"
-#include "master_spi.h"
-#include "flash_w25qxx.h"
-#include "lcd_st7789.h"
-#include "tb_pmw3389.h"
 #include "usb_hid.h"
 
 /*
@@ -53,27 +40,7 @@
  *     - read tb_motion
  */
 
-typedef struct {
-    uint8_t gpio;
-    bool on;
-} kbd_led_t;
-
-struct {
-    uart_comm_t* comm;
-    rtc_t* rtc;
-    master_spi_t* m_spi;
-    flash_t* flash;
-    lcd_t* lcd;
-    tb_t* tb;
-
-    key_scan_t* ks;
-
-    kbd_led_t led;
-    kbd_led_t ledB;
-
-    uint8_t flash_header[FLASH_PAGE_SIZE];
-} kbd_hw;
-
+kbd_hw_t kbd_hw;
 
 uint32_t board_millis() {
     return to_ms_since_boot(get_absolute_time());
@@ -242,13 +209,10 @@ void init_hw_left() {
                             hw_gpio_CS_lcd, hw_gpio_lcd_DC, hw_gpio_lcd_RST, hw_gpio_lcd_BL,
                             240, 240,
                             lcd_orient_Normal);
-
+    lcd_set_backlight_level(kbd_hw.lcd, 30); // 30%
     lcd_clear(kbd_hw.lcd, BROWN);
-    lcd_canvas_t* cv = lcd_new_canvas(240, 20, BROWN);
-    // w:18x11=198 h:16, x:21-219
-    lcd_canvas_text(cv, 21, 2, "Welcome Pradyumna!", &lcd_font16, WHITE, BROWN);
-    lcd_display_canvas(kbd_hw.lcd, 0, 110, cv);
-    lcd_free_canvas(cv);
+    kbd_hw.lcd_body = lcd_new_canvas(240, 200, BROWN);
+    lcd_show_welcome();
 }
 
 void init_hw_right() {
@@ -272,7 +236,7 @@ void lcd_display_head_task(void* param) {
     uint16_t bg = BLACK;
     uint16_t fg = WHITE;
     uint16_t fg1 = YELLOW;
-    uint16_t bg2 = GRAY;
+    uint16_t bg2 = DARK_GRAY;
     uint16_t fgcl = RED;
     uint16_t fgnl = GREEN;
     uint16_t fgsl = BLUE;
@@ -291,13 +255,13 @@ void lcd_display_head_task(void* param) {
     lcd_canvas_text(cv, 40, 4, txt, &lcd_font16, fg, bg);
     // time (2 rows) : w:17x5=85 h:24, x:77-162, y:8
     sprintf(txt, "%02d:%02d", kbd_system.date.hour, kbd_system.date.minute);
-    lcd_canvas_text(cv, 77, 9, txt, &lcd_font24, fg1, bg);
+    lcd_canvas_text(cv, 80, 9, txt, &lcd_font24, fg1, bg);
     // weekday: w:11x3=33 h:16, x:197-230
     char* wd = rtc_week[kbd_system.date.weekday%8];
     lcd_canvas_text(cv, 197, 4, wd, &lcd_font16, fg, bg);
 
     // row2: locksx2, temperature, MM/dd
-    // locksx3: w:20x2=40 h:16, x:5-45
+    // locksx3: w:20x2=40 h:16, x:5-65
     lcd_canvas_rect(cv, 5, 22, 20, 16, bg2, 1, true);
     if(kbd_system.state.caps_lock)
         lcd_canvas_circle(cv, 15, 30, 3, fgcl, 1, true);
@@ -395,7 +359,8 @@ void process_requests() {
                                &kbd_system.right_task_request_ts, kbd_system.right_task_request);
     }
 
-    // TODO
+    // respond to the reqeust
+    respond_screen_processor();
 
     // set the task responses
     if(kbd_system.side == kbd_side_LEFT) {

@@ -225,7 +225,7 @@ lcd_t* lcd_create(master_spi_t* m_spi,
 
     // Interface Pixel Format
     // - RGB interface color format = 65K of RGB interface
-    // - Control interface color format = 16bit/pixel
+    // - Control interface color format = 16bit/pixel (R-G-B: 5-6-5 bits)
     lcd_command(lcd, LCD_CMD_COLMOD, (uint8_t[]){ 0x55 }, 1);
     sleep_ms(10);
 

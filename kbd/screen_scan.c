@@ -1,0 +1,175 @@
+#include <string.h>
+
+#include "hw_model.h"
+#include "screen_processor.h"
+
+#define SCROLL_SCALE 4
+
+uint8_t key_press[KEY_ROW_COUNT][KEY_COL_COUNT*2];
+
+static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_key_press) {
+    int row,col;
+    uint8_t v, ov;
+
+    for(row=0 ; row<KEY_ROW_COUNT ; row++) {
+        for(col=KEY_COL_COUNT-1, v=left_key_press[row] ; col>=0 ; col--, v>>=1) {
+            if(init) {
+                key_press[row][col] = (v&1) ? 1 : 0;
+            } else {
+                ov = key_press[row][col] & 1;
+                if(((v&1) && ov) || !((v&1) || ov))
+                    key_press[row][col] = ov| 2;
+                else
+                    key_press[row][col] = ov ? 0 : 1;
+            }
+        }
+        for(col=KEY_COL_COUNT-1, v=right_key_press[row] ; col>=0 ; col--, v>>=1) {
+            uint8_t col2 = KEY_COL_COUNT+col;
+            if(init) {
+                key_press[row][col2] = (v&1) ? 1 : 0;
+            } else {
+                ov = key_press[row][col2] & 1;
+                if(((v&1) && ov) || !((v&1) || ov))
+                    key_press[row][col2] = ov| 2;
+                else
+                    key_press[row][col2] = ov ? 0 : 1;
+            }
+        }
+    }
+}
+
+static void init_screen() {
+    lcd_canvas_t* cv = kbd_hw.lcd_body;
+    lcd_canvas_clear(cv);
+
+    uint8_t* req = kbd_system.left_task_request;
+    key_layout_read(true, req+2, req+2+KEY_ROW_COUNT);
+
+    // x: 5 (10+5)x7=105 5 10 5 (5+10)x7=105 5
+    // y: 15 (10+15)x3=75 5 10 5 (15+10)x3=75 15
+    // d: 95, 5-100 100-195, 25-120 120-215
+
+    uint8_t i,j,k,r,c;
+    uint16_t x, y, xs[4]={5, 135, 5, 135}, ys[4]={15, 15, 125, 125}, color;
+    for(k=0; k<4; k++) {
+        r = k<2 ? 0 : 3;
+        c = k==0||k==2 ? 0 : 7;
+        x = xs[k];
+        y = ys[k];
+        for(i=0; i<7; i++)
+            for(j=0; j<3; j++) {
+                color = key_press[r+j][c+i]==1 ? MAGENTA : DARK_GRAY;
+                lcd_canvas_rect(cv, x+15*i, y+25*j, 10, 10, color, 1, true);
+            }
+    }
+
+    lcd_canvas_rect(cv, 115, 5, 10, 190, DARK_GRAY, 1, true);
+    lcd_canvas_rect(cv, 25, 95, 190, 10, DARK_GRAY, 1, true);
+
+    kbd_tb_motion_t tbm;
+    memcpy(&tbm, req+2+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+    if(!tbm.on_surface) lcd_canvas_rect(cv, 115, 95, 10, 10, RED, 1, true);
+
+    if(tbm.has_motion) {
+        if(tbm.dx>0)
+            lcd_canvas_rect(cv, 130, 95, (tbm.dx/SCROLL_SCALE), 10, YELLOW, 1, true);
+        else
+            lcd_canvas_rect(cv, 110+(tbm.dx/SCROLL_SCALE), 95, -(tbm.dx/SCROLL_SCALE), 10, YELLOW, 1, true);
+
+        if(tbm.dy>0)
+            lcd_canvas_rect(cv, 115, 110, 10, (tbm.dy/SCROLL_SCALE), YELLOW, 1, true);
+        else
+            lcd_canvas_rect(cv, 115, 90+(tbm.dy/SCROLL_SCALE), 10, -(tbm.dy/SCROLL_SCALE), YELLOW, 1, true);
+    }
+
+    lcd_display_body();
+}
+
+static void update_screen() {
+    lcd_canvas_t* cv;
+    lcd_canvas_t* cv0 = lcd_new_canvas(10, 10, DARK_GRAY);
+    lcd_canvas_clear(cv0);
+    lcd_canvas_t* cv1 = lcd_new_canvas(10, 10, MAGENTA);
+    lcd_canvas_clear(cv1);
+
+    uint8_t* req = kbd_system.left_task_request;
+    key_layout_read(true, req+2, req+2+KEY_ROW_COUNT);
+
+    uint8_t i,j,k,r,c,v;
+    uint16_t x, y, xs[4]={5, 135, 5, 135}, ys[4]={55, 55, 165, 165};
+    for(k=0; k<4; k++) {
+        r = k<2 ? 0 : 3;
+        c = k==0||k==2 ? 0 : 7;
+        x = xs[k];
+        y = ys[k];
+        for(i=0; i<7; i++)
+            for(j=0; j<3; j++) {
+                v = key_press[r+j][c+i];
+                cv = v&1 ? cv1 : cv0;
+                if(!(v&2))
+                    lcd_display_canvas(kbd_hw.lcd, x+15*i, y+25*j, cv);
+            }
+    }
+    lcd_free_canvas(cv0);
+    lcd_free_canvas(cv1);
+
+    kbd_tb_motion_t tbm;
+    memcpy(&tbm, req+2+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+
+    cv = lcd_new_canvas(190, 10, DARK_GRAY);
+    lcd_canvas_clear(cv);
+    if(tbm.has_motion) {
+        if(tbm.dx>0)
+            lcd_canvas_rect(cv, 105, 0, (tbm.dx/SCROLL_SCALE), 10, YELLOW, 1, true);
+        else
+            lcd_canvas_rect(cv, 85+(tbm.dx/SCROLL_SCALE), 0, -(tbm.dx/SCROLL_SCALE), 10, YELLOW, 1, true);
+    }
+    lcd_display_canvas(kbd_hw.lcd, 25, 135, cv);
+    lcd_free_canvas(cv);
+
+    cv = lcd_new_canvas(10, 190, DARK_GRAY);
+    lcd_canvas_clear(cv);
+    if(tbm.has_motion) {
+        if(tbm.dy>0)
+            lcd_canvas_rect(cv, 0, 105, 10, (tbm.dy/SCROLL_SCALE), YELLOW, 1, true);
+        else
+            lcd_canvas_rect(cv, 0, 85+(tbm.dy/SCROLL_SCALE), 10, -(tbm.dy/SCROLL_SCALE), YELLOW, 1, true);
+    }
+    if(!tbm.on_surface) lcd_canvas_rect(cv, 90, 0, 10, 10, RED, 1, true);
+    lcd_display_canvas(kbd_hw.lcd, 115, 45, cv);
+    lcd_free_canvas(cv);
+}
+
+void execute_screen_scan(kbd_screen_event_t event) {
+    uint8_t* req = kbd_system.left_task_request;
+    uint8_t* res = kbd_system.left_task_response;
+    if(res[0]!=0) req[0]=0;
+
+    if(req[0]!=0 || is_nav_event(event)) return;
+
+    req[0] = 1;
+    res[0] = 0;
+
+    req[1] = (event == kbd_screen_event_INIT) ? 0 : 1;
+
+    // add scan data
+    uint8_t pos=2;
+    memcpy(req+pos, kbd_system.left_key_press, KEY_ROW_COUNT);
+    pos += KEY_ROW_COUNT;
+    memcpy(req+pos, kbd_system.right_key_press, KEY_ROW_COUNT);
+    pos += KEY_ROW_COUNT;
+    memcpy(req+pos, &kbd_system.right_tb_motion, sizeof(kbd_tb_motion_t));
+}
+
+void respond_screen_scan(void) {
+    uint8_t* req = kbd_system.left_task_request;
+    uint8_t* res = kbd_system.left_task_response;
+    if(req[0]==0) return;
+
+    if(req[1]==0)
+        init_screen();
+    else
+        update_screen();
+
+    res[0] = 1;
+}

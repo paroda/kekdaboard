@@ -3,16 +3,42 @@
 
 #include "data_model.h"
 
-typedef bool render_screen_t (kbd_screen_event_t event);
+bool is_nav_event(kbd_screen_event_t event);
 
-render_screen_t execute_screen_processor;
+// every screen renderer would render the body of the display
+// display body location 0,41 - 240,240, size: 240x200
 
-// render function should return true if it has finished the job
-// else returns false to indicate it is busy.
-// Only when the renderer is done, the main processor would do any navigation.
+// screen is processed by master, but may have tasks to be done on the other side
+// this is achieved by doing it in steps:
+//   create request - by MASTER
+//   create response - by appropriate SIDE
+//   acknowledge response - by MASTER (must clear the request)
 
-render_screen_t render_screen_home;
+// each screen creates its own request and responds to it
+// and it must clear the request upon completion
 
-render_screen_t render_screen_date;
+typedef void execute_screen_t (kbd_screen_event_t event);
+
+typedef void respond_screen_t(void);
+
+execute_screen_t execute_screen_processor;
+respond_screen_t respond_screen_processor;
+
+/*
+ * Info Screens
+ */
+
+execute_screen_t execute_screen_welcome;
+respond_screen_t respond_screen_welcome;
+
+execute_screen_t execute_screen_scan;
+respond_screen_t respond_screen_scan;
+
+/*
+ * Config Screens
+ */
+
+execute_screen_t execute_screen_date;
+respond_screen_t respond_screen_date;
 
 #endif

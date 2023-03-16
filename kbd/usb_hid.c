@@ -31,7 +31,14 @@ static bool send_hid_mouse_report() {
         (m->backward ? MOUSE_BUTTON_BACKWARD : 0) |
         (m->forward  ? MOUSE_BUTTON_FORWARD  : 0);
 
-    return tud_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX);
+    if(tud_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX)) {
+        m->deltaX = 0;
+        m->deltaY = 0;
+        m->scrollX = 0;
+        m->scrollY = 0;
+        return true;
+    }
+    return false;
 }
 
 static bool send_hid_keyboard_report() {

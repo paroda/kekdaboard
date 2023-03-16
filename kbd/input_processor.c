@@ -147,11 +147,11 @@ kbd_screen_event_t execute_input_processor() {
 
     if(kbd_system.right_tb_motion.has_motion) {
         if(moon) {
-            outm.scrollX = kbd_system.right_tb_motion.dx/20;
-            outm.scrollY = kbd_system.right_tb_motion.dy/20;
+            outm.scrollX = kbd_system.right_tb_motion.dx/32;
+            outm.scrollY = kbd_system.right_tb_motion.dy/32;
         } else {
-            outm.deltaX = kbd_system.right_tb_motion.dx;
-            outm.deltaY = kbd_system.right_tb_motion.dy;
+            outm.deltaX = kbd_system.right_tb_motion.dx/4;
+            outm.deltaY = kbd_system.right_tb_motion.dy/4;
         }
     }
 
@@ -222,6 +222,10 @@ kbd_screen_event_t execute_input_processor() {
     } else {
         kbd_system.hid_report_out.has_events = has_events;
         kbd_system.hid_report_out.keyboard = outk;
+        outm.deltaX += kbd_system.hid_report_out.mouse.deltaX;
+        outm.deltaY += kbd_system.hid_report_out.mouse.deltaY;
+        outm.scrollX += kbd_system.hid_report_out.mouse.scrollX;
+        outm.scrollY += kbd_system.hid_report_out.mouse.scrollY;
         kbd_system.hid_report_out.mouse = outm;
 
         // info screen event
