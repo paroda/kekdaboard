@@ -196,7 +196,7 @@ kbd_screen_event_t execute_input_processor() {
 
     kbd_screen_event_t screen_event = kbd_screen_event_NONE;
 
-    bool config_mode = kbd_system.state.screen & KBD_CONFIG_SCREEN_MASK;
+    bool config_mode = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     if(config_mode) {
         memset(&kbd_system.hid_report_out, 0, sizeof(hid_report_out_t));
 

@@ -14,24 +14,13 @@ void lcd_show_welcome() {
 }
 
 void execute_screen_welcome(kbd_screen_event_t event) {
-    uint8_t* req = kbd_system.left_task_request;
-    uint8_t* res = kbd_system.left_task_response;
-    if(res[0]!=0) req[0]=0;
-
-    if(req[0]!=0 || is_nav_event(event)) return;
-
     if(event != kbd_screen_event_INIT) return;
 
-    req[0] = 1;
-    res[0] = 0;
+    mark_left_request(kbd_info_screen_welcome);
 }
 
 void respond_screen_welcome(void) {
-    uint8_t* req = kbd_system.left_task_request;
-    uint8_t* res = kbd_system.left_task_response;
-    if(req[0]==0) return;
-
     lcd_show_welcome();
 
-    res[0] = 1;
+    mark_left_response();
 }

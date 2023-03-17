@@ -23,8 +23,7 @@
 #define BLUE           0x001F
 #define MAGENTA        0xF81F // red blue
 #define YELLOW         0xFFE0 // red green
-#define TEAL           0x07FF // green blue
-#define CYAN           0x7FFF
+#define CYAN           0x07FF // green blue
 #define BROWN          0xBC40
 #define GRAY           0x8430
 #define DARK_GRAY      0x4108

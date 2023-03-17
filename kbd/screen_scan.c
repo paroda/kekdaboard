@@ -43,7 +43,7 @@ static void init_screen() {
     lcd_canvas_clear(cv);
 
     uint8_t* req = kbd_system.left_task_request;
-    key_layout_read(true, req+2, req+2+KEY_ROW_COUNT);
+    key_layout_read(true, req+3, req+3+KEY_ROW_COUNT);
 
     // x: 5 (10+5)x7=105 5 10 5 (5+10)x7=105 5
     // y: 15 (10+15)x3=75 5 10 5 (15+10)x3=75 15
@@ -67,7 +67,7 @@ static void init_screen() {
     lcd_canvas_rect(cv, 25, 95, 190, 10, DARK_GRAY, 1, true);
 
     kbd_tb_motion_t tbm;
-    memcpy(&tbm, req+2+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+    memcpy(&tbm, req+3+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
     if(!tbm.on_surface) lcd_canvas_rect(cv, 115, 95, 10, 10, RED, 1, true);
 
     if(tbm.has_motion) {
@@ -92,7 +92,7 @@ static void update_screen() {
     lcd_canvas_t* cv;
 
     uint8_t* req = kbd_system.left_task_request;
-    key_layout_read(true, req+2, req+2+KEY_ROW_COUNT);
+    key_layout_read(true, req+3, req+3+KEY_ROW_COUNT);
 
     uint8_t i,j,k,r,c,v;
     uint16_t x, y, xs[4]={5, 135, 5, 135}, ys[4]={55, 55, 165, 165};
@@ -111,7 +111,7 @@ static void update_screen() {
     }
 
     kbd_tb_motion_t tbm;
-    memcpy(&tbm, req+2+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+    memcpy(&tbm, req+3+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
 
     cv = canvas;
     lcd_canvas_clear(cv);
@@ -142,18 +142,15 @@ static void update_screen() {
 
 void execute_screen_scan(kbd_screen_event_t event) {
     uint8_t* req = kbd_system.left_task_request;
-    uint8_t* res = kbd_system.left_task_response;
-    if(res[0]!=0) req[0]=0;
 
-    if(req[0]!=0 || is_nav_event(event)) return;
+    if(is_nav_event(event)) return;
 
-    req[0] = 1;
-    res[0] = 0;
+    mark_left_request(kbd_info_screen_scan);
 
-    req[1] = (event == kbd_screen_event_INIT) ? 0 : 1;
+    req[2] = (event == kbd_screen_event_INIT) ? 0 : 1;
 
     // add scan data
-    uint8_t pos=2;
+    uint8_t pos=3;
     memcpy(req+pos, kbd_system.left_key_press, KEY_ROW_COUNT);
     pos += KEY_ROW_COUNT;
     memcpy(req+pos, kbd_system.right_key_press, KEY_ROW_COUNT);
@@ -163,13 +160,11 @@ void execute_screen_scan(kbd_screen_event_t event) {
 
 void respond_screen_scan(void) {
     uint8_t* req = kbd_system.left_task_request;
-    uint8_t* res = kbd_system.left_task_response;
-    if(req[0]==0) return;
 
-    if(req[1]==0)
+    if(req[2]==0)
         init_screen();
     else
         update_screen();
 
-    res[0] = 1;
+    mark_left_response();
 }

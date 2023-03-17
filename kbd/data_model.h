@@ -47,7 +47,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x03 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x07 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -131,6 +131,7 @@ typedef struct {
     // note that we are using memcmp to detect change
     // keep it small and simple
     kbd_screen_t screen;
+    kbd_usb_hid_state_t usb_hid_state;
     bool caps_lock;
     bool num_lock;
     bool scroll_lock;
@@ -238,6 +239,7 @@ typedef struct {
     shared_buffer_t* sb_left_task_response;
     shared_buffer_t* sb_right_task_response;
 
+    volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
 
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock

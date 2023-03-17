@@ -33,6 +33,7 @@ kbd_system_t kbd_system = {
     .sb_right_task_request = NULL,
     .sb_left_task_response = NULL,
     .sb_right_task_response = NULL,
+    .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
     .led = kbd_led_state_OFF,
     .ledB = kbd_led_state_OFF,
@@ -56,6 +57,7 @@ void init_data_model() {
 
     memset(&kbd_system.state, 0, sizeof(kbd_state_t));
     kbd_system.state.screen = kbd_info_screen_welcome;
+    kbd_system.state.usb_hid_state = kbd_usb_hid_state_UNMOUNTED;
     kbd_system.state.caps_lock = false;
     kbd_system.state.num_lock = false;
     kbd_system.state.scroll_lock = false;

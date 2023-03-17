@@ -1,3 +1,5 @@
+#include "pico/stdlib.h"
+
 #include "screen_processor.h"
 
 execute_screen_t* info_screen_executors[KBD_INFO_SCREEN_COUNT] = {
@@ -25,35 +27,73 @@ bool is_nav_event(kbd_screen_event_t event) {
         || event == kbd_screen_event_PREV;
 }
 
+#define set_next_id(x) x=x==0xFF?0:x+1
+
+void mark_left_request(kbd_screen_t screen) {
+    set_next_id(kbd_system.left_task_request[0]);
+    kbd_system.left_task_request[1] = screen;
+    kbd_system.left_task_request_ts = time_us_64();
+}
+
+void mark_left_response() {
+    kbd_system.left_task_response[0] = kbd_system.left_task_request[0];
+    kbd_system.left_task_response[1] = kbd_system.left_task_request[1];
+    kbd_system.left_task_response_ts = time_us_64();
+}
+
+void mark_right_request(kbd_screen_t screen) {
+    set_next_id(kbd_system.right_task_request[0]);
+    kbd_system.right_task_request[1] = screen;
+    kbd_system.right_task_request_ts = time_us_64();
+}
+
+void mark_right_response() {
+    kbd_system.right_task_response[0] = kbd_system.right_task_request[0];
+    kbd_system.right_task_response[1] = kbd_system.right_task_request[1];
+    kbd_system.right_task_response_ts = time_us_64();
+}
+
 static void execute_screen(kbd_screen_event_t event) {
-    bool config = kbd_system.state.screen & KBD_CONFIG_SCREEN_MASK;
+    bool config = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = kbd_system.state.screen - s0;
+    uint8_t si = kbd_system.screen - s0;
 
     (config ? config_screen_executors[si] : info_screen_executors[si])(event);
 }
 
 void execute_screen_processor(kbd_screen_event_t event) {
+    static kbd_screen_event_t pending_event = kbd_screen_event_NONE;
+    event = event==kbd_screen_event_NONE ? pending_event : event;
+
     uint8_t* lreq = kbd_system.left_task_request;
     uint8_t* lres = kbd_system.left_task_response;
-    uint8_t* rreq = kbd_system.left_task_request;
-    uint8_t* rres = kbd_system.left_task_response;
+    uint8_t* rreq = kbd_system.right_task_request;
+    uint8_t* rres = kbd_system.right_task_response;
 
-    if((lreq[0]==0 || lres[0]!=0) && (rreq[0]==0 || rres[0]!=0)) {
-        // execute the current screen, when not pending request
-        execute_screen(event);
+    if(lreq[0]!=lres[0] || rreq[0]!=rres[0]) {
+        pending_event = event;
+        return; // pending tasks
     }
 
-    if(lreq[0]!=0 || rreq[0]!=0) return; // no screen change when pending reqeust
+    // execute the current screen, when not pending request
+    execute_screen(event);
+    pending_event = kbd_screen_event_NONE;
+
+    if(lreq[0]!=lres[0] || rreq[0]!=rres[0]) {
+        if(is_nav_event(event)) pending_event = event;
+        return; // no screen change when pending reqeust
+    }
+
+    pending_event = kbd_screen_event_NONE;
 
     // change screen if asked for
     if(is_nav_event(event)) {
-        bool config = kbd_system.state.screen & KBD_CONFIG_SCREEN_MASK;
+        bool config = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
         uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
         kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-        uint8_t si = kbd_system.state.screen - s0;
+        uint8_t si = kbd_system.screen - s0;
 
-        kbd_screen_t screen = kbd_system.state.screen;
+        kbd_screen_t screen = kbd_system.screen;
         if(event == kbd_screen_event_CONFIG && !config)
             screen = kbd_config_screen_date;
         else if(event == kbd_screen_event_EXIT && config)
@@ -64,15 +104,15 @@ void execute_screen_processor(kbd_screen_event_t event) {
             screen = si>0 ? s0+si-1 : s0+n-1;
         }
 
-        kbd_system.state.screen = screen;
+        kbd_system.screen = screen;
         execute_screen(kbd_screen_event_INIT);
     }
 }
 
-static void respond_screen() {
-    bool config = kbd_system.state.screen & KBD_CONFIG_SCREEN_MASK;
+static void respond_screen(kbd_screen_t screen) {
+    bool config = screen & KBD_CONFIG_SCREEN_MASK;
     kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = kbd_system.state.screen - s0;
+    uint8_t si = screen - s0;
 
     (config ? config_screen_responders[si] : info_screen_responders[si])();
 }
@@ -83,7 +123,7 @@ void respond_screen_processor(void) {
     uint8_t* res = kbd_system.side==kbd_side_LEFT ?
         kbd_system.left_task_response : kbd_system.right_task_response;
 
-    if(req[0]==0 || res[0]!=0) return;
+    if(req[0]==res[0]) return;
 
-    respond_screen();
+    respond_screen(req[1]);
 }

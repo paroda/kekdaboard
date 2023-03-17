@@ -5,6 +5,14 @@
 
 bool is_nav_event(kbd_screen_event_t event);
 
+void mark_left_request(kbd_screen_t screen);
+
+void mark_left_response();
+
+void mark_right_request(kbd_screen_t screen);
+
+void mark_right_response();
+
 // every screen renderer would render the body of the display
 // display body location 0,41 - 240,240, size: 240x200
 
