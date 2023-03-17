@@ -30,13 +30,16 @@
 #define DARK_GRAY      0x4108
 
 typedef struct {
-    uint16_t* buff;
+    uint16_t* buf;
     uint16_t width;
     uint16_t height;
     uint16_t color;
+    bool shared;
 } lcd_canvas_t;
 
 lcd_canvas_t* lcd_new_canvas(uint16_t width, uint16_t height, uint16_t color);
+
+lcd_canvas_t* lcd_new_shared_canvas(uint16_t* buf, uint16_t width, uint16_t height, uint16_t color);
 
 void lcd_free_canvas(lcd_canvas_t* canvas);
 

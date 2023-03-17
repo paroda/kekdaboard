@@ -86,11 +86,10 @@ static void init_screen() {
 }
 
 static void update_screen() {
+    lcd_canvas_t* canvas = lcd_new_canvas(190, 10, DARK_GRAY);
+    lcd_canvas_t* cv0 = lcd_new_shared_canvas(canvas->buf, 10, 10, DARK_GRAY);
+    lcd_canvas_t* cv1 = lcd_new_shared_canvas(canvas->buf+100, 10, 10, MAGENTA);
     lcd_canvas_t* cv;
-    lcd_canvas_t* cv0 = lcd_new_canvas(10, 10, DARK_GRAY);
-    lcd_canvas_clear(cv0);
-    lcd_canvas_t* cv1 = lcd_new_canvas(10, 10, MAGENTA);
-    lcd_canvas_clear(cv1);
 
     uint8_t* req = kbd_system.left_task_request;
     key_layout_read(true, req+2, req+2+KEY_ROW_COUNT);
@@ -110,13 +109,11 @@ static void update_screen() {
                     lcd_display_canvas(kbd_hw.lcd, x+15*i, y+25*j, cv);
             }
     }
-    lcd_free_canvas(cv0);
-    lcd_free_canvas(cv1);
 
     kbd_tb_motion_t tbm;
     memcpy(&tbm, req+2+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
 
-    cv = lcd_new_canvas(190, 10, DARK_GRAY);
+    cv = canvas;
     lcd_canvas_clear(cv);
     if(tbm.has_motion) {
         if(tbm.dx>0)
@@ -125,9 +122,9 @@ static void update_screen() {
             lcd_canvas_rect(cv, 85+(tbm.dx/SCROLL_SCALE), 0, -(tbm.dx/SCROLL_SCALE), 10, YELLOW, 1, true);
     }
     lcd_display_canvas(kbd_hw.lcd, 25, 135, cv);
-    lcd_free_canvas(cv);
 
-    cv = lcd_new_canvas(10, 190, DARK_GRAY);
+    cv->width = 10; // reuse the canvas as same size, just re-orient
+    cv->height = 190;
     lcd_canvas_clear(cv);
     if(tbm.has_motion) {
         if(tbm.dy>0)
@@ -137,7 +134,10 @@ static void update_screen() {
     }
     if(!tbm.on_surface) lcd_canvas_rect(cv, 90, 0, 10, 10, RED, 1, true);
     lcd_display_canvas(kbd_hw.lcd, 115, 45, cv);
-    lcd_free_canvas(cv);
+
+    lcd_free_canvas(canvas);
+    lcd_free_canvas(cv0);
+    lcd_free_canvas(cv1);
 }
 
 void execute_screen_scan(kbd_screen_event_t event) {

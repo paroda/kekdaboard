@@ -1,33 +1,41 @@
 #include <stdlib.h>
 #include "lcd_canvas.h"
 
-lcd_canvas_t* lcd_new_canvas(uint16_t width, uint16_t height, uint16_t color) {
+lcd_canvas_t* lcd_new_shared_canvas(uint16_t* buf, uint16_t width, uint16_t height, uint16_t color) {
     lcd_canvas_t* canvas = (lcd_canvas_t*) malloc(sizeof(lcd_canvas_t));
-    canvas->buff = (uint16_t*) malloc(width * height * sizeof(uint16_t));
+    canvas->buf = buf;
     canvas->width = width;
     canvas->height = height;
     canvas->color = color;
+    canvas->shared = true;
     lcd_canvas_clear(canvas);
     return canvas;
 }
 
+lcd_canvas_t* lcd_new_canvas(uint16_t width, uint16_t height, uint16_t color) {
+    uint16_t* buf = (uint16_t*) malloc(width * height * sizeof(uint16_t));
+    lcd_canvas_t* canvas = lcd_new_shared_canvas(buf, width, height, color);
+    canvas->shared = false;
+    return canvas;
+}
+
 void lcd_free_canvas(lcd_canvas_t* canvas) {
-    free(canvas->buff);
+    if(!canvas->shared) free(canvas->buf);
     free(canvas);
 }
 
 void lcd_canvas_clear(lcd_canvas_t* canvas) {
-    uint16_t* buff = canvas->buff;
+    uint16_t* buf = canvas->buf;
     for(uint16_t y=0; y < canvas->height; y++) {
         for(uint16_t x=0; x < canvas->width; x++) {
-            *(buff++) = canvas->color;
+            *(buf++) = canvas->color;
         }
     }
 }
 
 void lcd_canvas_pixel(lcd_canvas_t* canvas, uint16_t x, uint16_t y, uint16_t color) {
     if(x < canvas->width && y < canvas->height) {
-        canvas->buff[x+y*canvas->width] = color;
+        canvas->buf[x+y*canvas->width] = color;
     }
 }
 

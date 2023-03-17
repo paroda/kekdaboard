@@ -282,7 +282,7 @@ void lcd_display_canvas(lcd_t* lcd, uint16_t xs, uint16_t ys, lcd_canvas_t* canv
     master_spi_select_slave(lcd->m_spi, lcd->spi_slave_id);
     lcd_set_window(lcd, xs, ys, canvas->width, canvas->height);
     lcd_send_cmd(lcd, LCD_CMD_RAMWR);
-    lcd_send_data_words(lcd, canvas->buff, canvas->width * canvas->height);
+    lcd_send_data_words(lcd, canvas->buf, canvas->width * canvas->height);
     master_spi_release_slave(lcd->m_spi, lcd->spi_slave_id);
 }
 

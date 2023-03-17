@@ -47,7 +47,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x02 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x03 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
