@@ -12,6 +12,10 @@
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
 
+#include "screen_model.h"
+#include "key_layout.h"
+#include "flash_store.h"
+
 #include "key_scan.h"
 #include "uart_comm.h"
 #include "rtc_ds3231.h"
@@ -42,11 +46,21 @@ typedef struct {
     kbd_led_t ledB;
 
     lcd_canvas_t* lcd_body; // 240x200 at 0,40 - 240,240
-
-    uint8_t flash_header[FLASH_PAGE_SIZE];
 } kbd_hw_t;
 
 extern kbd_hw_t kbd_hw;
+
+uint32_t board_millis();
+
+void init_hw_core1(peer_comm_config_t* comm);
+
+void init_hw_common();
+
+void init_hw_left();
+
+void init_hw_right();
+
+void init_flash_datasets(flash_dataset_t** flash_datasets);
 
 void lcd_display_body();
 

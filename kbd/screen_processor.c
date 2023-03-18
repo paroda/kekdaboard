@@ -2,6 +2,16 @@
 
 #include "screen_processor.h"
 
+kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
+    kbd_info_screen_welcome,
+    kbd_info_screen_scan,
+};
+
+kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
+    kbd_config_screen_date,
+    kbd_config_screen_power,
+};
+
 execute_screen_t* info_screen_executors[KBD_INFO_SCREEN_COUNT] = {
     execute_screen_welcome,
     execute_screen_scan,
@@ -14,11 +24,19 @@ respond_screen_t* info_screen_responders[KBD_INFO_SCREEN_COUNT] = {
 
 execute_screen_t* config_screen_executors[KBD_CONFIG_SCREEN_COUNT] = {
     execute_screen_date,
+    execute_screen_power,
 };
 
 respond_screen_t* config_screen_responders[KBD_CONFIG_SCREEN_COUNT] = {
     respond_screen_date,
+    respond_screen_power,
 };
+
+uint8_t get_screen_index(kbd_screen_t screen) {
+    bool config = screen & KBD_CONFIG_SCREEN_MASK;
+    kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
+    return screen - s0;
+}
 
 bool is_nav_event(kbd_screen_event_t event) {
     return event == kbd_screen_event_CONFIG
@@ -55,8 +73,7 @@ void mark_right_response() {
 
 static void execute_screen(kbd_screen_event_t event) {
     bool config = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
-    kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = kbd_system.screen - s0;
+    uint8_t si = get_screen_index(kbd_system.screen);
 
     (config ? config_screen_executors[si] : info_screen_executors[si])(event);
 }
@@ -111,9 +128,7 @@ void execute_screen_processor(kbd_screen_event_t event) {
 
 static void respond_screen(kbd_screen_t screen) {
     bool config = screen & KBD_CONFIG_SCREEN_MASK;
-    kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = screen - s0;
-
+    uint8_t si = get_screen_index(screen);
     (config ? config_screen_responders[si] : info_screen_responders[si])();
 }
 

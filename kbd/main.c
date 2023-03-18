@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "hw_model.h"
-
 #include "data_model.h"
 #include "input_processor.h"
 #include "screen_processor.h"
@@ -39,12 +38,6 @@
  *   - side right ->
  *     - read tb_motion
  */
-
-kbd_hw_t kbd_hw;
-
-uint32_t board_millis() {
-    return to_ms_since_boot(get_absolute_time());
-}
 
 void do_if_elapsed(uint32_t* t_ms, uint32_t dt_ms, void* param, void(*task)(void* param)) {
     uint32_t ms = board_millis();
@@ -111,8 +104,7 @@ void comm_task(void* param) {
 }
 
 void core1_main(void) {
-    uart_inst_t* uart = hw_inst_UART == 0 ? uart0 : uart1;
-    kbd_hw.comm = uart_comm_create(uart, hw_gpio_TX, hw_gpio_RX, kbd_system.comm);
+    init_hw_core1(kbd_system.comm);
 
     kbd_system.ledB = kbd_led_state_BLINK_HIGH;
 
@@ -166,60 +158,11 @@ void core1_main(void) {
 
 void init_core1() { multicore_launch_core1(core1_main); }
 
-void init_hw_common() {
-    i2c_inst_t* i2c = hw_inst_I2C == 0 ? i2c0 : i2c1;
-    kbd_hw.rtc = rtc_create(i2c, hw_gpio_SCL, hw_gpio_SDA);
-    rtc_set_default_instance(kbd_hw.rtc);
+void load_flash() {
+    memset(kbd_system.flash_header, 0, KBD_FLASH_HEADER_SIZE);
+    flash_read(kbd_hw.flash, 0, kbd_system.flash_header, KBD_FLASH_HEADER_SIZE);
 
-    spi_inst_t* spi = hw_inst_SPI == 0 ? spi0 : spi1;
-    kbd_hw.m_spi = master_spi_create(spi, 3, hw_gpio_MOSI, hw_gpio_MISO, hw_gpio_CLK);
-
-    kbd_hw.flash = flash_create(kbd_hw.m_spi, hw_gpio_CS_flash);
-
-    // init LEDs
-    kbd_hw.led.gpio = hw_gpio_LED;
-    kbd_hw.led.on = false;
-    kbd_hw.ledB.gpio = 25;
-    kbd_hw.ledB.on = false;
-
-    uint8_t gpio_leds[2] = { kbd_hw.led.gpio, kbd_hw.ledB.gpio };
-    for(uint i=0; i<2; i++) {
-        uint8_t gpio = gpio_leds[i];
-        gpio_init(gpio);
-        gpio_set_dir(gpio, GPIO_OUT);
-        gpio_put(gpio, true);
-    }
-
-    // init key scanner
-    uint8_t gpio_rows[KEY_ROW_COUNT] = hw_gpio_rows;
-    uint8_t gpio_cols[KEY_COL_COUNT] = hw_gpio_cols;
-    kbd_hw.ks = key_scan_create(KEY_ROW_COUNT, KEY_COL_COUNT, gpio_rows, gpio_cols);
-}
-
-kbd_side_t detect_kbd_side() {
-    memset(kbd_hw.flash_header, 0, FLASH_PAGE_SIZE);
-    flash_read(kbd_hw.flash, 0, kbd_hw.flash_header, FLASH_PAGE_SIZE);
-    return (kbd_hw.flash_header[hw_flash_addr_side] == hw_flash_side_left) ?
-        kbd_side_LEFT : kbd_side_RIGHT;
-}
-
-void init_hw_left() {
-    // setup lcd
-    kbd_hw.lcd = lcd_create(kbd_hw.m_spi,
-                            hw_gpio_CS_lcd, hw_gpio_lcd_DC, hw_gpio_lcd_RST, hw_gpio_lcd_BL,
-                            240, 240,
-                            lcd_orient_Normal);
-    lcd_set_backlight_level(kbd_hw.lcd, 30); // 30%
-    lcd_clear(kbd_hw.lcd, BROWN);
-    kbd_hw.lcd_body = lcd_new_canvas(240, 200, BROWN);
-    lcd_show_welcome();
-}
-
-void init_hw_right() {
-    // setup track ball
-    kbd_hw.tb = tb_create(kbd_hw.m_spi,
-                          hw_gpio_CS_tb, hw_gpio_tb_MT, hw_gpio_tb_RST,
-                          1, true, false, false);
+    init_flash_datasets(kbd_system.flash_datasets);
 }
 
 void rtc_task(void* param) {
@@ -421,6 +364,8 @@ int main(void) {
 
     init_hw_common();
 
+    load_flash();
+
     usb_hid_init();
 
     kbd_system.led = kbd_led_state_BLINK_LOW;
@@ -428,8 +373,7 @@ int main(void) {
 
     init_core1();
 
-    kbd_side_t side = detect_kbd_side();
-    set_kbd_side(side);
+    init_kbd_side();
 
     kbd_system.led = kbd_led_state_BLINK_HIGH;
 

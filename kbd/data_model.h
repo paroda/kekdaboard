@@ -1,9 +1,11 @@
 #ifndef _DATA_MODEL_H
 #define _DATA_MODEL_H
 
-#include "hw_config.h"
+#include "screen_model.h"
 #include "peer_comm.h"
 #include "rtc_model.h"
+#include "key_layout.h"
+#include "flash_store.h"
 
 /*
  * Tasks (10ms process cycle)
@@ -47,19 +49,22 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x07 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x0A // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
 #define KBD_TASK_REQUEST_SIZE 32
 #define KBD_TASK_RESPONSE_SIZE 32
 
-#define KBD_CONFIG_SCREEN_MASK 0x80
-#define KBD_INFO_SCREEN_COUNT 2
-#define KBD_CONFIG_SCREEN_COUNT 1
+#define KBD_FLASH_HEADER_SIZE 256 // one flash page
 
-#define KEY_CODE_MAX 6 // same as in TinyUSB
-
+// FLASH 1st page (256 bytes) (permanent)
+// byes 0x00-0x0F 16bytes for my name
+#define KBD_FLASH_NAME "Pradyumna"
+// designate side (left: 0xF0, right:0xF1)
+#define KBD_FLASH_ADDR_SIDE 0x10
+#define KBD_FLASH_SIDE_LEFT 0xF0
+#define KBD_FLASH_SIDE_RIGHT 0xF1
 
 typedef enum {
     kbd_side_NONE = 0,
@@ -97,33 +102,6 @@ typedef enum {
     kbd_led_state_BLINK_NORMAL, // 500, 500
     kbd_led_state_BLINK_FAST    // 100, 100
 } kbd_led_state_t;
-
-typedef enum {
-    // info screens
-    kbd_info_screen_welcome = 0x00,
-    kbd_info_screen_scan,
-    // config screens
-    kbd_config_screen_date = 0x80
-} kbd_screen_t;
-
-typedef enum {
-    kbd_screen_event_NONE = 0,
-    kbd_screen_event_INIT,
-    // only info screen
-    kbd_screen_event_CONFIG, // SUN+L.MOON
-    // only config screen
-    kbd_screen_event_UP,     // ArrowUp
-    kbd_screen_event_DOWN,   // ArrowDown
-    kbd_screen_event_LEFT,   // ArrowLeft
-    kbd_screen_event_RIGHT,  // ArrowRight
-    kbd_screen_event_SEL_NEXT,  // Space
-    kbd_screen_event_SEL_PREV,  // Space+L.MOON
-    kbd_screen_event_SAVE,   // Enter
-    kbd_screen_event_EXIT,   // Escape
-    // both info and config screens
-    kbd_screen_event_NEXT,   // SUN
-    kbd_screen_event_PREV,   // SUN+R.MOON
-} kbd_screen_event_t;
 
 typedef struct {
     // be careful about the size due to packing/alignment
@@ -245,6 +223,13 @@ typedef struct {
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock
     volatile kbd_led_state_t ledB; // left/right: core1 state
 
+    // flash loaded and saved on both sides, keeping them in sync
+    // flash data is meant to be accessed by primary (core0) loop
+    // the primary loop should maintain some more fields for others
+    // the update is done via config screens which runs in primary loop
+    uint8_t flash_header[KBD_FLASH_HEADER_SIZE];
+    flash_dataset_t* flash_datasets[KBD_CONFIG_SCREEN_COUNT];
+
     peer_comm_config_t* comm;
     spin_lock_t* spin_lock;
 } kbd_system_t;
@@ -255,16 +240,13 @@ typedef struct {
 
 extern kbd_system_t kbd_system;
 
-extern kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT];
-extern kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT];
-
 /*
  * Model functions
  */
 
 void init_data_model();
 
-void set_kbd_side(kbd_side_t side);
+void init_kbd_side(); // call after loading the flash_header
 
 void set_kbd_role(kbd_role_t role);
 

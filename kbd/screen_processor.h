@@ -49,4 +49,7 @@ respond_screen_t respond_screen_scan;
 execute_screen_t execute_screen_date;
 respond_screen_t respond_screen_date;
 
+execute_screen_t execute_screen_power;
+respond_screen_t respond_screen_power;
+
 #endif

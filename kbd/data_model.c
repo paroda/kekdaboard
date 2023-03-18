@@ -4,15 +4,6 @@
 
 #include "data_model.h"
 
-kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
-    kbd_info_screen_welcome,
-    kbd_info_screen_scan,
-};
-
-kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
-    kbd_config_screen_date,
-};
-
 kbd_system_t kbd_system = {
     .version = 0,
     .side = kbd_side_NONE,
@@ -89,8 +80,10 @@ void init_data_model() {
     kbd_system.comm = new_peer_comm_config(KBD_VERSION, KBD_SB_COUNT, sbs, data_inits);
 }
 
-void set_kbd_side(kbd_side_t side) {
-    kbd_system.side = side;
+// to be called after loading the flash_header data
+void init_kbd_side() {
+    kbd_system.side = (kbd_system.flash_header[KBD_FLASH_ADDR_SIDE] == KBD_FLASH_SIDE_LEFT) ?
+        kbd_side_LEFT : kbd_side_RIGHT;
 }
 
 void set_kbd_role(kbd_role_t role) {

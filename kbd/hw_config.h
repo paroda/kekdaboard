@@ -31,18 +31,7 @@
 
 #define hw_gpio_LED 28
 
-#define KEY_ROW_COUNT 6
 #define hw_gpio_rows  {15, 14, 13, 12, 11, 10} // 6 rows
-
-#define KEY_COL_COUNT 7
 #define hw_gpio_cols {22, 21, 20, 19, 18, 17, 16} // 7 cols
-
-// FLASH 1st page (256 bytes) (permanent)
-// byes 0x00-0x0F 16bytes for my name
-#define hw_flash_name "Pradyumna"
-// designate side (left: 0xF0, right:0xF1)
-#define hw_flash_addr_side 0x10
-#define hw_flash_side_left 0xF0
-#define hw_flash_side_right 0xF1
 
 #endif

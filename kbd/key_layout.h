@@ -1,7 +1,11 @@
 #ifndef _KEY_LAYOUT_H_
 #define _KEY_LAYOUT_H_
 
-#include "data_model.h"
+#include <stdint.h>
+
+#define KEY_ROW_COUNT 6
+#define KEY_COL_COUNT 7
+#define KEY_CODE_MAX 6 // same as in TinyUSB
 
 // special keys
 #define KBD_KEY_SUN         0xF1

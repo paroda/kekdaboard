@@ -2,7 +2,6 @@
 
 #include "class/hid/hid.h"
 
-#include "key_layout.h"
 #include "input_processor.h"
 
 #define KEY_PRESS_MAX 16
@@ -30,6 +29,9 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
 }
 
 // update the hid_report_out and return the screen event if any
+
+#define TB_SCROLL_SCALE 128
+#define TB_DELTA_SCALE 16
 
 kbd_screen_event_t execute_input_processor() {
     const uint8_t* key_press[KEY_PRESS_MAX];
@@ -147,11 +149,11 @@ kbd_screen_event_t execute_input_processor() {
 
     if(kbd_system.right_tb_motion.has_motion) {
         if(moon) {
-            outm.scrollX = kbd_system.right_tb_motion.dx/32;
-            outm.scrollY = kbd_system.right_tb_motion.dy/32;
+            outm.scrollX = kbd_system.right_tb_motion.dx/TB_SCROLL_SCALE;
+            outm.scrollY = kbd_system.right_tb_motion.dy/TB_SCROLL_SCALE;
         } else {
-            outm.deltaX = kbd_system.right_tb_motion.dx/4;
-            outm.deltaY = kbd_system.right_tb_motion.dy/4;
+            outm.deltaX = kbd_system.right_tb_motion.dx/TB_DELTA_SCALE;
+            outm.deltaY = kbd_system.right_tb_motion.dy/TB_DELTA_SCALE;
         }
     }
 
