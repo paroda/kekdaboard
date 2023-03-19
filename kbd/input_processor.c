@@ -215,7 +215,7 @@ kbd_screen_event_t execute_input_processor() {
         } else if(right_press) {
             screen_event = kbd_screen_event_RIGHT;
         } else if(space_press) {
-            screen_event = lmoon ? kbd_screen_event_PREV : kbd_screen_event_NEXT;
+            screen_event = moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
         } else if(enter_press) {
             screen_event = kbd_screen_event_SAVE;
         } else if(escape_press) {

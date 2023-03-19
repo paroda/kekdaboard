@@ -29,9 +29,9 @@ static uint16_t set_field(uint8_t field, uint8_t value) {
     case 1: return date.month = value > 12 ? 1 : value < 1 ? 12 : value;
     case 2: return date.date = value > 31 ? 1 : value < 1 ? 31 : value;
     case 3: return date.weekday = value > 7 ? 1 : value < 1 ? 7 : value;
-    case 4: return date.hour = value % 24;
-    case 5: return date.minute = value % 60;
-    case 6: return date.second = value % 60;
+    case 4: return date.hour = value > 24 ? 23 : value > 23 ? 0 : value;
+    case 5: return date.minute = value > 60 ? 59 : value > 59 ? 0 : value;
+    case 6: return date.second = value > 60 ? 59 : value > 59 ? 0 : value;
     default: return value; // invalid field
     }
 }
@@ -67,7 +67,7 @@ static void init_screen() {
     lcd_display_body();
 }
 
-static void update_screen(uint8_t sel_field) {
+static void update_screen(uint8_t field, uint8_t sel_field) {
     if(kbd_system.side != kbd_side_LEFT) return;
 
     lcd_canvas_t* cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 120, 24, LCD_BODY_BG);
@@ -79,8 +79,15 @@ static void update_screen(uint8_t sel_field) {
     }
     draw_field(cv, 0, 0, sel_field, true);
     lcd_display_body_canvas(60, 10+sel_field*26, cv);
-
     lcd_free_canvas(cv);
+
+    if(dirty) {
+        cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 10, 10, LCD_BODY_BG);
+        lcd_canvas_circle(cv, 5, 5, 5, RED, 1, true);
+        lcd_display_body_canvas(220, 10, cv);
+        lcd_free_canvas(cv);
+    }
+
 }
 
 void execute_screen_date(kbd_screen_event_t event) {
@@ -98,30 +105,32 @@ void execute_screen_date(kbd_screen_event_t event) {
         memcpy(lreq+4, &date, sizeof(rtc_datetime_t));
         dirty = false;
         break;
-    case kbd_screen_event_RIGHT:
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 1;
-        lreq[3] = field = field==FIELD_COUNT-1 ? 0 : field+1;
-        break;
     case kbd_screen_event_LEFT:
+    case kbd_screen_event_UP:
         mark_left_request(kbd_config_screen_date);
         lreq[2] = 1;
-        lreq[3] = field = field>0 ? field-1 : FIELD_COUNT-1;
+        lreq[3] = field;
+        lreq[4] = field = field>0 ? field-1 : FIELD_COUNT-1;
         break;
-    case kbd_screen_event_UP:
+    case kbd_screen_event_RIGHT:
+    case kbd_screen_event_DOWN:
+        mark_left_request(kbd_config_screen_date);
+        lreq[2] = 1;
+        lreq[3] = field;
+        lreq[4] = field = field==FIELD_COUNT-1 ? 0 : field+1;
+        break;
     case kbd_screen_event_SEL_PREV:
         mark_left_request(kbd_config_screen_date);
         lreq[2] = 2;
         lreq[3] = field;
-        lreq[4] = set_field(field, get_field(field) + 1);
+        lreq[4] = set_field(field, get_field(field) - 1);
         lreq[5] = dirty = true;
         break;
-    case kbd_screen_event_DOWN:
     case kbd_screen_event_SEL_NEXT:
         mark_left_request(kbd_config_screen_date);
         lreq[2] = 2;
         lreq[3] = field;
-        lreq[4] = set_field(field, get_field(field) - 1);
+        lreq[4] = set_field(field, get_field(field) + 1);
         lreq[5] = dirty = true;
         break;
     case kbd_screen_event_SAVE:
@@ -146,13 +155,14 @@ void respond_screen_date(void) {
         init_screen();
         break;
     case 1: // select field
-        update_screen(req[3]);
-        field = req[3];
+        field = req[4];
+        update_screen(req[3], req[4]);
         break;
     case 2: // set field
-        set_field(req[3], req[4]);
-        update_screen(req[3]);
         field = req[3];
+        set_field(req[3], req[4]);
+        dirty = req[5];
+        update_screen(req[3], req[3]);
         break;
     case 3: // save
         field = req[3];
