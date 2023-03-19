@@ -101,8 +101,6 @@ void execute_screen_processor(kbd_screen_event_t event) {
         return; // no screen change when pending reqeust
     }
 
-    pending_event = kbd_screen_event_NONE;
-
     // change screen if asked for
     if(is_nav_event(event)) {
         bool config = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;

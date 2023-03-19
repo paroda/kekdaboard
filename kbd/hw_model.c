@@ -89,3 +89,19 @@ void init_flash_datasets(flash_dataset_t** flash_datasets) {
                        flash_store_read, flash_store_page_program, flash_store_sector_erase);
     for(i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) flash_store_load(flash_datasets[i]);
 }
+
+void lcd_display_body() {
+    lcd_display_canvas(kbd_hw.lcd, 0, 40, kbd_hw.lcd_body);
+}
+
+void lcd_display_body_canvas(uint16_t xs, uint16_t ys, lcd_canvas_t *canvas) {
+    lcd_display_canvas(kbd_hw.lcd, xs, ys+40, canvas);
+}
+
+void lcd_show_welcome() {
+    lcd_canvas_clear(kbd_hw.lcd_body);
+    // w:18x11=198 h:16, x:21-219
+    lcd_canvas_text(kbd_hw.lcd_body, 21, 92, "Welcome Pradyumna!",
+                    &lcd_font16, LCD_BODY_FG, LCD_BODY_BG);
+    lcd_display_body();
+}
