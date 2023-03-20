@@ -175,6 +175,8 @@ void rtc_task(void* param) {
 void lcd_display_head_task(void* param) {
     (void)param;
 
+    lcd_update_backlight(kbd_system.backlight);
+
     static uint8_t old_state[10];
     uint8_t state[10] = {
         kbd_system.screen & KBD_CONFIG_SCREEN_MASK ? 1 : 0,
@@ -259,6 +261,23 @@ void tb_scan_task(void* param) {
     write_shared_buffer(kbd_system.sb_right_tb_motion, time_us_64(), &d);
 }
 
+void adjust_backlight(bool high) {
+
+}
+
+kbd_event_t process_basic_event(kbd_event_t event) {
+    switch(event) {
+    case kbd_backlight_event_HIGH:
+        kbd_system.backlight = kbd_system.backlight <= 90 ? kbd_system.backlight+10 : 100;
+        return kbd_event_NONE;
+    case kbd_backlight_event_LOW:
+        kbd_system.backlight = kbd_system.backlight >= 10 ? kbd_system.backlight-10 : 0;
+        return kbd_event_NONE;
+    default:
+        return event;
+    }
+}
+
 /*
  * Processing:
  * sb_left_key_press      -->  sb_state
@@ -297,9 +316,12 @@ void process_inputs(void* param) {
     read_shared_buffer(kbd_system.sb_right_tb_motion, &ts, &kbd_system.right_tb_motion);
 
     // process inputs to update the hid_report_out and generate event
-    kbd_screen_event_t event = execute_input_processor();
+    kbd_event_t event = execute_input_processor();
 
-    // send events to screens processor to process the responses and raise requests if any
+    // handle basic event
+    event = process_basic_event(event);
+
+    // send event to screens processor to process the responses and raise requests if any
     execute_screen_processor(event);
 
     // set the task requests
@@ -313,9 +335,10 @@ void process_inputs(void* param) {
                                 kbd_system.right_task_request_ts, kbd_system.right_task_request);
     }
 
-    // note the usb state and screen
+    // note other state changes
     kbd_system.state.screen = kbd_system.screen;
     kbd_system.state.usb_hid_state = kbd_system.usb_hid_state;
+    kbd_system.state.backlight = kbd_system.backlight;
 
     // update the state if changed
     if(memcmp(&old_state, &kbd_system.state, sizeof(kbd_state_t)) != 0) {
@@ -443,6 +466,7 @@ int main(void) {
             if(kbd_system.state_ts != kbd_system.sb_state->ts)
                 read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
 
+            kbd_system.backlight = kbd_system.state.backlight;
             kbd_system.usb_hid_state = kbd_system.state.usb_hid_state;
             kbd_system.screen = kbd_system.state.screen;
         }

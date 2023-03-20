@@ -49,7 +49,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x01 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x05 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -113,6 +113,7 @@ typedef struct {
     bool caps_lock;
     bool num_lock;
     bool scroll_lock;
+    uint8_t backlight; // 0-100 %
 } kbd_state_t;
 
 /*
@@ -156,9 +157,9 @@ typedef struct {
 } hid_report_out_keyboard_t;
 
 typedef struct {
-    bool has_events;
-    hid_report_out_mouse_t mouse;
     hid_report_out_keyboard_t keyboard;
+    hid_report_out_mouse_t mouse;
+    bool has_events;
 } hid_report_out_t;
 
 /*
@@ -172,9 +173,6 @@ typedef struct {
     volatile kbd_role_t role;
 
     volatile bool ready;
-
-    rtc_datetime_t date;
-    uint8_t temperature;
 
     uint64_t state_ts;
     kbd_state_t state;
@@ -217,8 +215,14 @@ typedef struct {
     shared_buffer_t* sb_left_task_response;
     shared_buffer_t* sb_right_task_response;
 
+    volatile uint8_t backlight; // 0-100 %
     volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
+
+    // side local data
+
+    rtc_datetime_t date;
+    uint8_t temperature;
 
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock
     volatile kbd_led_state_t ledB; // left/right: core1 state

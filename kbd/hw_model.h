@@ -56,6 +56,8 @@ void init_hw_core1(peer_comm_config_t* comm);
 
 void init_hw_common();
 
+void lcd_update_backlight(uint8_t level);
+
 void init_hw_left();
 
 void init_hw_right();

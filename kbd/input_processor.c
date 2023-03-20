@@ -33,12 +33,57 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
 #define TB_SCROLL_SCALE 128
 #define TB_DELTA_SCALE 16
 
-kbd_screen_event_t execute_input_processor() {
+#define TRACK_KEY_COUNT 9
+
+uint8_t track_keys[TRACK_KEY_COUNT] = {
+    KBD_KEY_SUN,
+    KBD_KEY_BACKLIGHT,
+    HID_KEY_ARROW_UP,
+    HID_KEY_ARROW_DOWN,
+    HID_KEY_ARROW_LEFT,
+    HID_KEY_ARROW_RIGHT,
+    HID_KEY_SPACE,
+    HID_KEY_ENTER,
+    HID_KEY_ESCAPE,
+};
+
+typedef struct {
+    uint8_t sun;
+    uint8_t backlight;
+    uint8_t up;
+    uint8_t down;
+    uint8_t left;
+    uint8_t right;
+    uint8_t space;
+    uint8_t enter;
+    uint8_t escape;
+} track_key_press_t;
+
+track_key_press_t new_key_press; // newly pressed
+track_key_press_t old_key_press; // previousl pressed
+track_key_press_t cur_key_press; // currently pressed
+
+void update_track_key_press() {
+    static bool init = true;
+    if(init) {
+        memset(&old_key_press, 0, sizeof(track_key_press_t));
+        init = false;
+    }
+    uint8_t* nkp = (uint8_t*) &new_key_press;
+    uint8_t* okp = (uint8_t*) &old_key_press;
+    uint8_t* ckp = (uint8_t*) &cur_key_press;
+    for(uint8_t i=0; i<TRACK_KEY_COUNT; i++) {
+        nkp[i] = ckp[i] && !okp[i] ? 1 : 0;
+        okp[i] = ckp[i];
+    }
+}
+
+kbd_event_t execute_input_processor() {
     const uint8_t* key_press[KEY_PRESS_MAX];
     uint8_t n = key_layout_read(key_press);
 
     bool sun=false, moon=false, lmoon=false, rmoon=false;
-    int i;
+    int i,j;
     for(i=0; i<n; i++) {
         switch(key_press[i][1]) {
         case KBD_KEY_SUN:
@@ -60,8 +105,7 @@ kbd_screen_event_t execute_input_processor() {
     hid_report_out_mouse_t outm;
     memset(&outm, 0, sizeof(hid_report_out_mouse_t));
 
-    bool k_up=false, k_down=false, k_left=false, k_right=false;
-    bool k_space=false, k_enter=false, k_escape=false;
+    memset(&cur_key_press, 0, sizeof(track_key_press_t));
 
     uint8_t n_key_codes=0;
     for(i=0; i<n; i++) {
@@ -96,53 +140,36 @@ kbd_screen_event_t execute_input_processor() {
         }
         // read key_codes
         uint8_t code = (moon && key_press[i][2]) ? key_press[i][2] : key_press[i][1];
-        switch(code) {
-        case KBD_KEY_SUN:
-        case KBD_KEY_LEFT_MOON:
-        case KBD_KEY_RIGHT_MOON:
-            break;
-        case KBD_KEY_MOUSE_LEFT:
-            outm.left=true;
-            break;
-        case KBD_KEY_MOUSE_RIGHT:
-            outm.right=true;
-            break;
-        case KBD_KEY_MOUSE_MIDDLE:
-            outm.middle=true;
-            break;
-        case KBD_KEY_MOUSE_BACKWARD:
-            outm.backward=true;
-            break;
-        case KBD_KEY_MOUSE_FORWARD:
-            outm.forward=true;
-            break;
-        default: // normal keys
-            outk.key_codes[n_key_codes++]=code;
-            // note keys for screen event
+        if(key_press[i][1]==KBD_KEY_SUN
+           || key_press[i][1]==KBD_KEY_LEFT_MOON
+           || key_press[i][1]==KBD_KEY_RIGHT_MOON) {
+            if(sun) cur_key_press.sun = 1;
+        } else {
             switch(code) {
-            case HID_KEY_ARROW_UP:
-                k_up=true;
+            case KBD_KEY_MOUSE_LEFT:
+                outm.left=true;
                 break;
-            case HID_KEY_ARROW_DOWN:
-                k_down=true;
+            case KBD_KEY_MOUSE_RIGHT:
+                outm.right=true;
                 break;
-            case HID_KEY_ARROW_LEFT:
-                k_left=true;
+            case KBD_KEY_MOUSE_MIDDLE:
+                outm.middle=true;
                 break;
-            case HID_KEY_ARROW_RIGHT:
-                k_right=true;
+            case KBD_KEY_MOUSE_BACKWARD:
+                outm.backward=true;
                 break;
-            case HID_KEY_SPACE:
-                k_space=true;
+            case KBD_KEY_MOUSE_FORWARD:
+                outm.forward=true;
                 break;
-            case HID_KEY_ENTER:
-                k_enter=true;
-                break;
-            case HID_KEY_ESCAPE:
-                k_escape=true;
-                break;
-            default: // skip
-                break;
+            default: // normal keys
+                outk.key_codes[n_key_codes++]=code;
+                // note keys for screen event
+                for(j=0; j<TRACK_KEY_COUNT; j++) {
+                    if(track_keys[j]==code) {
+                        ((uint8_t*)&cur_key_press)[j] = 1;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -164,62 +191,32 @@ kbd_screen_event_t execute_input_processor() {
                        || kbd_system.right_tb_motion.has_motion);
 
     // note key press events for screen
-    static bool sun_prev = false;
-    bool sun_press = sun && !sun_prev;
-    sun_prev = sun;
+    update_track_key_press();
 
-    static bool up_prev = false;
-    bool up_press = k_up && !up_prev;
-    up_prev = k_up;
-
-    static bool down_prev = false;
-    bool down_press = k_down && !down_prev;
-    down_prev = k_down;
-
-    static bool left_prev = false;
-    bool left_press = k_left && ! left_prev;
-    left_prev = k_left;
-
-    static bool right_prev = false;
-    bool right_press = k_right && !right_prev;
-    right_prev = k_right;
-
-    static bool space_prev = false;
-    bool space_press = k_space && !space_prev;
-    space_prev = k_space;
-
-    static bool enter_prev = false;
-    bool enter_press = k_enter && !enter_prev;
-    enter_prev = k_enter;
-
-    static bool escape_prev = false;
-    bool escape_press = k_escape && !escape_prev;
-    escape_prev = k_escape;
-
-    kbd_screen_event_t screen_event = kbd_screen_event_NONE;
+    kbd_event_t event = kbd_event_NONE;
 
     bool config_mode = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     if(config_mode) {
+        // no hid report in config mode
         memset(&kbd_system.hid_report_out, 0, sizeof(hid_report_out_t));
 
         // config screen event
-        if(sun_press) {
-            if(rmoon) screen_event = kbd_screen_event_NEXT;
-            else screen_event = kbd_screen_event_PREV;
-        } else if(up_press) {
-            screen_event = kbd_screen_event_UP;
-        } else if(down_press) {
-            screen_event = kbd_screen_event_DOWN;
-        } else if(left_press) {
-            screen_event = kbd_screen_event_LEFT;
-        } else if(right_press) {
-            screen_event = kbd_screen_event_RIGHT;
-        } else if(space_press) {
-            screen_event = moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
-        } else if(enter_press) {
-            screen_event = kbd_screen_event_SAVE;
-        } else if(escape_press) {
-            screen_event = kbd_screen_event_EXIT;
+        if(new_key_press.sun) {
+            event = moon ? kbd_screen_event_PREV : kbd_screen_event_NEXT;
+        } else if(new_key_press.up) {
+            event = kbd_screen_event_UP;
+        } else if(new_key_press.down) {
+            event = kbd_screen_event_DOWN;
+        } else if(new_key_press.left) {
+            event = kbd_screen_event_LEFT;
+        } else if(new_key_press.right) {
+            event = kbd_screen_event_RIGHT;
+        } else if(new_key_press.space) {
+            event = moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
+        } else if(new_key_press.enter) {
+            event = kbd_screen_event_SAVE;
+        } else if(new_key_press.escape) {
+            event = kbd_screen_event_EXIT;
         }
     } else {
         kbd_system.hid_report_out.has_events = has_events;
@@ -231,12 +228,14 @@ kbd_screen_event_t execute_input_processor() {
         kbd_system.hid_report_out.mouse = outm;
 
         // info screen event
-        if(sun_press) {
-            if(lmoon) screen_event = kbd_screen_event_CONFIG;
-            else if(rmoon) screen_event = kbd_screen_event_PREV;
-            else screen_event = kbd_screen_event_NEXT;
+        if(new_key_press.sun) {
+            if(lmoon) event = kbd_screen_event_CONFIG;
+            else if(rmoon) event = kbd_screen_event_PREV;
+            else event = kbd_screen_event_NEXT;
+        } else if(new_key_press.backlight) {
+            event = lmoon ? kbd_backlight_event_HIGH : kbd_backlight_event_LOW;
         }
     }
 
-    return screen_event;
+    return event;
 }

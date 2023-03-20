@@ -29,7 +29,7 @@ const uint8_t key_layout[KEY_LAYOUT_ROW_COUNT][KEY_LAYOUT_COL_COUNT][3] = {
         {0, HID_KEY_ESCAPE, 0},
 
         /// Col 7
-        {0, HID_KEY_PRINT_SCREEN, 0},
+        {0, HID_KEY_PRINT_SCREEN, KBD_KEY_BACKLIGHT},
 
         /// Col 8
         {0, HID_KEY_F7, 0},

@@ -140,7 +140,7 @@ static void update_screen() {
     lcd_free_canvas(cv1);
 }
 
-void execute_screen_scan(kbd_screen_event_t event) {
+void execute_screen_scan(kbd_event_t event) {
     uint8_t* req = kbd_system.left_task_request;
 
     if(is_nav_event(event)) return;

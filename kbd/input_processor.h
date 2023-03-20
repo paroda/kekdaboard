@@ -3,6 +3,6 @@
 
 #include "data_model.h"
 
-kbd_screen_event_t execute_input_processor();
+kbd_event_t execute_input_processor();
 
 #endif

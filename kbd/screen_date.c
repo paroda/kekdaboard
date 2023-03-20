@@ -90,7 +90,7 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
 
 }
 
-void execute_screen_date(kbd_screen_event_t event) {
+void execute_screen_date(kbd_event_t event) {
     uint8_t* lreq = kbd_system.left_task_request;
     uint8_t* rreq = kbd_system.right_task_request;
 

@@ -55,13 +55,21 @@ void init_hw_common() {
     kbd_hw.ks = key_scan_create(KEY_ROW_COUNT, KEY_COL_COUNT, gpio_rows, gpio_cols);
 }
 
+void lcd_update_backlight(uint8_t level) {
+    static uint8_t old = 0;
+    if(old!=level) {
+        lcd_set_backlight_level(kbd_hw.lcd, level); // 30%
+        old = level;
+    }
+}
+
 void init_hw_left() {
     // setup lcd
     kbd_hw.lcd = lcd_create(kbd_hw.m_spi,
                             hw_gpio_CS_lcd, hw_gpio_lcd_DC, hw_gpio_lcd_RST, hw_gpio_lcd_BL,
                             240, 240,
                             lcd_orient_Normal);
-    lcd_set_backlight_level(kbd_hw.lcd, 30); // 30%
+    lcd_update_backlight(30);
     lcd_clear(kbd_hw.lcd, BROWN);
     kbd_hw.lcd_body = lcd_new_canvas(240, 200, BROWN);
     lcd_show_welcome();

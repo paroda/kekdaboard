@@ -3,7 +3,7 @@
 
 #include "data_model.h"
 
-bool is_nav_event(kbd_screen_event_t event);
+bool is_nav_event(kbd_event_t event);
 
 void mark_left_request(kbd_screen_t screen);
 
@@ -25,7 +25,7 @@ void mark_right_response();
 // each screen creates its own request and responds to it
 // and it must clear the request upon completion
 
-typedef void execute_screen_t (kbd_screen_event_t event);
+typedef void execute_screen_t (kbd_event_t event);
 
 typedef void respond_screen_t(void);
 

@@ -38,7 +38,7 @@ uint8_t get_screen_index(kbd_screen_t screen) {
     return screen - s0;
 }
 
-bool is_nav_event(kbd_screen_event_t event) {
+bool is_nav_event(kbd_event_t event) {
     return event == kbd_screen_event_CONFIG
         || event == kbd_screen_event_EXIT
         || event == kbd_screen_event_NEXT
@@ -71,16 +71,16 @@ void mark_right_response() {
     kbd_system.right_task_response_ts = time_us_64();
 }
 
-static void execute_screen(kbd_screen_event_t event) {
+static void execute_screen(kbd_event_t event) {
     bool config = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     uint8_t si = get_screen_index(kbd_system.screen);
 
     (config ? config_screen_executors[si] : info_screen_executors[si])(event);
 }
 
-void execute_screen_processor(kbd_screen_event_t event) {
-    static kbd_screen_event_t pending_event = kbd_screen_event_NONE;
-    event = event==kbd_screen_event_NONE ? pending_event : event;
+void execute_screen_processor(kbd_event_t event) {
+    static kbd_event_t pending_event = kbd_event_NONE;
+    event = event==kbd_event_NONE ? pending_event : event;
 
     uint8_t* lreq = kbd_system.left_task_request;
     uint8_t* lres = kbd_system.left_task_response;
@@ -94,7 +94,7 @@ void execute_screen_processor(kbd_screen_event_t event) {
 
     // execute the current screen, when not pending request
     execute_screen(event);
-    pending_event = kbd_screen_event_NONE;
+    pending_event = kbd_event_NONE;
 
     if(lreq[0]!=lres[0] || rreq[0]!=rres[0]) {
         if(is_nav_event(event)) pending_event = event;
