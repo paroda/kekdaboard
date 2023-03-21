@@ -29,8 +29,15 @@ typedef void execute_screen_t (kbd_event_t event);
 
 typedef void respond_screen_t(void);
 
+typedef void init_config_screen_default_t();
+
+typedef void apply_config_screen_t();
+
 execute_screen_t execute_screen_processor;
 respond_screen_t respond_screen_processor;
+
+extern init_config_screen_default_t* config_screen_default_initiators[KBD_CONFIG_SCREEN_COUNT];
+extern apply_config_screen_t* config_screen_appliers[KBD_CONFIG_SCREEN_COUNT];
 
 /*
  * Info Screens
@@ -48,8 +55,12 @@ respond_screen_t respond_screen_scan;
 
 execute_screen_t execute_screen_date;
 respond_screen_t respond_screen_date;
+init_config_screen_default_t init_config_screen_default_date;
+apply_config_screen_t  apply_config_screen_date;
 
 execute_screen_t execute_screen_power;
 respond_screen_t respond_screen_power;
+init_config_screen_default_t init_config_screen_default_power;
+apply_config_screen_t  apply_config_screen_power;
 
 #endif

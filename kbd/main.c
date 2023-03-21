@@ -159,10 +159,17 @@ void core1_main(void) {
 void init_core1() { multicore_launch_core1(core1_main); }
 
 void load_flash() {
+    // load FLASH HEADER
     memset(kbd_system.flash_header, 0, KBD_FLASH_HEADER_SIZE);
     flash_read(kbd_hw.flash, 0, kbd_system.flash_header, KBD_FLASH_HEADER_SIZE);
 
+    // load FLASH DATASETS
     init_flash_datasets(kbd_system.flash_datasets);
+
+    for(uint8_t i=0; i<KBD_CONFIG_SCREEN_COUNT; i++)
+        config_screen_default_initiators[i]();
+
+    load_flash_datasets(kbd_system.flash_datasets);
 }
 
 void rtc_task(void* param) {
@@ -170,6 +177,21 @@ void rtc_task(void* param) {
 
     rtc_read_time(kbd_hw.rtc, &kbd_system.date);
     kbd_system.temperature = rtc_get_temperature(kbd_hw.rtc);
+}
+
+void apply_configs() {
+    static bool init=true;
+    static int16_t applied[KBD_CONFIG_SCREEN_COUNT];
+
+    for(uint8_t i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) {
+        flash_dataset_t* fd = kbd_system.flash_datasets[i];
+        if(applied[i]==fd->pos && !init) continue;
+
+        config_screen_appliers[i]();
+        applied[i] = fd->pos;
+    }
+
+    init = false;
 }
 
 void lcd_display_head_task(void* param) {
@@ -278,6 +300,20 @@ kbd_event_t process_basic_event(kbd_event_t event) {
     }
 }
 
+void process_idle() {
+    static bool idle_prev = false;
+    static uint8_t backlight_prev = 0;
+    uint8_t mins = (time_us_64()-kbd_system.active_ts)/1000/1000/60;
+    bool idle = mins >= kbd_system.idle_minutes;
+    if(idle & !idle_prev) { // turned idle
+        backlight_prev = kbd_system.backlight;
+        kbd_system.backlight = 0;
+    } else if(idle_prev & !idle) { // turned active
+        kbd_system.backlight = backlight_prev;
+    }
+    idle_prev = idle;
+}
+
 /*
  * Processing:
  * sb_left_key_press      -->  sb_state
@@ -334,6 +370,9 @@ void process_inputs(void* param) {
             write_shared_buffer(kbd_system.sb_right_task_request,
                                 kbd_system.right_task_request_ts, kbd_system.right_task_request);
     }
+
+    // track activity
+    if(kbd_system.hid_report_out.has_events) kbd_system.active_ts = time_us_64();
 
     // note other state changes
     kbd_system.state.screen = kbd_system.screen;
@@ -435,6 +474,12 @@ int main(void) {
     while(true) {
         // get date & temperature, once a second
         do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
+
+        // apply any new configs
+        apply_configs();
+
+        // handle idleness
+        process_idle();
 
         if(kbd_system.side == kbd_side_LEFT) {
             // update lcd display head, @ 100 ms

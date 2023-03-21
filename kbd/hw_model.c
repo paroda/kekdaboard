@@ -90,12 +90,17 @@ void init_hw_right() {
 }
 
 void init_flash_datasets(flash_dataset_t** flash_datasets) {
-    unsigned int i;
-    uint8_t ids[KBD_CONFIG_SCREEN_COUNT];
-    for(i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) ids[i] = kbd_config_screens[i];
+    uint8_t i, ids[KBD_CONFIG_SCREEN_COUNT];
+    for(i=0; i<KBD_CONFIG_SCREEN_COUNT; i++)
+        ids[i] = kbd_config_screens[i];
     flash_create_store(KBD_CONFIG_SCREEN_COUNT, ids, flash_datasets,
                        flash_store_read, flash_store_page_program, flash_store_sector_erase);
-    for(i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) flash_store_load(flash_datasets[i]);
+}
+
+void load_flash_datasets(flash_dataset_t** flash_datasets) {
+    uint8_t i;
+    for(i=0; i<KBD_CONFIG_SCREEN_COUNT; i++)
+        flash_store_load(flash_datasets[i]);
 }
 
 void lcd_display_body() {

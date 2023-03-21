@@ -49,7 +49,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x05 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x07 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -219,7 +219,10 @@ typedef struct {
     volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
 
-    // side local data
+    // local data
+
+    uint64_t active_ts; // timestamp of last activity (input_processor)
+    uint8_t idle_minutes; // minutes of idleness to consider idle
 
     rtc_datetime_t date;
     uint8_t temperature;

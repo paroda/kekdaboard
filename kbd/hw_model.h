@@ -64,6 +64,8 @@ void init_hw_right();
 
 void init_flash_datasets(flash_dataset_t** flash_datasets);
 
+void load_flash_datasets(flash_dataset_t** flash_datasets);
+
 void lcd_display_body();
 
 void lcd_display_body_canvas(uint16_t xs, uint16_t ys, lcd_canvas_t *canvas);

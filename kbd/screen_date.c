@@ -179,3 +179,11 @@ void respond_screen_date(void) {
     else
         mark_right_response();
 }
+
+void init_config_screen_default_date() {
+    // No action
+}
+
+void apply_config_screen_date() {
+    // No action
+}

@@ -32,6 +32,16 @@ respond_screen_t* config_screen_responders[KBD_CONFIG_SCREEN_COUNT] = {
     respond_screen_power,
 };
 
+init_config_screen_default_t* config_screen_default_initiators[KBD_CONFIG_SCREEN_COUNT] = {
+    init_config_screen_default_date,
+    init_config_screen_default_power,
+};
+
+apply_config_screen_t* config_screen_appliers[KBD_CONFIG_SCREEN_COUNT] = {
+    apply_config_screen_date,
+    apply_config_screen_power,
+};
+
 uint8_t get_screen_index(kbd_screen_t screen) {
     bool config = screen & KBD_CONFIG_SCREEN_MASK;
     kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
