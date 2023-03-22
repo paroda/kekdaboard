@@ -233,7 +233,7 @@ kbd_event_t execute_input_processor() {
             else if(rmoon) event = kbd_screen_event_PREV;
             else event = kbd_screen_event_NEXT;
         } else if(new_key_press.backlight) {
-            event = lmoon ? kbd_backlight_event_HIGH : kbd_backlight_event_LOW;
+            event = lmoon ? kbd_backlight_event_LOW : kbd_backlight_event_HIGH;
         }
     }
 

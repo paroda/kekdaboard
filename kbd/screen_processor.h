@@ -3,6 +3,8 @@
 
 #include "data_model.h"
 
+uint8_t get_screen_index(kbd_screen_t screen);
+
 bool is_nav_event(kbd_event_t event);
 
 void mark_left_request(kbd_screen_t screen);

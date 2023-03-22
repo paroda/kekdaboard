@@ -3,10 +3,6 @@
 
 kbd_hw_t kbd_hw;
 
-uint32_t board_millis() {
-    return to_ms_since_boot(get_absolute_time());
-}
-
 static void flash_store_read(uint32_t addr, uint8_t* buf, size_t len) {
     flash_read(kbd_hw.flash, addr, buf, len);
 }
@@ -14,8 +10,25 @@ static void flash_store_read(uint32_t addr, uint8_t* buf, size_t len) {
 static void flash_store_page_program(uint32_t addr, const uint8_t* buf, size_t len) {
     flash_page_program(kbd_hw.flash, addr, buf, len);
 }
+
 static void flash_store_sector_erase(uint32_t addr) {
     flash_sector_erase(kbd_hw.flash, addr);
+}
+
+uint32_t board_millis() {
+    return us_to_ms(time_us_64());
+}
+
+void do_if_elapsed(uint32_t* t_ms, uint32_t dt_ms, void* param, void(*task)(void* param)) {
+    uint32_t ms = board_millis();
+    if(ms > *t_ms+dt_ms) {
+        task(param);
+        if(dt_ms==0 || *t_ms==0) {
+            *t_ms = ms;
+            return;
+        }
+        while(*t_ms < ms) *t_ms += dt_ms;
+    }
 }
 
 void init_hw_core1(peer_comm_config_t* comm) {

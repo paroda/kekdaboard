@@ -59,6 +59,8 @@ add_executable(kbd_main)
 
 target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/main.c
+  ${CMAKE_CURRENT_LIST_DIR}/core0.c
+  ${CMAKE_CURRENT_LIST_DIR}/core1.c
   ${CMAKE_CURRENT_LIST_DIR}/data_model.c
   ${CMAKE_CURRENT_LIST_DIR}/flash_store.c
   ${CMAKE_CURRENT_LIST_DIR}/flash_w25qxx.c

@@ -6,9 +6,9 @@
 
 #define FIELD_COUNT 7
 
-rtc_datetime_t date;
-uint8_t field;
-bool dirty;
+static rtc_datetime_t date;
+static uint8_t field;
+static bool dirty;
 
 static uint16_t get_field(uint8_t field) {
     switch(field) {
@@ -138,20 +138,24 @@ void execute_screen_date(kbd_event_t event) {
         mark_right_request(kbd_config_screen_date);
         rreq[2] = lreq[2] = 3;
         rreq[3] = lreq[3] = field = 0;
-        rreq[4] = lreq[4] = dirty = false;
-        memcpy(lreq+5, &date, sizeof(rtc_datetime_t));
-        memcpy(rreq+5, &date, sizeof(rtc_datetime_t));
+        memcpy(lreq+4, &date, sizeof(rtc_datetime_t));
+        memcpy(rreq+4, &date, sizeof(rtc_datetime_t));
+        dirty = false;
         break;
     default: break;
     }
 }
 
 void respond_screen_date(void) {
-    uint8_t* req = kbd_system.side == kbd_side_LEFT ? kbd_system.left_task_request : kbd_system.right_task_request;
+    uint8_t* req = kbd_system.side == kbd_side_LEFT ?
+        kbd_system.left_task_request : kbd_system.right_task_request;
     switch(req[2]) {
     case 0: // init
+    case 3: // save
         field = req[3];
         memcpy(&date, req+4, sizeof(rtc_datetime_t));
+        if(req[2]==3) save();
+        dirty = false;
         init_screen();
         break;
     case 1: // select field
@@ -163,13 +167,6 @@ void respond_screen_date(void) {
         set_field(req[3], req[4]);
         dirty = req[5];
         update_screen(req[3], req[3]);
-        break;
-    case 3: // save
-        field = req[3];
-        dirty = req[4];
-        memcpy(&date, req+5, sizeof(rtc_datetime_t));
-        save();
-        init_screen();
         break;
     default: break;
     }

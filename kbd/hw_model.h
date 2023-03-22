@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 #include "pico/stdlib.h"
-#include "pico/multicore.h"
 
 #include "hardware/uart.h"
 #include "hardware/i2c.h"
@@ -51,6 +50,8 @@ typedef struct {
 extern kbd_hw_t kbd_hw;
 
 uint32_t board_millis();
+
+void do_if_elapsed(uint32_t* t_ms, uint32_t dt_ms, void* param, void(*task)(void* param));
 
 void init_hw_core1(peer_comm_config_t* comm);
 
