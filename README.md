@@ -1,3 +1,8 @@
+# Custom keyboard
+
+![front](images/kbd_front.jpg)
+![back](images/kbd_back.jpg)
+
 # Dependency
 
 ## Install build tools (Archlinux)
