@@ -10,6 +10,7 @@
 #include "hardware/spi.h"
 
 #include "hw_config.h"
+#include "data_model.h"
 #include "master_spi.h"
 #include "flash_w25qxx.h"
 
@@ -25,8 +26,8 @@ void printbuf(uint8_t* buf, size_t len) {
 }
 
 bool check_name(uint8_t* buf) {
-    char* flash_name = hw_flash_name;
-    for(int i=0; i<hw_flash_addr_side; i++) {
+    char* flash_name = KBD_FLASH_NAME;
+    for(int i=0; i<KBD_FLASH_ADDR_SIDE; i++) {
         if(flash_name[i]==0) return true;
         if(buf[i]!=flash_name[i]) return false;
     }
@@ -42,13 +43,13 @@ void set_side(flash_t* f, uint8_t side) {
     memset(buf, 0, FLASH_PAGE_SIZE);
 
     int i=0;
-    char* flash_name = hw_flash_name;
+    char* flash_name = KBD_FLASH_NAME;
     while(flash_name[i]!=0) {
         buf[i] = flash_name[i];
         i++;
     }
 
-    buf[hw_flash_addr_side] = side;
+    buf[KBD_FLASH_ADDR_SIDE] = side;
 
     flash_page_program(f, 0, buf, FLASH_PAGE_SIZE);
 }
@@ -81,7 +82,7 @@ int main(void) {
 
         if(!check_name(buf)) set_side(f, get_target_flash_side());
 
-        if(buf[hw_flash_addr_side]==hw_flash_side_left) printf("\n\nSide - LEFT\n");
-        if(buf[hw_flash_addr_side]==hw_flash_side_right) printf("\n\nSide - RIGHT\n");
+        if(buf[KBD_FLASH_ADDR_SIDE]==KBD_FLASH_SIDE_LEFT) printf("\n\nSide - LEFT\n");
+        if(buf[KBD_FLASH_ADDR_SIDE]==KBD_FLASH_SIDE_RIGHT) printf("\n\nSide - RIGHT\n");
     }
 }

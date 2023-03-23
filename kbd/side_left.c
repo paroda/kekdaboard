@@ -1,5 +1,5 @@
-#include "hw_config.h"
+#include "data_model.h"
 
 uint8_t get_target_flash_side() {
-    return hw_flash_side_left;
+    return KBD_FLASH_SIDE_LEFT;
 }
