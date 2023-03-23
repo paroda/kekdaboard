@@ -30,8 +30,8 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
 
 // update the hid_report_out and return the screen event if any
 
-#define TB_SCROLL_SCALE 64
-#define TB_DELTA_SCALE 8
+#define TB_SCROLL_SCALE 8
+#define TB_DELTA_SCALE 4
 
 #define TRACK_KEY_COUNT 9
 
@@ -80,7 +80,8 @@ void update_track_key_press() {
 
 int16_t add_motion(int16_t v1, int16_t v2) {
     v1 = v1+v2;
-    return v1<-127 ? -127 : v1>127 ? 127 : v1;
+    v1 = v1<-127 ? -127 : v1>127 ? 127 : v1;
+    return v1<0 ? (v1-v1*v1/128)/2 : (v1+v1*v1/128)/2;
 }
 
 kbd_event_t execute_input_processor() {
@@ -182,7 +183,7 @@ kbd_event_t execute_input_processor() {
     if(kbd_system.right_tb_motion.has_motion) {
         if(moon) {
             outm.scrollX = kbd_system.right_tb_motion.dx/TB_SCROLL_SCALE;
-            outm.scrollY = kbd_system.right_tb_motion.dy/TB_SCROLL_SCALE;
+            outm.scrollY = -kbd_system.right_tb_motion.dy/TB_SCROLL_SCALE;
         } else {
             outm.deltaX = kbd_system.right_tb_motion.dx/TB_DELTA_SCALE;
             outm.deltaY = kbd_system.right_tb_motion.dy/TB_DELTA_SCALE;
