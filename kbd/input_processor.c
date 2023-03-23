@@ -30,8 +30,8 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
 
 // update the hid_report_out and return the screen event if any
 
-#define TB_SCROLL_SCALE 128
-#define TB_DELTA_SCALE 16
+#define TB_SCROLL_SCALE 64
+#define TB_DELTA_SCALE 8
 
 #define TRACK_KEY_COUNT 9
 

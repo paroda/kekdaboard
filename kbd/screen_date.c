@@ -87,7 +87,6 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
         lcd_display_body_canvas(220, 10, cv);
         lcd_free_canvas(cv);
     }
-
 }
 
 void execute_screen_date(kbd_event_t event) {

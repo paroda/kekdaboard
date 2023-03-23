@@ -98,7 +98,7 @@ void init_hw_right() {
     // setup track ball
     kbd_hw.tb = tb_create(kbd_hw.m_spi,
                           hw_gpio_CS_tb, hw_gpio_tb_MT, hw_gpio_tb_RST,
-                          4, // cpi_index 1-4 (400, 800, 1200, 1600)
+                          3, // cpi_index 1-4 (400, 800, 1200, 1600)
                           true, false, false);
 }
 

@@ -1,5 +1,7 @@
+#include <stdio.h>
 #include <string.h>
 
+#include "hw_model.h"
 #include "screen_processor.h"
 
 #define CONFIG_VERSION 0x01
@@ -68,12 +70,55 @@ static void save() {
     flash_store_save(fd);
 }
 
-static void init_screen() {
+static void draw_backlight(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool selected) {
+    char txt[8];
+    sprintf(txt, "%3d %%", backlight);
+    lcd_canvas_text(cv, x, y, txt, &lcd_font24, selected?RED:WHITE, LCD_BODY_BG);
+}
 
+static void draw_idle_minutes(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool selected) {
+    char txt[8];
+    if(idle_minutes==0xFF) sprintf(txt, "Never");
+    else if(idle_minutes>=60) sprintf(txt, "%d h", idle_minutes/60);
+    else sprintf(txt, "%3d m", idle_minutes);
+    lcd_canvas_text(cv, x, y, txt, &lcd_font24, selected?RED:WHITE, LCD_BODY_BG);
+}
+
+static void init_screen() {
+    if(kbd_system.side != kbd_side_LEFT) return;
+
+    lcd_canvas_t* cv = kbd_hw.lcd_body;
+    lcd_canvas_clear(cv);
+    lcd_canvas_text(cv, 20, 30, "Backlight", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
+    draw_backlight(cv, 135, 60, field==0);
+    lcd_canvas_text(cv, 20, 120, "Idle Minutes", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
+    draw_idle_minutes(cv, 135, 150, field==1);
+    lcd_display_body();
 }
 
 static void update_screen(uint8_t field, uint8_t sel_field) {
+    if(kbd_system.side != kbd_side_LEFT) return;
 
+    lcd_canvas_t* cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 85, 24, LCD_BODY_BG);
+
+    if(field!=sel_field || sel_field==0) {
+        draw_backlight(cv, 0, 0, sel_field==0);
+        lcd_display_body_canvas(135, 60, cv);
+        lcd_canvas_clear(cv);
+    }
+
+    if(field!=sel_field || sel_field==1) {
+        draw_idle_minutes(cv, 0, 0, sel_field==1);
+        lcd_display_body_canvas(135, 150, cv);
+    }
+    lcd_free_canvas(cv);
+
+    if(dirty) {
+        cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 10, 10, LCD_BODY_BG);
+        lcd_canvas_circle(cv, 5, 5, 5, RED, 1, true);
+        lcd_display_body_canvas(220, 10, cv);
+        lcd_free_canvas(cv);
+    }
 }
 
 void execute_screen_power(kbd_event_t event) {
@@ -109,14 +154,14 @@ void execute_screen_power(kbd_event_t event) {
         mark_left_request(kbd_config_screen_power);
         lreq[2] = 2;
         lreq[3] = field;
-        lreq[4] = select_next_value(field);
+        lreq[4] = select_prev_value(field);
         lreq[5] = dirty = true;
         break;
     case kbd_screen_event_SEL_NEXT:
         mark_left_request(kbd_config_screen_power);
         lreq[2] = 2;
         lreq[3] = field;
-        lreq[4] = select_prev_value(field);
+        lreq[4] = select_next_value(field);
         lreq[5] = dirty = true;
         break;
     case kbd_screen_event_SAVE:

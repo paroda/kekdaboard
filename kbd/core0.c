@@ -119,8 +119,8 @@ void lcd_display_head_task(void* param) {
     lcd_display_canvas(kbd_hw.lcd, 0, 0, cv);
 }
 
-void tb_scan_task(void* param) {
-    (void)param;
+void tb_scan_task_capture(void* param) {
+    kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
 
     // scan tb scroll and write to sb_right_tb_motion
     kbd_tb_motion_t d = {
@@ -129,8 +129,24 @@ void tb_scan_task(void* param) {
         .dx = 0,
         .dy = 0
     };
+
     d.has_motion = tb_check_motion(kbd_hw.tb, &d.on_surface, &d.dx, &d.dy);
-    write_shared_buffer(kbd_system.sb_right_tb_motion, time_us_64(), &d);
+
+    ds->has_motion = ds->has_motion || d.has_motion;
+    ds->on_surface = ds->on_surface || d.on_surface;
+    ds->dx = ds->dx + d.dx;
+    ds->dy = ds->dy + d.dy;
+}
+
+void tb_scan_task_publish(void* param) {
+    kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
+
+    write_shared_buffer(kbd_system.sb_right_tb_motion, time_us_64(), ds);
+
+    ds->has_motion = false;
+    ds->on_surface = false;
+    ds->dx = 0;
+    ds->dy = 0;
 }
 
 kbd_event_t process_basic_event(kbd_event_t event) {
@@ -300,8 +316,16 @@ void core0_main(void) {
 
     uint32_t rtc_last_ms = 0;
     uint32_t lcd_last_ms = 0;
-    uint32_t tb_last_ms = 0;
+    uint32_t tb_capture_last_ms = 0;
+    uint32_t tb_publish_last_ms = 0;
     uint32_t proc_last_ms = 0;
+
+    kbd_tb_motion_t tb_scan = {
+        .has_motion = false,
+        .on_surface = false,
+        .dx = 0,
+        .dy = 0
+    };
 
     while(true) {
         // get date & temperature, once a second
@@ -330,8 +354,11 @@ void core0_main(void) {
             }
         }
         else { // RIGHT
-            // scan track ball scroll, @ 10 ms
-            do_if_elapsed(&tb_last_ms, 10, NULL, tb_scan_task);
+            // scan track ball scroll (capture), @ 3 ms
+            do_if_elapsed(&tb_capture_last_ms, 3, &tb_scan, tb_scan_task_capture);
+
+            // scan track ball scroll (publish), @ 10 ms
+            do_if_elapsed(&tb_publish_last_ms, 10, &tb_scan, tb_scan_task_publish);
 
             // set caps lock led
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
