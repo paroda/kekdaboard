@@ -320,7 +320,7 @@ void core0_main(void) {
     uint32_t tb_publish_last_ms = 0;
     uint32_t proc_last_ms = 0;
 
-    kbd_tb_motion_t tb_scan = {
+    kbd_tb_motion_t tbm = {
         .has_motion = false,
         .on_surface = false,
         .dx = 0,
@@ -355,10 +355,10 @@ void core0_main(void) {
         }
         else { // RIGHT
             // scan track ball scroll (capture), @ 3 ms
-            do_if_elapsed(&tb_capture_last_ms, 3, &tb_scan, tb_scan_task_capture);
+            do_if_elapsed(&tb_capture_last_ms, 3, &tbm, tb_scan_task_capture);
 
             // scan track ball scroll (publish), @ 10 ms
-            do_if_elapsed(&tb_publish_last_ms, 10, &tb_scan, tb_scan_task_publish);
+            do_if_elapsed(&tb_publish_last_ms, 10, &tbm, tb_scan_task_publish);
 
             // set caps lock led
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;

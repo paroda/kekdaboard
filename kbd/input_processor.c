@@ -78,6 +78,11 @@ void update_track_key_press() {
     }
 }
 
+int16_t add_motion(int16_t v1, int16_t v2) {
+    v1 = v1+v2;
+    return v1<-127 ? -127 : v1>127 ? 127 : v1;
+}
+
 kbd_event_t execute_input_processor() {
     const uint8_t* key_press[KEY_PRESS_MAX];
     uint8_t n = key_layout_read(key_press);
@@ -221,10 +226,10 @@ kbd_event_t execute_input_processor() {
     } else {
         kbd_system.hid_report_out.has_events = has_events;
         kbd_system.hid_report_out.keyboard = outk;
-        outm.deltaX += kbd_system.hid_report_out.mouse.deltaX;
-        outm.deltaY += kbd_system.hid_report_out.mouse.deltaY;
-        outm.scrollX += kbd_system.hid_report_out.mouse.scrollX;
-        outm.scrollY += kbd_system.hid_report_out.mouse.scrollY;
+        outm.deltaX = add_motion(outm.deltaX, kbd_system.hid_report_out.mouse.deltaX);
+        outm.deltaY = add_motion(outm.deltaY, kbd_system.hid_report_out.mouse.deltaY);
+        outm.scrollX = add_motion(outm.scrollX, kbd_system.hid_report_out.mouse.scrollX);
+        outm.scrollY = add_motion(outm.scrollY, kbd_system.hid_report_out.mouse.scrollY);
         kbd_system.hid_report_out.mouse = outm;
 
         // info screen event
