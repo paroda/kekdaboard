@@ -132,7 +132,7 @@ static void update_screen() {
         else
             lcd_canvas_rect(cv, 0, 85+(tbm.dy/SCROLL_SCALE), 10, -(tbm.dy/SCROLL_SCALE), YELLOW, 1, true);
     }
-    if(!tbm.on_surface) lcd_canvas_rect(cv, 90, 0, 10, 10, RED, 1, true);
+    if(!tbm.on_surface) lcd_canvas_rect(cv, 0, 90, 10, 10, RED, 1, true);
     lcd_display_canvas(kbd_hw.lcd, 115, 45, cv);
 
     lcd_free_canvas(canvas);
