@@ -35,6 +35,7 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
 
 #define TRACK_KEY_COUNT 9
 
+// keycodes tracked with new_key_press, old_key_press, cur_key_press
 uint8_t track_keys[TRACK_KEY_COUNT] = {
     KBD_KEY_SUN,
     KBD_KEY_BACKLIGHT,
@@ -63,7 +64,7 @@ track_key_press_t new_key_press; // newly pressed
 track_key_press_t old_key_press; // previousl pressed
 track_key_press_t cur_key_press; // currently pressed
 
-void update_track_key_press() {
+static void update_track_key_press() {
     static bool init = true;
     if(init) {
         memset(&old_key_press, 0, sizeof(track_key_press_t));
@@ -78,18 +79,126 @@ void update_track_key_press() {
     }
 }
 
-int16_t add_motion(int16_t v1, int16_t v2) {
+static int16_t add_motion(int16_t v1, int16_t v2) {
+    v2 = v2<0 ? (v2-v2*v2/128)/2 : (v2+v2*v2/128)/2;
     v1 = v1+v2;
     v1 = v1<-127 ? -127 : v1>127 ? 127 : v1;
-    return v1<0 ? (v1-v1*v1/128)/2 : (v1+v1*v1/128)/2;
+    return v1;
+}
+
+static void parse_modifier(uint8_t modifier, hid_report_out_keyboard_t* outk) {
+    switch(modifier) {
+    case KEYBOARD_MODIFIER_LEFTCTRL:
+        outk->leftCtrl=true;
+        break;
+    case KEYBOARD_MODIFIER_LEFTSHIFT:
+        outk->leftShift=true;
+        break;
+    case KEYBOARD_MODIFIER_LEFTALT:
+        outk->leftAlt=true;
+        break;
+    case KEYBOARD_MODIFIER_LEFTGUI:
+        outk->leftGui=true;
+        break;
+    case KEYBOARD_MODIFIER_RIGHTCTRL:
+        outk->rightCtrl=true;
+        break;
+    case KEYBOARD_MODIFIER_RIGHTSHIFT:
+        outk->rightShift=true;
+        break;
+    case KEYBOARD_MODIFIER_RIGHTALT:
+        outk->rightAlt=true;
+        break;
+    case KEYBOARD_MODIFIER_RIGHTGUI:
+        outk->rightGui=true;
+        break;
+    default: // skip
+        break;
+    }
+}
+
+static void parse_code(uint8_t code, uint8_t base_code,
+                       uint8_t* n_key_codes, hid_report_out_keyboard_t* outk,
+                       hid_report_out_mouse_t* outm) {
+    if(base_code==KBD_KEY_SUN) {
+        cur_key_press.sun = 1;
+    } else if(base_code==KBD_KEY_LEFT_MOON || base_code==KBD_KEY_RIGHT_MOON) {
+        // no action
+    } else {
+        switch(code) {
+        case KBD_KEY_MOUSE_LEFT:
+            outm->left=true;
+            break;
+        case KBD_KEY_MOUSE_RIGHT:
+            outm->right=true;
+            break;
+        case KBD_KEY_MOUSE_MIDDLE:
+            outm->middle=true;
+            break;
+        case KBD_KEY_MOUSE_BACKWARD:
+            outm->backward=true;
+            break;
+        case KBD_KEY_MOUSE_FORWARD:
+            outm->forward=true;
+            break;
+        default: // normal keys
+            outk->key_codes[*n_key_codes]=code;
+            *n_key_codes = *n_key_codes + 1;
+            // note keys for screen event
+            for(int j=0; j<TRACK_KEY_COUNT; j++) {
+                if(track_keys[j]==code) {
+                    ((uint8_t*)&cur_key_press)[j] = 1;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm) {
+    if(kbd_system.right_tb_motion.has_motion) {
+        uint8_t scale = moon ? TB_SCROLL_SCALE : TB_DELTA_SCALE;
+        int8_t x = kbd_system.right_tb_motion.dx/scale;
+        int8_t y = kbd_system.right_tb_motion.dy/scale;
+        if(shift) {
+            int8_t x_abs = x < 0 ? -x : x;
+            int8_t y_abs = y < 0 ? -y : y;
+            if(x_abs < y_abs) {
+                x = 0;
+            } else {
+                y = 0;
+            }
+        }
+        if(moon) {
+            outm->scrollX = x;
+            outm->scrollY = -y;
+        } else {
+            outm->deltaX = x;
+            outm->deltaY = y;
+        }
+    }
+}
+
+static kbd_event_t parse_config_screen_event(bool moon) {
+    if(new_key_press.sun) return moon ? kbd_screen_event_PREV : kbd_screen_event_NEXT;
+    if(new_key_press.up) return kbd_screen_event_UP;
+    if(new_key_press.down) return kbd_screen_event_DOWN;
+    if(new_key_press.left) return kbd_screen_event_LEFT;
+    if(new_key_press.right) return kbd_screen_event_RIGHT;
+    if(new_key_press.space) return moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
+    if(new_key_press.enter) return kbd_screen_event_SAVE;
+    if(new_key_press.escape) return kbd_screen_event_EXIT;
+    return kbd_event_NONE;
 }
 
 kbd_event_t execute_input_processor() {
+    // identify the raw left/right scan matrix
     const uint8_t* key_press[KEY_PRESS_MAX];
     uint8_t n = key_layout_read(key_press);
 
+    // check for sun or moon
     bool sun=false, moon=false, lmoon=false, rmoon=false;
-    int i,j;
+    int i;
     for(i=0; i<n; i++) {
         switch(key_press[i][1]) {
         case KBD_KEY_SUN:
@@ -106,90 +215,31 @@ kbd_event_t execute_input_processor() {
     }
     moon = lmoon || rmoon;
 
+    // initialize cleared
     hid_report_out_keyboard_t outk;
     memset(&outk, 0, sizeof(hid_report_out_keyboard_t));
+
     hid_report_out_mouse_t outm;
     memset(&outm, 0, sizeof(hid_report_out_mouse_t));
 
     memset(&cur_key_press, 0, sizeof(track_key_press_t));
 
+    // parse keypress
     uint8_t n_key_codes=0;
     for(i=0; i<n; i++) {
         // read modifiers
-        switch(key_press[i][0]) {
-        case KEYBOARD_MODIFIER_LEFTCTRL:
-            outk.leftCtrl=true;
-            break;
-        case KEYBOARD_MODIFIER_LEFTSHIFT:
-            outk.leftShift=true;
-            break;
-        case KEYBOARD_MODIFIER_LEFTALT:
-            outk.leftAlt=true;
-            break;
-        case KEYBOARD_MODIFIER_LEFTGUI:
-            outk.leftGui=true;
-            break;
-        case KEYBOARD_MODIFIER_RIGHTCTRL:
-            outk.rightCtrl=true;
-            break;
-        case KEYBOARD_MODIFIER_RIGHTSHIFT:
-            outk.rightShift=true;
-            break;
-        case KEYBOARD_MODIFIER_RIGHTALT:
-            outk.rightAlt=true;
-            break;
-        case KEYBOARD_MODIFIER_RIGHTGUI:
-            outk.rightGui=true;
-            break;
-        default: // skip
-            break;
-        }
+        parse_modifier(key_press[i][0], &outk);
         // read key_codes
-        uint8_t code = (moon && key_press[i][2]) ? key_press[i][2] : key_press[i][1];
-        if(key_press[i][1]==KBD_KEY_SUN
-           || key_press[i][1]==KBD_KEY_LEFT_MOON
-           || key_press[i][1]==KBD_KEY_RIGHT_MOON) {
-            if(sun) cur_key_press.sun = 1;
-        } else {
-            switch(code) {
-            case KBD_KEY_MOUSE_LEFT:
-                outm.left=true;
-                break;
-            case KBD_KEY_MOUSE_RIGHT:
-                outm.right=true;
-                break;
-            case KBD_KEY_MOUSE_MIDDLE:
-                outm.middle=true;
-                break;
-            case KBD_KEY_MOUSE_BACKWARD:
-                outm.backward=true;
-                break;
-            case KBD_KEY_MOUSE_FORWARD:
-                outm.forward=true;
-                break;
-            default: // normal keys
-                outk.key_codes[n_key_codes++]=code;
-                // note keys for screen event
-                for(j=0; j<TRACK_KEY_COUNT; j++) {
-                    if(track_keys[j]==code) {
-                        ((uint8_t*)&cur_key_press)[j] = 1;
-                        break;
-                    }
-                }
-            }
-        }
+        uint8_t base_code = key_press[i][1];
+        uint8_t moon_code = key_press[i][2];
+        uint8_t code = (moon && moon_code) ? moon_code : base_code;
+        parse_code(code, base_code, &n_key_codes, &outk, &outm);
     }
 
-    if(kbd_system.right_tb_motion.has_motion) {
-        if(moon) {
-            outm.scrollX = kbd_system.right_tb_motion.dx/TB_SCROLL_SCALE;
-            outm.scrollY = -kbd_system.right_tb_motion.dy/TB_SCROLL_SCALE;
-        } else {
-            outm.deltaX = kbd_system.right_tb_motion.dx/TB_DELTA_SCALE;
-            outm.deltaY = kbd_system.right_tb_motion.dy/TB_DELTA_SCALE;
-        }
-    }
+    // parse tb motion
+    parse_tb_motion(moon, outk.leftShift || outk.rightShift, &outm);
 
+    // decide presence of user input
     bool has_events = (n_key_codes>0
                        || outk.leftCtrl  || outk.leftShift  || outk.leftAlt  || outk.leftGui
                        || outk.rightCtrl || outk.rightShift || outk.rightAlt || outk.rightGui
@@ -199,49 +249,34 @@ kbd_event_t execute_input_processor() {
     // note key press events for screen
     update_track_key_press();
 
-    kbd_event_t event = kbd_event_NONE;
-
     bool config_mode = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     if(config_mode) {
         // no hid report in config mode
         memset(&kbd_system.hid_report_out, 0, sizeof(hid_report_out_t));
 
         // config screen event
-        if(new_key_press.sun) {
-            event = moon ? kbd_screen_event_PREV : kbd_screen_event_NEXT;
-        } else if(new_key_press.up) {
-            event = kbd_screen_event_UP;
-        } else if(new_key_press.down) {
-            event = kbd_screen_event_DOWN;
-        } else if(new_key_press.left) {
-            event = kbd_screen_event_LEFT;
-        } else if(new_key_press.right) {
-            event = kbd_screen_event_RIGHT;
-        } else if(new_key_press.space) {
-            event = moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
-        } else if(new_key_press.enter) {
-            event = kbd_screen_event_SAVE;
-        } else if(new_key_press.escape) {
-            event = kbd_screen_event_EXIT;
-        }
-    } else {
-        kbd_system.hid_report_out.has_events = has_events;
-        kbd_system.hid_report_out.keyboard = outk;
-        outm.deltaX = add_motion(outm.deltaX, kbd_system.hid_report_out.mouse.deltaX);
-        outm.deltaY = add_motion(outm.deltaY, kbd_system.hid_report_out.mouse.deltaY);
-        outm.scrollX = add_motion(outm.scrollX, kbd_system.hid_report_out.mouse.scrollX);
-        outm.scrollY = add_motion(outm.scrollY, kbd_system.hid_report_out.mouse.scrollY);
-        kbd_system.hid_report_out.mouse = outm;
-
-        // info screen event
-        if(new_key_press.sun) {
-            if(lmoon) event = kbd_screen_event_CONFIG;
-            else if(rmoon) event = kbd_screen_event_PREV;
-            else event = kbd_screen_event_NEXT;
-        } else if(new_key_press.backlight) {
-            event = lmoon ? kbd_backlight_event_LOW : kbd_backlight_event_HIGH;
-        }
+        return parse_config_screen_event(moon);
     }
 
-    return event;
+    // set the hid report
+    kbd_system.hid_report_out.has_events = has_events;
+    kbd_system.hid_report_out.keyboard = outk;
+    outm.deltaX = add_motion(outm.deltaX, kbd_system.hid_report_out.mouse.deltaX);
+    outm.deltaY = add_motion(outm.deltaY, kbd_system.hid_report_out.mouse.deltaY);
+    outm.scrollX = add_motion(outm.scrollX, kbd_system.hid_report_out.mouse.scrollX);
+    outm.scrollY = add_motion(outm.scrollY, kbd_system.hid_report_out.mouse.scrollY);
+    kbd_system.hid_report_out.mouse = outm;
+
+    // screen change event
+    if(new_key_press.sun) {
+        if(lmoon) return kbd_screen_event_CONFIG;
+        if(rmoon) return kbd_screen_event_PREV;
+        return kbd_screen_event_NEXT;
+    }
+
+    // backlight change event
+    if(new_key_press.backlight)
+        return lmoon ? kbd_backlight_event_LOW : kbd_backlight_event_HIGH;
+
+    return kbd_event_NONE;
 }
