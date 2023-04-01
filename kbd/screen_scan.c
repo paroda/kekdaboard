@@ -3,7 +3,7 @@
 #include "hw_model.h"
 #include "screen_processor.h"
 
-#define SCROLL_SCALE 4
+#define SCROLL_SCALE 16
 
 uint8_t key_press[KEY_ROW_COUNT][KEY_COL_COUNT*2];
 

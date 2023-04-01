@@ -138,10 +138,10 @@ typedef struct {
     bool middle;
     bool backward;
     bool forward;
-    int8_t deltaX;
-    int8_t deltaY;
-    int8_t scrollX;
-    int8_t scrollY;
+    int16_t deltaX;
+    int16_t deltaY;
+    int16_t scrollX;
+    int16_t scrollY;
 } hid_report_out_mouse_t;
 
 typedef struct {

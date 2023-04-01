@@ -21,6 +21,33 @@ static bool send_hid_consumer_report() {
     return true;
 }
 
+/// Custom HID Boot Protocol Mouse Report.
+typedef struct TU_ATTR_PACKED {
+    uint8_t buttons; /**< buttons mask for currently pressed buttons in the mouse. */
+    int16_t  x;       /**< Current delta x movement of the mouse. */
+    int16_t  y;       /**< Current delta y movement on the mouse. */
+    int16_t  wheel;   /**< Current delta wheel movement on the mouse. */
+    int16_t  pan;     // using AC Pan
+} kbd_mouse_report_t;
+
+static bool kbd_hid_n_mouse_report(uint8_t instance, uint8_t report_id, uint8_t buttons,
+                                   int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
+    kbd_mouse_report_t report = {
+        .buttons = buttons,
+        .x       = x,
+        .y       = y,
+        .wheel   = vertical,
+        .pan     = horizontal
+    };
+
+    return tud_hid_n_report(instance, report_id, &report, sizeof(report));
+}
+
+static inline bool kbd_hid_mouse_report(uint8_t report_id, uint8_t buttons,
+                                        int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
+    return kbd_hid_n_mouse_report(0, report_id, buttons, x, y, vertical, horizontal);
+}
+
 static bool send_hid_mouse_report() {
     hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
 
@@ -31,7 +58,7 @@ static bool send_hid_mouse_report() {
         (m->backward ? MOUSE_BUTTON_BACKWARD : 0) |
         (m->forward  ? MOUSE_BUTTON_FORWARD  : 0);
 
-    if(tud_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX)) {
+    if(kbd_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX)) {
         m->deltaX = 0;
         m->deltaY = 0;
         m->scrollX = 0;
