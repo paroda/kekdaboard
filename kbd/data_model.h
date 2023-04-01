@@ -221,8 +221,14 @@ typedef struct {
 
     // local data
 
-    uint64_t active_ts; // timestamp of last activity (input_processor)
+    uint64_t active_ts; // timestamp of last activity (input_processor), invalid on SLAVE
     uint8_t idle_minutes; // minutes of idleness to consider idle
+
+    uint16_t tb_cpi;
+    uint8_t tb_scroll_scale;
+    uint8_t tb_scroll_quad_weight;
+    uint8_t tb_delta_scale;
+    uint8_t tb_delta_quad_weight;
 
     rtc_datetime_t date;
     uint8_t temperature;

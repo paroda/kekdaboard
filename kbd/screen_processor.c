@@ -10,6 +10,7 @@ kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
 kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
     kbd_config_screen_date,
     kbd_config_screen_power,
+    kbd_config_screen_tb,
 };
 
 execute_screen_t* info_screen_executors[KBD_INFO_SCREEN_COUNT] = {
@@ -25,21 +26,25 @@ respond_screen_t* info_screen_responders[KBD_INFO_SCREEN_COUNT] = {
 execute_screen_t* config_screen_executors[KBD_CONFIG_SCREEN_COUNT] = {
     execute_screen_date,
     execute_screen_power,
+    execute_screen_tb,
 };
 
 respond_screen_t* config_screen_responders[KBD_CONFIG_SCREEN_COUNT] = {
     respond_screen_date,
     respond_screen_power,
+    respond_screen_tb,
 };
 
 init_config_screen_default_t* config_screen_default_initiators[KBD_CONFIG_SCREEN_COUNT] = {
     init_config_screen_default_date,
     init_config_screen_default_power,
+    init_config_screen_default_tb,
 };
 
 apply_config_screen_t* config_screen_appliers[KBD_CONFIG_SCREEN_COUNT] = {
     apply_config_screen_date,
     apply_config_screen_power,
+    apply_config_screen_tb,
 };
 
 uint8_t get_screen_index(kbd_screen_t screen) {

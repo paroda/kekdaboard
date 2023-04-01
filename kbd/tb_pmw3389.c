@@ -63,9 +63,6 @@
 
 #define GPIO_NONE 0xFF
 
-uint16_t tb_cpi_options[] = { 400, 800, 1200, 1600 };
-uint8_t tb_cpi_options_count = 4;
-
 static uint8_t tb_read_register(tb_t* tb, uint8_t reg_addr) {
     // book spi for this slave device
     master_spi_select_slave(tb->m_spi, tb->spi_slave_id);
@@ -143,13 +140,12 @@ static void tb_upload_firmware(tb_t* tb) {
 
 }
 
-void tb_set_cpi(tb_t* tb, uint8_t cpi_index) {
-    if(cpi_index >= tb_cpi_options_count) return;
+void tb_set_cpi(tb_t* tb, uint16_t cpi) {
+    cpi = cpi>KBD_TB_CPI_MAX ? KBD_TB_CPI_MAX : cpi<KBD_TB_CPI_MIN ? KBD_TB_CPI_MIN : cpi;
     master_spi_set_baud(tb->m_spi, tb->spi_slave_id);
 
-    tb->cpi_index = cpi_index;
-    uint16_t cpi = tb_cpi_options[cpi_index];
     uint16_t cpival = cpi/50; // CPI is set as multiples of 50
+    tb->cpi = cpival*50;
 
     master_spi_select_slave(tb->m_spi, tb->spi_slave_id);
     tb_write_register(tb, tb_Resolution_L, cpival & 0xFF);
@@ -200,7 +196,7 @@ static void tb_init_device(tb_t* tb, uint8_t gpio_CS,
 
 tb_t* tb_create(master_spi_t* m_spi,
                 uint8_t gpio_CS, uint8_t gpio_MT, uint8_t gpio_RST,
-                uint8_t cpi_index,
+                uint16_t cpi,
                 bool swap_XY, bool invert_X, bool invert_Y) {
     tb_t* tb = (tb_t*) malloc(sizeof(tb_t));
     tb->m_spi = m_spi;
@@ -234,7 +230,7 @@ tb_t* tb_create(master_spi_t* m_spi,
     sleep_ms(10);
 
     // set CPI resolution
-    tb_set_cpi(tb, cpi_index);
+    tb_set_cpi(tb, cpi);
 
     // set the X/Y axis orientation
     tb->swap_XY = swap_XY;
@@ -317,7 +313,7 @@ void print_tb(tb_t* tb) {
     printf("\ntb->spi_slave_id %d", tb->spi_slave_id);
     printf("\ntb->gpio_MT %d", tb->gpio_MT);
     printf("\ntb->gpio_RST %d", tb->gpio_RST);
-    printf("\ntb->cpi_index %d", tb->cpi_index);
+    printf("\ntb->cpi %d", tb->cpi);
     printf("\ntb->swap_XY %d", tb->swap_XY);
     printf("\ntb->invert_X %d", tb->invert_X);
     printf("\ntb->invert_Y %d", tb->invert_Y);

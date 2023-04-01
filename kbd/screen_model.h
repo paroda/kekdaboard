@@ -19,7 +19,7 @@
  */
 
 #define KBD_INFO_SCREEN_COUNT 2
-#define KBD_CONFIG_SCREEN_COUNT 2
+#define KBD_CONFIG_SCREEN_COUNT 3
 
 typedef enum {
     // info screens
@@ -28,6 +28,7 @@ typedef enum {
     // config screens
     kbd_config_screen_date = 0x80,
     kbd_config_screen_power,
+    kbd_config_screen_tb
 } kbd_screen_t;
 
 extern kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT];

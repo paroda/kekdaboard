@@ -6,15 +6,20 @@
 
 kbd_system_t kbd_system = {
     .version = 0,
+
     .side = kbd_side_NONE,
     .role = kbd_role_NONE,
+
     .ready = false,
+
     .state_ts = 0,
+    .sb_state = NULL,
+
     .left_task_request_ts = 0,
     .right_task_request_ts = 0,
     .left_task_response_ts = 0,
     .right_task_response_ts = 0,
-    .sb_state = NULL,
+
     .sb_left_key_press = NULL,
     .sb_right_key_press = NULL,
     .sb_right_tb_motion = NULL,
@@ -22,16 +27,28 @@ kbd_system_t kbd_system = {
     .sb_right_task_request = NULL,
     .sb_left_task_response = NULL,
     .sb_right_task_response = NULL,
+
     .backlight = 30, // 30%
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
+
     .active_ts = 0,
     .idle_minutes = 5,
+
+    .tb_cpi = 1600,
+    .tb_scroll_scale = 32,
+    .tb_scroll_quad_weight = 2,
+    .tb_delta_scale = 4,
+    .tb_delta_quad_weight = 2,
+
     .date = {2000, 1, 1, 1, 0, 0, 0},
     .temperature = 0,
+
     .led = kbd_led_state_OFF,
     .ledB = kbd_led_state_OFF,
-    .comm = NULL
+
+    .comm = NULL,
+    .spin_lock = NULL
 };
 
 void init_data_model() {

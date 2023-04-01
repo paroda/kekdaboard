@@ -92,13 +92,13 @@ void init_hw_right() {
 
     // tb_t* tb_create(master_spi_t* m_spi,
     //                 uint8_t gpio_CS, uint8_t gpio_MT, uint8_t gpio_RST,
-    //                 uint8_t cpi_index,
+    //                 uint16_t cpi,
     //                 bool swap_XY, bool invert_X, bool invert_Y);
 
     // setup track ball
     kbd_hw.tb = tb_create(kbd_hw.m_spi,
                           hw_gpio_CS_tb, hw_gpio_tb_MT, hw_gpio_tb_RST,
-                          4, // cpi_index 1-4 (400, 800, 1200, 1600)
+                          KBD_TB_CPI_DEFAULT,
                           true, false, false);
 }
 

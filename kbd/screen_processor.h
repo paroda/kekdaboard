@@ -58,11 +58,16 @@ respond_screen_t respond_screen_scan;
 execute_screen_t execute_screen_date;
 respond_screen_t respond_screen_date;
 init_config_screen_default_t init_config_screen_default_date;
-apply_config_screen_t  apply_config_screen_date;
+apply_config_screen_t apply_config_screen_date;
 
 execute_screen_t execute_screen_power;
 respond_screen_t respond_screen_power;
 init_config_screen_default_t init_config_screen_default_power;
-apply_config_screen_t  apply_config_screen_power;
+apply_config_screen_t apply_config_screen_power;
+
+execute_screen_t execute_screen_tb;
+respond_screen_t respond_screen_tb;
+init_config_screen_default_t init_config_screen_default_tb;
+apply_config_screen_t apply_config_screen_tb;
 
 #endif

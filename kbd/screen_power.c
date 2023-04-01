@@ -121,6 +121,11 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
     }
 }
 
+static void init_data() {
+    backlight = kbd_system.backlight;
+    idle_minutes = kbd_system.idle_minutes;
+}
+
 void execute_screen_power(kbd_event_t event) {
     uint8_t* lreq = kbd_system.left_task_request;
     uint8_t* rreq = kbd_system.right_task_request;
@@ -129,6 +134,7 @@ void execute_screen_power(kbd_event_t event) {
 
     switch(event) {
     case kbd_screen_event_INIT:
+        init_data();
         mark_left_request(kbd_config_screen_power);
         lreq[2] = 0;
         lreq[3] = field = 0;
@@ -210,12 +216,14 @@ void respond_screen_power(void) {
 }
 
 void init_config_screen_default_power() {
+    init_data();
+
     fd = kbd_system.flash_datasets[get_screen_index(kbd_config_screen_power)];
     uint8_t* data = fd->data;
     memset(data, 0xFF, FLASH_DATASET_SIZE); // use 0xFF = erased state in flash
     data[0] = CONFIG_VERSION;
-    data[1] = backlight = kbd_system.backlight;
-    data[2] = idle_minutes = kbd_system.idle_minutes;
+    data[1] = backlight;
+    data[2] = idle_minutes;
 }
 
 void apply_config_screen_power() {

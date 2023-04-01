@@ -78,6 +78,7 @@ target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/screen_power.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_processor.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_scan.c
+  ${CMAKE_CURRENT_LIST_DIR}/screen_tb.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_welcome.c
   ${CMAKE_CURRENT_LIST_DIR}/shared_buffer.c
   ${CMAKE_CURRENT_LIST_DIR}/srom_pmw3389.c

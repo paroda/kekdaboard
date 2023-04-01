@@ -334,9 +334,6 @@ void core0_main(void) {
         // apply any new configs
         apply_configs();
 
-        // handle idleness
-        process_idle();
-
         if(kbd_system.side == kbd_side_LEFT) {
             // update lcd display head, @ 100 ms
             do_if_elapsed(&lcd_last_ms, 100, NULL, lcd_display_head_task);
@@ -366,6 +363,9 @@ void core0_main(void) {
 
         if(kbd_system.role == kbd_role_MASTER) {
             do_if_elapsed(&proc_last_ms, 10, NULL, process_inputs);
+
+            // handle idleness, only MASTER has activeness tracking
+            process_idle();
         } else { // SLAVE
             if(kbd_system.state_ts != kbd_system.sb_state->ts)
                 read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
