@@ -89,10 +89,15 @@ static void init_screen() {
 
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
-    lcd_canvas_text(cv, 20, 30, "Backlight", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
-    draw_backlight(cv, 135, 60, field==0);
-    lcd_canvas_text(cv, 20, 120, "Idle Minutes", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
-    draw_idle_minutes(cv, 135, 150, field==1);
+
+    char txt[16];
+    sprintf(txt, "Power-%04d", fd->pos);
+    lcd_canvas_text(cv, 65, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
+
+    lcd_canvas_text(cv, 20, 60, "Backlight", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
+    draw_backlight(cv, 135, 90, field==0);
+    lcd_canvas_text(cv, 20, 130, "Idle Minutes", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
+    draw_idle_minutes(cv, 135, 160, field==1);
     lcd_display_body();
 }
 
@@ -103,13 +108,13 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
 
     if(field!=sel_field || sel_field==0) {
         draw_backlight(cv, 0, 0, sel_field==0);
-        lcd_display_body_canvas(135, 60, cv);
+        lcd_display_body_canvas(135, 90, cv);
         lcd_canvas_clear(cv);
     }
 
     if(field!=sel_field || sel_field==1) {
         draw_idle_minutes(cv, 0, 0, sel_field==1);
-        lcd_display_body_canvas(135, 150, cv);
+        lcd_display_body_canvas(135, 160, cv);
     }
     lcd_free_canvas(cv);
 

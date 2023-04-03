@@ -15,12 +15,12 @@
  * 7 0111  F 1111
  */
 
-// 16bit RGB colors (5-6-5)
+// 16bit RGB colors (5-6-5) (0000 0-000 000-0 0000)
 #define WHITE          0xFFFF
 #define BLACK          0x0000
-#define RED            0xF800
-#define GREEN          0x07E0
-#define BLUE           0x001F
+#define RED            0xB800 // use a bit darker RED/GREEN/BLUE
+#define GREEN          0x05E0
+#define BLUE           0x0017
 #define MAGENTA        0xF81F // red blue
 #define YELLOW         0xFFE0 // red green
 #define CYAN           0x07FF // green blue

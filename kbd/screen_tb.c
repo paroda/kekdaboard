@@ -8,18 +8,12 @@
 #define FIELD_COUNT 5
 
 /*
- *   0123456789012
- * 0 Track Ball...
- * 1 .............
- * 2 CPI     01600
- * 3      Scale  Q
- * 4 Scroll 032  2
- * 5 Delta  004  2
- *
- * w = 17*13 = 221
- * h = 30*6 = 180
- * top = (200-180)/2 = 10
- * left = (240-221)/2 ~ 10
+ *   0123456789012  font
+ * 1 .............  11x16 y:10
+ * 2 CPI     01600  17x24 y:60
+ * 3      Scale  Q        y:100
+ * 4 Scroll 032  2        y:130
+ * 5 Delta  004  2        y:180
  */
 
 #define CPI_BASE 400
@@ -157,14 +151,13 @@ static void init_screen() {
 
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
-    lcd_canvas_text(cv, 10, 10, "Trackball!", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
 
-    char txt[8];
-    sprintf(txt, "v%5d", fd->pos);
-    lcd_canvas_text(cv, 164, 40, txt, &lcd_font16, MAGENTA, LCD_BODY_BG);
+    char txt[16];
+    sprintf(txt, "Trackball-%04d", fd->pos);
+    lcd_canvas_text(cv, 43, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
-    lcd_canvas_text(cv, 10, 70, "CPI", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
-    draw_cpi(cv, 129, 70, field==0);
+    lcd_canvas_text(cv, 10, 60, "CPI", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
+    draw_cpi(cv, 129, 60, field==0);
 
     lcd_canvas_text(cv, 95, 100, "Scale  Q", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
 
@@ -183,7 +176,7 @@ static void draw_field(lcd_canvas_t* cv1, lcd_canvas_t* cv2, uint8_t field, bool
     switch(field) {
     case 0: // cpi
         draw_cpi(cv2, 0, 0, selected);
-        lcd_display_body_canvas(129, 70, cv2);
+        lcd_display_body_canvas(129, 60, cv2);
         break;
     case 1: // scroll_scale
         draw_scroll_scale(cv1, 0, 0, selected);
