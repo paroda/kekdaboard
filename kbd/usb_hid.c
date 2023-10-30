@@ -30,8 +30,8 @@ typedef struct TU_ATTR_PACKED {
     int16_t  pan;     // using AC Pan
 } kbd_mouse_report_t;
 
-static bool kbd_hid_n_mouse_report(uint8_t instance, uint8_t report_id, uint8_t buttons,
-                                   int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
+static inline bool kbd_hid_mouse_report(uint8_t report_id, uint8_t buttons,
+                                        int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
     kbd_mouse_report_t report = {
         .buttons = buttons,
         .x       = x,
@@ -39,13 +39,8 @@ static bool kbd_hid_n_mouse_report(uint8_t instance, uint8_t report_id, uint8_t 
         .wheel   = vertical,
         .pan     = horizontal
     };
-
+    uint8_t instance = 0;
     return tud_hid_n_report(instance, report_id, &report, sizeof(report));
-}
-
-static inline bool kbd_hid_mouse_report(uint8_t report_id, uint8_t buttons,
-                                        int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
-    return kbd_hid_n_mouse_report(0, report_id, buttons, x, y, vertical, horizontal);
 }
 
 static bool send_hid_mouse_report() {
@@ -127,6 +122,10 @@ static void hid_task(void) {
                     had_events = false;
         }
     }
+}
+
+void usb_hid_idle_task(void) {
+    tud_task();
 }
 
 void usb_hid_task(void) {

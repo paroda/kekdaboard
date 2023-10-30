@@ -56,5 +56,8 @@ add_subdirectory(hello_track_ball)
 # add multiple device trials (flash, sd_card, clock)
 add_subdirectory(hello_spi_i2c)
 
+# add ws2812
+add_subdirectory(hello_ws2812)
+
 # add kbd
 add_subdirectory(kbd)

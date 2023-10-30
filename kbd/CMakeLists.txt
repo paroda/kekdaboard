@@ -57,6 +57,13 @@ project(kbd_main)
 
 add_executable(kbd_main)
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
+
+# generate the header file into the source tree
+pico_generate_pio_header(kbd_main
+  ${CMAKE_CURRENT_LIST_DIR}/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
+)
+
 target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/main.c
   ${CMAKE_CURRENT_LIST_DIR}/core0.c
@@ -71,6 +78,7 @@ target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/lcd_canvas.c
   ${CMAKE_CURRENT_LIST_DIR}/lcd_fonts.c
   ${CMAKE_CURRENT_LIST_DIR}/lcd_st7789.c
+  ${CMAKE_CURRENT_LIST_DIR}/led_pixel.c
   ${CMAKE_CURRENT_LIST_DIR}/master_spi.c
   ${CMAKE_CURRENT_LIST_DIR}/peer_comm.c
   ${CMAKE_CURRENT_LIST_DIR}/rtc_ds3231.c
@@ -97,7 +105,7 @@ target_link_libraries(kbd_main PUBLIC
   pico_stdlib
   pico_multicore
   pico_bootsel_via_double_reset # Double tap reset into bootrom
-  hardware_spi hardware_i2c hardware_uart hardware_pwm
+  hardware_spi hardware_i2c hardware_uart hardware_pwm hardware_pio hardware_dma
   tinyusb_device tinyusb_board
 )
 

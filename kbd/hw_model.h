@@ -21,6 +21,7 @@
 #include "master_spi.h"
 #include "flash_w25qxx.h"
 #include "lcd_st7789.h"
+#include "led_pixel.h"
 #include "tb_pmw3389.h"
 
 #define LCD_BODY_BG BROWN
@@ -37,6 +38,7 @@ typedef struct {
     master_spi_t* m_spi;
     flash_t* flash;
     lcd_t* lcd;
+    led_pixel_t* led_pixel;
     tb_t* tb;
 
     key_scan_t* ks;

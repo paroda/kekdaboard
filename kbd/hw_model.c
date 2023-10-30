@@ -100,6 +100,10 @@ void init_hw_right() {
                           hw_gpio_CS_tb, hw_gpio_tb_MT, hw_gpio_tb_RST,
                           KBD_TB_CPI_DEFAULT,
                           true, false, false);
+
+    // setup key switch leds
+    pio_hw_t* pio = hw_inst_PIO == 0 ? pio0 : pio1;
+    kbd_hw.led_pixel = led_pixel_create(pio, hw_inst_PIO_SM, hw_gpio_led_left_DI, hw_gpio_led_right_DI, hw_led_pixel_count);
 }
 
 void init_flash_datasets(flash_dataset_t** flash_datasets) {

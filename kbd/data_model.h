@@ -1,6 +1,8 @@
 #ifndef _DATA_MODEL_H
 #define _DATA_MODEL_H
 
+#include "hw_config.h"
+
 #include "screen_model.h"
 #include "peer_comm.h"
 #include "rtc_model.h"
@@ -8,15 +10,25 @@
 #include "flash_store.h"
 
 /*
- * Tasks (10ms process cycle)
+ * Tasks (10 ms process cycle)
  *
- * core-1: scan key_press                   core-0: scan tb_motion (right)
- *         UART TX/RX                               update state (master)
- *                                                  set tasks (master)
- *                                                  execute task (master & slave)
- *                                                  prepare hid report and send (master)
- *                                                  process state->led (left & right)
- *                                                  process state->lcd (left)
+ * core-1: scan key_press @ 3 ms            core-0: scan tb_motion (right)                 @ 5 ms
+ *         UART TX/RX     @ 3 ms                    publish tb_motion (right)              @ 20 ms
+ *         led blinking   no-delay                  primary process                        @ 10 ms
+ *                                                  - update state using inputs
+ *                                                  - set task requests (master)
+ *                                                  - make hid report and send via usb (master)
+ *                                                  execute task (master & slave)          @ on demand
+ *                                                  process state->led (left & right)      no-delay
+ *                                                  process state->lcd (left)              @ 100 ms
+ *                                                  apply configs                          @ on demand
+ *                                                  read date-time & temperature           @ 1 second
+ *                                                  update key switch leds                 @ 1 second
+ * 
+ * It is critical to time the scan and processing for track ball
+ * since it is an accumulator of dx and dy. We scan it quickly to avoid overflow of hardware registers.
+ * And accumulate in memroy. Then use it at a lower frequency, i.e. 20 ms intervals. It should be
+ * slower than our processing cycle which is 10 ms. So that, we can consume the readings without loss.
  *
  * Flow (left-master, right-slave)
  *
@@ -30,9 +42,9 @@
  *        right:right_task_response ==> left:right_task_response
  *
  * core-0
- * scan   : right:scan ==> right:right_input->tb_motion
+ * scan   : right:scan ==> right:right_tb_motion
  * Process: left:left_key_press   ==>  left:system_state
- *          left:right_key_press       left:hid_report
+ *          left:right_key_press       left:hid_report_out
  *          left:right_tb_motion
  *          left:hid_report_in
  *          left:left_task_response
@@ -89,8 +101,8 @@ typedef struct {
     // order members larger to smaller
     bool has_motion;
     bool on_surface;
-    int16_t dx;
-    int16_t dy;
+    int32_t dx;
+    int32_t dy;
 } kbd_tb_motion_t;
 
 typedef enum {
@@ -235,6 +247,9 @@ typedef struct {
 
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock
     volatile kbd_led_state_t ledB; // left/right: core1 state
+
+    uint32_t led_colors_left[hw_led_pixel_count];
+    uint32_t led_colors_right[hw_led_pixel_count];
 
     // flash loaded and saved on both sides, keeping them in sync
     // flash data is meant to be accessed by primary (core0) loop

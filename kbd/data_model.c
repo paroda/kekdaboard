@@ -86,6 +86,9 @@ void init_data_model() {
     memset(kbd_system.left_task_response, 0, KBD_TASK_RESPONSE_SIZE);
     memset(kbd_system.right_task_response, 0, KBD_TASK_RESPONSE_SIZE);
 
+    memset(kbd_system.led_colors_left, 0, hw_led_pixel_count * sizeof(uint32_t));
+    memset(kbd_system.led_colors_right, 0, hw_led_pixel_count * sizeof(uint32_t));
+
     shared_buffer_t* sbs[KBD_SB_COUNT] = {
         kbd_system.sb_state,               // DATA_ID: 0
         kbd_system.sb_left_key_press,      //          1

@@ -143,21 +143,30 @@ static void parse_code(uint8_t code, uint8_t base_code,
     }
 }
 
+static inline int16_t cap16_value(int32_t v) {
+    // cap the value to 16 bits
+    return (v > 0x7fff) ? 0x7fff : (-v > 0x7fff) ? -0x7fff : v;
+}
+
+static inline int16_t add_cap16_value(int16_t v1, int16_t v2) {
+    return cap16_value((int32_t)v1 + (int32_t)v2);
+}
+
 static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm) {
     if(kbd_system.right_tb_motion.has_motion) {
         uint8_t scale = moon ? kbd_system.tb_scroll_scale : kbd_system.tb_delta_scale;
         uint8_t quad_weight = moon ? kbd_system.tb_scroll_quad_weight : kbd_system.tb_delta_quad_weight;
-        int32_t x,y,q;
+        int32_t x,y,q,x_abs,y_abs;
         uint16_t m = kbd_system.tb_cpi / scale;
         x = kbd_system.right_tb_motion.dx/scale;
         q = (x<0 ? -x*x : x*x) / m;
-        x = (x + quad_weight * q) / (quad_weight+1);
+        x = (x + quad_weight * q) / (1 + quad_weight);
         y = kbd_system.right_tb_motion.dy/scale;
         q = (y<0 ? -y*y : y*y) / m;
-        y = (y + quad_weight * q) / (quad_weight+1);
+        y = (y + quad_weight * q) / (1 + quad_weight);
         if(shift) {
-            int16_t x_abs = x < 0 ? -x : x;
-            int16_t y_abs = y < 0 ? -y : y;
+            x_abs = x < 0 ? -x : x;
+            y_abs = y < 0 ? -y : y;
             if(x_abs < y_abs) {
                 x = 0;
             } else {
@@ -165,11 +174,11 @@ static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm)
             }
         }
         if(moon) {
-            outm->scrollX = x;
-            outm->scrollY = -y;
+            outm->scrollX = cap16_value(x);
+            outm->scrollY = cap16_value(-y);
         } else {
-            outm->deltaX = x;
-            outm->deltaY = y;
+            outm->deltaX = cap16_value(x);
+            outm->deltaY = cap16_value(y);
         }
     }
 }
@@ -257,10 +266,10 @@ kbd_event_t execute_input_processor() {
     // set the hid report
     kbd_system.hid_report_out.has_events = has_events;
     kbd_system.hid_report_out.keyboard = outk;
-    outm.deltaX += kbd_system.hid_report_out.mouse.deltaX;
-    outm.deltaY += kbd_system.hid_report_out.mouse.deltaY;
-    outm.scrollX += kbd_system.hid_report_out.mouse.scrollX;
-    outm.scrollY += kbd_system.hid_report_out.mouse.scrollY;
+    outm.deltaX = add_cap16_value(outm.deltaX, kbd_system.hid_report_out.mouse.deltaX);
+    outm.deltaY = add_cap16_value(outm.deltaY, kbd_system.hid_report_out.mouse.deltaY);
+    outm.scrollX = add_cap16_value(outm.scrollX, kbd_system.hid_report_out.mouse.scrollX);
+    outm.scrollY = add_cap16_value(outm.scrollY, kbd_system.hid_report_out.mouse.scrollY);
     kbd_system.hid_report_out.mouse = outm;
 
     // screen change event

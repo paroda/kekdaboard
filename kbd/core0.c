@@ -119,23 +119,28 @@ void lcd_display_head_task(void* param) {
     lcd_display_canvas(kbd_hw.lcd, 0, 0, cv);
 }
 
+void led_pixel_task(void* param) {
+    (void)param;
+    // TODO: prepare the colors buffers
+    led_pixel_set(kbd_hw.led_pixel, kbd_system.led_colors_left, kbd_system.led_colors_right);
+}
+
+
 void tb_scan_task_capture(void* param) {
     kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
 
     // scan tb scroll and write to sb_right_tb_motion
-    kbd_tb_motion_t d = {
-        .has_motion = false,
-        .on_surface = false,
-        .dx = 0,
-        .dy = 0
-    };
+    bool has_motion = false;
+    bool on_surface = false;
+    int16_t dx = 0;
+    int16_t dy = 0;
 
-    d.has_motion = tb_check_motion(kbd_hw.tb, &d.on_surface, &d.dx, &d.dy);
+    has_motion = tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy);
 
-    ds->has_motion = ds->has_motion || d.has_motion;
-    ds->on_surface = ds->on_surface || d.on_surface;
-    ds->dx = ds->dx + d.dx;
-    ds->dy = ds->dy + d.dy;
+    ds->has_motion = ds->has_motion || has_motion;
+    ds->on_surface = ds->on_surface || on_surface;
+    ds->dx = ds->dx + dx;
+    ds->dy = ds->dy + dy;
 }
 
 void tb_scan_task_publish(void* param) {
@@ -209,10 +214,18 @@ void process_inputs(void* param) {
     }
 
     // read the inputs
-    uint64_t ts; // unused, we read the input always
+    uint64_t ts;
     read_shared_buffer(kbd_system.sb_left_key_press, &ts, kbd_system.left_key_press);
     read_shared_buffer(kbd_system.sb_right_key_press, &ts, kbd_system.right_key_press);
     read_shared_buffer(kbd_system.sb_right_tb_motion, &ts, &kbd_system.right_tb_motion);
+    static uint64_t last_ts_tb_motion = 0;
+    if(last_ts_tb_motion == ts) { 
+        // discard the delta if already used
+        kbd_system.right_tb_motion.dx = 0;
+        kbd_system.right_tb_motion.dy = 0;
+    } else {
+        last_ts_tb_motion = ts;
+    }
 
     // process inputs to update the hid_report_out and generate event
     kbd_event_t event = execute_input_processor();
@@ -316,6 +329,7 @@ void core0_main(void) {
 
     uint32_t rtc_last_ms = 0;
     uint32_t lcd_last_ms = 0;
+    uint32_t led_pixel_last_ms = 0;
     uint32_t tb_capture_last_ms = 0;
     uint32_t tb_publish_last_ms = 0;
     uint32_t proc_last_ms = 0;
@@ -328,6 +342,9 @@ void core0_main(void) {
     };
 
     while(true) {
+        // keep tiny usb ready
+        usb_hid_idle_task();
+
         // get date & temperature, once a second
         do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
 
@@ -354,14 +371,18 @@ void core0_main(void) {
             // scan track ball scroll (capture), @ 3 ms
             do_if_elapsed(&tb_capture_last_ms, 3, &tbm, tb_scan_task_capture);
 
-            // scan track ball scroll (publish), @ 10 ms
-            do_if_elapsed(&tb_publish_last_ms, 10, &tbm, tb_scan_task_publish);
+            // scan track ball scroll (publish), @ 20 ms
+            do_if_elapsed(&tb_publish_last_ms, 20, &tbm, tb_scan_task_publish);
 
             // set caps lock led
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
+
+            // set key switch leds
+            do_if_elapsed(&led_pixel_last_ms, 1000, NULL, led_pixel_task);
         }
 
         if(kbd_system.role == kbd_role_MASTER) {
+            // process input to output/usb, @ 10 ms
             do_if_elapsed(&proc_last_ms, 10, NULL, process_inputs);
 
             // handle idleness, only MASTER has activeness tracking

@@ -98,10 +98,10 @@ void core1_main(void) {
     while(true) {
         led_task();
 
-        // scan key presses
+        // scan key presses, @ 3 ms
         do_if_elapsed(&ks_last_ms, 3, NULL, key_scan_task);
 
-        // transfer data to/from peer, initiated by master only
+        // transfer data to/from peer, initiated by master only, @ 3 ms
         if(kbd_system.role == kbd_role_MASTER) {
             do_if_elapsed(&comm_last_ms, 3, NULL, comm_task);
         }
