@@ -8,6 +8,7 @@
 #include "rtc_model.h"
 #include "key_layout.h"
 #include "flash_store.h"
+#include "pixel_anim.h"
 
 /*
  * Tasks (10 ms process cycle)
@@ -248,8 +249,12 @@ typedef struct {
     volatile kbd_led_state_t led;  // left: core0 system state, right: caps lock
     volatile kbd_led_state_t ledB; // left/right: core1 state
 
-    uint32_t led_colors_left[hw_led_pixel_count];
-    uint32_t led_colors_right[hw_led_pixel_count];
+    volatile uint32_t pixel_color;
+    volatile pixel_anim_style_t pixel_anim_style; // fixed, key press, fade etc
+    volatile uint8_t pixel_anim_cycles; // number of cycles for a full transition (on to off)
+
+    uint32_t pixel_colors_left[hw_led_pixel_count];
+    uint32_t pixel_colors_right[hw_led_pixel_count];
 
     // flash loaded and saved on both sides, keeping them in sync
     // flash data is meant to be accessed by primary (core0) loop

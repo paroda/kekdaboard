@@ -43,8 +43,8 @@ typedef struct {
 
     key_scan_t* ks;
 
-    kbd_led_t led;
-    kbd_led_t ledB;
+    kbd_led_t led;  // status led - one on each side
+    kbd_led_t ledB; // board led - one on each pico
 
     lcd_canvas_t* lcd_body; // 240x200 at 0,40 - 240,240
 } kbd_hw_t;

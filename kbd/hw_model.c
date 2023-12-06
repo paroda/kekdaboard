@@ -103,7 +103,7 @@ void init_hw_right() {
 
     // setup key switch leds
     pio_hw_t* pio = hw_inst_PIO == 0 ? pio0 : pio1;
-    kbd_hw.led_pixel = led_pixel_create(pio, hw_inst_PIO_SM, hw_gpio_led_left_DI, hw_gpio_led_right_DI, hw_led_pixel_count);
+    kbd_hw.led_pixel = led_pixel_create(pio, hw_inst_PIO_SM, hw_gpio_led_left_DI, hw_led_pixel_count); // right_DI is next consecutive GPIO
 }
 
 void init_flash_datasets(flash_dataset_t** flash_datasets) {

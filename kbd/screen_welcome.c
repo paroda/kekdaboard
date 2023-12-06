@@ -7,7 +7,7 @@ void execute_screen_welcome(kbd_event_t event) {
     mark_left_request(kbd_info_screen_welcome);
 }
 
-void respond_screen_welcome(void) {
+void respond_screen_welcome() {
     lcd_show_welcome();
 
     mark_left_response();

@@ -303,7 +303,7 @@ void execute_screen_tb(kbd_event_t event) {
     }
 }
 
-void respond_screen_tb(void) {
+void respond_screen_tb() {
     uint8_t* req = kbd_system.side == kbd_side_LEFT ?
         kbd_system.left_task_request : kbd_system.right_task_request;
     switch(req[2]) {

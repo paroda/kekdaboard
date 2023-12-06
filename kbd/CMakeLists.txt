@@ -81,8 +81,10 @@ target_sources(kbd_main PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/led_pixel.c
   ${CMAKE_CURRENT_LIST_DIR}/master_spi.c
   ${CMAKE_CURRENT_LIST_DIR}/peer_comm.c
+  ${CMAKE_CURRENT_LIST_DIR}/pixel_anim.c
   ${CMAKE_CURRENT_LIST_DIR}/rtc_ds3231.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_date.c
+  ${CMAKE_CURRENT_LIST_DIR}/screen_pixel.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_power.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_processor.c
   ${CMAKE_CURRENT_LIST_DIR}/screen_scan.c

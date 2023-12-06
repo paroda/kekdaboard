@@ -47,6 +47,10 @@ kbd_system_t kbd_system = {
     .led = kbd_led_state_OFF,
     .ledB = kbd_led_state_OFF,
 
+    .pixel_color = 0x000f0f, // cyan
+    .pixel_anim_style = pixel_anim_style_FIXED, // fixed
+    .pixel_anim_cycles = 1, // not applicable when fixed
+
     .comm = NULL,
     .spin_lock = NULL
 };
@@ -86,8 +90,8 @@ void init_data_model() {
     memset(kbd_system.left_task_response, 0, KBD_TASK_RESPONSE_SIZE);
     memset(kbd_system.right_task_response, 0, KBD_TASK_RESPONSE_SIZE);
 
-    memset(kbd_system.led_colors_left, 0, hw_led_pixel_count * sizeof(uint32_t));
-    memset(kbd_system.led_colors_right, 0, hw_led_pixel_count * sizeof(uint32_t));
+    memset(kbd_system.pixel_colors_left, 0, hw_led_pixel_count * sizeof(uint32_t));
+    memset(kbd_system.pixel_colors_right, 0, hw_led_pixel_count * sizeof(uint32_t));
 
     shared_buffer_t* sbs[KBD_SB_COUNT] = {
         kbd_system.sb_state,               // DATA_ID: 0

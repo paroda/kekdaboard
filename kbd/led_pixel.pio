@@ -11,10 +11,9 @@
 .define public T3 3
 
 .wrap_target
-    out x, 2                       ; [1] copy 2 bits from OSR to x
-    mov pins, !null [T1-1]         ; [T1] set all pins high (!null)
-    mov pins, x     [T2-1]         ; [T2] pulse width: keep pins high (bit=1) or low (bit=0)
-    mov pins, null  [T3-2]         ; [1] pull all pins low
+    set pins, 3 [T1-1]         ; [T1] set all pins high
+    out pins, 2 [T2-1]         ; [T2] pulse width: keep pins high (bit=1) or low (bit=0)
+    set pins, 0 [T3-1]         ; [T3] pull all pins low
 .wrap
 
 % c-sdk {
@@ -23,10 +22,13 @@
 static inline void led_pixel_program_init(PIO pio, uint sm, uint offset, uint pin, float freq) {
 
     pio_gpio_init(pio, pin);
+    pio_gpio_init(pio, pin+1);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 2, true);
 
     pio_sm_config c = led_pixel_program_get_default_config(offset);
-    sm_config_set_out_shift(&c, false, true, 16);
+    sm_config_set_out_shift(&c, false, true, 32);
+    sm_config_set_out_pins(&c, pin, 2);
+    sm_config_set_set_pins(&c, pin, 2);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
 
     int cycles_per_bit = led_pixel_T1 + led_pixel_T2 + led_pixel_T3;

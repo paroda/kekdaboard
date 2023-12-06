@@ -14,7 +14,7 @@
 
 #define IS_RGBW false
 
-#define WS2812_PIN 16
+#define WS2812_PIN 7
 
 
 static inline void put_pixel(uint32_t pixel_grb) {
@@ -30,57 +30,42 @@ static inline uint32_t ugrb_u32(uint8_t r, uint8_t g, uint8_t b) {
 
 static void pattern_1() {
     for (int i = 0; i < 1000; ++i) {
-        switch(i%8) {
-        case 0:
-            put_pixel(ugrb_u32(0x00, 0x00, 0x00));
-            break;
-        case 1:
+        switch(i%9) {
+        case 0: // red
             put_pixel(ugrb_u32(0x80, 0x00, 0x00));
             break;
-        case 2:
+        case 1: // green
             put_pixel(ugrb_u32(0x00, 0x80, 0x00));
             break;
-        case 3:
+        case 2: // blue
             put_pixel(ugrb_u32(0x00, 0x00, 0x80));
             break;
-        case 4:
+        case 3: // yellow
             put_pixel(ugrb_u32(0x80, 0x80, 0x00));
             break;
-        case 5:
-            put_pixel(ugrb_u32(0x00, 0x80, 0x80));
-            break;
-        case 6:
+        case 4: // purple
             put_pixel(ugrb_u32(0x80, 0x00, 0x80));
             break;
-        case 7:
+        case 5: // cyan
+            put_pixel(ugrb_u32(0x00, 0x80, 0x80));
+            break;
+        case 6: // off
+            put_pixel(ugrb_u32(0x00, 0x00, 0x00));
+            break;
+        case 7: // half white
             put_pixel(ugrb_u32(0x80, 0x80, 0x80));
+            break;
+        case 8: // full white
+            put_pixel(ugrb_u32(0xff, 0xff, 0xff));
             break;
         default: break;
         }
-        sleep_ms(1000);
-    }
-}
+        if((i+1)%3==0) sleep_ms(1000);
+        if((i+1)%9==0) sleep_ms(2000);
 
-static void pattern_2() {
-    for(int i=1; i<256; i*=2) {
-        put_pixel(ugrb_u32(0, 0, i));
-        sleep_ms(1000);
-    }
-}
-
-static void pattern_3() {
-    for(uint32_t i=0; i<0x01000000; i+=8) {
-        put_pixel(i);
-        sleep_ms(1);
-    }
-}
-
-static void pattern_3_50() {
-    for(uint32_t i=0; i<0x01000000; i+=8) {
-        for(uint32_t j=0; j<50; j++){
-            put_pixel(i);
-        }
-        sleep_ms(1); // reset (> 80 us)
+        static bool led_on = true;
+        gpio_put(25, led_on);
+        led_on = !led_on;
     }
 }
 
@@ -103,7 +88,7 @@ int main() {
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
 
     while (1) {
-        pattern_3_50();
+        pattern_1();
         gpio_put(25, led_on);
         led_on = !led_on;
     }

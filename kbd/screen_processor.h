@@ -29,7 +29,7 @@ void mark_right_response();
 
 typedef void execute_screen_t (kbd_event_t event);
 
-typedef void respond_screen_t(void);
+typedef void respond_screen_t();
 
 typedef void init_config_screen_default_t();
 
@@ -69,5 +69,10 @@ execute_screen_t execute_screen_tb;
 respond_screen_t respond_screen_tb;
 init_config_screen_default_t init_config_screen_default_tb;
 apply_config_screen_t apply_config_screen_tb;
+
+execute_screen_t execute_screen_pixel;
+respond_screen_t respond_screen_pixel;
+init_config_screen_default_t init_config_screen_default_pixel;
+apply_config_screen_t apply_config_screen_pixel;
 
 #endif

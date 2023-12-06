@@ -121,8 +121,9 @@ void lcd_display_head_task(void* param) {
 
 void led_pixel_task(void* param) {
     (void)param;
-    // TODO: prepare the colors buffers
-    led_pixel_set(kbd_hw.led_pixel, kbd_system.led_colors_left, kbd_system.led_colors_right);
+    pixel_anim_update(kbd_system.pixel_colors_left, kbd_system.pixel_colors_right, hw_led_pixel_count,
+                      kbd_system.pixel_color, kbd_system.pixel_anim_style, kbd_system.pixel_anim_cycles);
+    led_pixel_set(kbd_hw.led_pixel, kbd_system.pixel_colors_left, kbd_system.pixel_colors_right);
 }
 
 
@@ -378,7 +379,7 @@ void core0_main(void) {
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
 
             // set key switch leds
-            do_if_elapsed(&led_pixel_last_ms, 1000, NULL, led_pixel_task);
+            do_if_elapsed(&led_pixel_last_ms, 100, NULL, led_pixel_task);
         }
 
         if(kbd_system.role == kbd_role_MASTER) {

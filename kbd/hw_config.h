@@ -17,29 +17,34 @@
 #define hw_gpio_MOSI 3
 #define hw_gpio_MISO 4
 
-#define hw_gpio_CS_lcd 6
-#define hw_gpio_lcd_BL 8
-#define hw_gpio_lcd_DC 9
-#define hw_gpio_lcd_RST 0xFF // use software RESET
-
-#define hw_inst_PIO 0
-#define hw_inst_PIO_SM 0
-#define hw_gpio_led_left_DI 7
-#define hw_gpio_led_right_DI 8
-#define hw_led_pixel_count 42
-
-#define hw_gpio_CS_tb 6
-#define hw_gpio_tb_MT 0xFF  // not used
-#define hw_gpio_tb_RST 0xFF // not used
-
 #define hw_gpio_CS_flash 5
 #define hw_gpio_CS_sd_card 7
 
 #define hw_gpio_LED 28
 
+// key scan layout
 #define hw_gpio_rows  {15, 14, 13, 12, 11, 10} // 6 rows
 #define hw_gpio_cols {22, 21, 20, 19, 18, 17, 16} // 7 cols
 
+// only left side
+#define hw_gpio_CS_lcd 6
+#define hw_gpio_lcd_BL 8
+#define hw_gpio_lcd_DC 9
+#define hw_gpio_lcd_RST 0xFF // use software RESET
+
+// only right side
+#define hw_gpio_CS_tb 6
+#define hw_gpio_tb_MT 0xFF  // not used
+#define hw_gpio_tb_RST 0xFF // not used
+
+// only right side
+#define hw_inst_PIO 0
+#define hw_inst_PIO_SM 0
+#define hw_gpio_led_left_DI 8
+#define hw_gpio_led_right_DI 9
+#define hw_led_pixel_count 42 // each side
+
+// led pixels layout - left
 #define hw_key_leds_left { \
     { 0,  1,  2,  3,  4,  5,  6}, \
     {13, 12, 11, 10,  9,  8,  7} \
@@ -49,6 +54,7 @@
     {35, 36, 37, 38, 39, 40, 41} \
 } // FIX last row
 
+// led pixels layout - right
 #define hw_key_leds_right { \
     { 6,  5,  4,  3,  2,  1,  0}, \
     { 7,  8,  9, 10, 11, 12, 13} \

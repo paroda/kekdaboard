@@ -163,7 +163,7 @@ void execute_screen_scan(kbd_event_t event) {
     memcpy(req+pos, &kbd_system.right_tb_motion, sizeof(kbd_tb_motion_t));
 }
 
-void respond_screen_scan(void) {
+void respond_screen_scan() {
     uint8_t* req = kbd_system.left_task_request;
 
     if(req[2]==0)
