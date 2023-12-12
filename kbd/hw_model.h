@@ -24,7 +24,7 @@
 #include "led_pixel.h"
 #include "tb_pmw3389.h"
 
-#define LCD_BODY_BG BROWN
+#define LCD_BODY_BG ORCHID
 #define LCD_BODY_FG WHITE
 
 typedef struct {

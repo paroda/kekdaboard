@@ -48,12 +48,19 @@ void key_scan_update(key_scan_t* ks) {
     for(uint row=0; row<ks->row_count; row++) {
         uint row_gpio = ks->gpio_rows[row];
         gpio_put(row_gpio, true);
+        sleep_us(10);
 
         uint8_t keys = 0;
         for(uint col=0; col<ks->col_count; col++) {
             uint col_gpio = ks->gpio_cols[col];
             keys = (keys<<1) | (gpio_get(col_gpio) ? 1 : 0);
         }
+
+        // for(uint col=ks->col_count-1; ; col--) {
+        //     uint col_gpio = ks->gpio_cols[col];
+        //     keys = (keys>>1) | (gpio_get(col_gpio) ? 1<<(ks->col_count-1) : 0);
+        //     if(col==0) break;
+        // }
 
         gpio_put(row_gpio, false);
 

@@ -24,9 +24,11 @@
 #define MAGENTA        0xF81F // red blue
 #define YELLOW         0xFFE0 // red green
 #define CYAN           0x07FF // green blue
+#define DARK_CYAN      0x0410
 #define BROWN          0xBC40
 #define GRAY           0x8430
 #define DARK_GRAY      0x4108
+#define ORCHID         0xC11F
 
 typedef struct {
     uint16_t* buf;

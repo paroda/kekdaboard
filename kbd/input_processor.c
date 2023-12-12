@@ -108,12 +108,19 @@ static void parse_modifier(uint8_t modifier, hid_report_out_keyboard_t* outk) {
 static void parse_code(uint8_t code, uint8_t base_code,
                        uint8_t* n_key_codes, hid_report_out_keyboard_t* outk,
                        hid_report_out_mouse_t* outm) {
-    if(base_code==KBD_KEY_SUN) {
+    switch (base_code) {
+    case KBD_KEY_SUN:
         cur_key_press.sun = 1;
-    } else if(base_code==KBD_KEY_LEFT_MOON || base_code==KBD_KEY_RIGHT_MOON) {
+        break;
+    case KBD_KEY_LEFT_MOON:
+    case KBD_KEY_RIGHT_MOON:
         // no action
-    } else {
+        break;
+    default:
         switch(code) {
+        case KBD_KEY_BACKLIGHT:
+            cur_key_press.backlight = 1;
+            break;
         case KBD_KEY_MOUSE_LEFT:
             outm->left=true;
             break;
@@ -140,6 +147,7 @@ static void parse_code(uint8_t code, uint8_t base_code,
                 }
             }
         }
+        break;
     }
 }
 

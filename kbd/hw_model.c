@@ -83,8 +83,8 @@ void init_hw_left() {
                             240, 240,
                             lcd_orient_Normal);
     lcd_update_backlight(30);
-    lcd_clear(kbd_hw.lcd, BROWN);
-    kbd_hw.lcd_body = lcd_new_canvas(240, 200, BROWN);
+    lcd_clear(kbd_hw.lcd, LCD_BODY_BG);
+    kbd_hw.lcd_body = lcd_new_canvas(240, 200, LCD_BODY_BG);
     lcd_show_welcome();
 }
 
