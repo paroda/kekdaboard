@@ -3,6 +3,12 @@
 
 #include "tusb.h"
 
+/*
+ * Modified version of TUD_HID_REPORT_DESC_MOUSE
+ * It uses 16 bits for delta-X, delta-Y, scroll and pan
+ */
+
+// Mouse Report Descriptor Template
 #define KBD_HID_REPORT_DESC_MOUSE(...) \
   HID_USAGE_PAGE ( HID_USAGE_PAGE_DESKTOP      )                   ,\
   HID_USAGE      ( HID_USAGE_DESKTOP_MOUSE     )                   ,\
