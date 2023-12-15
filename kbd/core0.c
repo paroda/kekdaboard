@@ -378,8 +378,8 @@ void core0_main(void) {
             // set caps lock led
             kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
 
-            // set key switch leds
-            do_if_elapsed(&led_pixel_last_ms, 100, NULL, led_pixel_task);
+            // set key switch leds, @ 30 ms
+            do_if_elapsed(&led_pixel_last_ms, 30, NULL, led_pixel_task);
         }
 
         if(kbd_system.role == kbd_role_MASTER) {

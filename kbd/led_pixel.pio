@@ -6,8 +6,8 @@
 
 .program led_pixel
 
-.define public T1 2
-.define public T2 5
+.define public T1 3
+.define public T2 3
 .define public T3 3
 
 .wrap_target

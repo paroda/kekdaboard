@@ -37,7 +37,8 @@ void blink_led() {
 }
 
 void draw(uint32_t* left, uint32_t* right, int count) {
-    static uint32_t c=0, j=0;
+    // static uint32_t c=0, j=0;
+    uint32_t c=0, j=0;
     c = (c+1)%128;
     j = (j+(c==0?1:0))%3;
     uint32_t d = 127-c;

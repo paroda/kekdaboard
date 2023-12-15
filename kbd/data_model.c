@@ -47,8 +47,8 @@ kbd_system_t kbd_system = {
     .led = kbd_led_state_OFF,
     .ledB = kbd_led_state_OFF,
 
-    .pixel_color = 0x000f0f, // cyan
-    .pixel_anim_style = pixel_anim_style_FIXED, // fixed
+    .pixel_color = 0x0f000f, // magenta
+    .pixel_anim_style = pixel_anim_style_FADE, // fade
     .pixel_anim_cycles = 1, // not applicable when fixed
 
     .comm = NULL,
