@@ -4,7 +4,7 @@
 
 #include "pico/stdlib.h"
 
-#include "bsp/board.h"
+#include "bsp/board_api.h"
 #include "tusb.h"
 
 #include "data_model.h"
@@ -138,6 +138,10 @@ void usb_hid_init(void) {
 
     // init device stack on configured roothub port
     tud_init(BOARD_TUD_RHPORT);
+
+    if(board_init_after_tusb) {
+      board_init_after_tusb();
+    }
 }
 
 
@@ -169,7 +173,7 @@ void tud_suspend_cb(bool remote_wakeup_en)
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-    kbd_system.usb_hid_state = kbd_usb_hid_state_MOUNTED;
+    kbd_system.usb_hid_state = tud_mounted() ? kbd_usb_hid_state_MOUNTED : kbd_usb_hid_state_UNMOUNTED;
 }
 
 // Invoked when sent REPORT successfully to host
