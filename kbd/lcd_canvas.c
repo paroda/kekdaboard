@@ -94,7 +94,7 @@ void lcd_canvas_rect(lcd_canvas_t* canvas, uint16_t xs, uint16_t ys, uint16_t w,
 
     if(fill) {
         for(uint64_t y = ys; y <= ye; y++)
-            lcd_canvas_line(canvas, xs, y, xe, y, color, thickness, false);
+            lcd_canvas_line(canvas, xs, y, xe, y, color, 1, false);
     } else {
         lcd_canvas_line(canvas, xs, ys, xe, ys, color, thickness, false);
         lcd_canvas_line(canvas, xs, ye, xe, ye, color, thickness, false);

@@ -19,7 +19,7 @@
  */
 
 #define KBD_INFO_SCREEN_COUNT 2
-#define KBD_CONFIG_SCREEN_COUNT 3
+#define KBD_CONFIG_SCREEN_COUNT 4
 
 typedef enum {
     // info screens
