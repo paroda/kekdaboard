@@ -49,7 +49,7 @@ kbd_system_t kbd_system = {
 
     .pixel_color = 0x0f000f, // magenta
     .pixel_anim_style = pixel_anim_style_FADE, // fade
-    .pixel_anim_cycles = 1, // not applicable when fixed
+    .pixel_anim_cycles = 30, // not applicable when fixed
 
     .comm = NULL,
     .spin_lock = NULL

@@ -192,6 +192,7 @@ static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm)
 }
 
 static kbd_event_t parse_config_screen_event(bool moon) {
+    static bool exit = false;
     if(new_key_press.sun) return moon ? kbd_screen_event_PREV : kbd_screen_event_NEXT;
     if(new_key_press.up) return kbd_screen_event_UP;
     if(new_key_press.down) return kbd_screen_event_DOWN;
@@ -199,7 +200,12 @@ static kbd_event_t parse_config_screen_event(bool moon) {
     if(new_key_press.right) return kbd_screen_event_RIGHT;
     if(new_key_press.space) return moon ? kbd_screen_event_SEL_PREV : kbd_screen_event_SEL_NEXT;
     if(new_key_press.enter) return kbd_screen_event_SAVE;
-    if(new_key_press.escape) return kbd_screen_event_EXIT;
+    // exit on key up, not just key down
+    if(new_key_press.escape) exit = true;
+    if(exit && !cur_key_press.escape) {
+        exit = false;
+        return kbd_screen_event_EXIT;
+    }
     return kbd_event_NONE;
 }
 

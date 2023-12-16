@@ -25,7 +25,7 @@
  *                                                  apply configs                          @ on demand
  *                                                  read date-time & temperature           @ 1 second
  *                                                  update key switch leds                 @ 1 second
- * 
+ *
  * It is critical to time the scan and processing for track ball
  * since it is an accumulator of dx and dy. We scan it quickly to avoid overflow of hardware registers.
  * And accumulate in memroy. Then use it at a lower frequency, i.e. 20 ms intervals. It should be
@@ -62,7 +62,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x03 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x04 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
