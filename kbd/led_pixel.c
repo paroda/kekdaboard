@@ -79,13 +79,12 @@ static inline void encode_pixels(uint32_t* buff, uint32_t* left, uint32_t* right
     for(; ci<2*buff_size; ci++) {
         buff[ci/2] = ci%2 ? buff[ci/2] : 0;
     }
-
 }
 
 void led_pixel_set(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb) {
     encode_pixels(led->buff, colors_left_rgb, colors_right_rgb, led->count, led->buff_size);
     dma_channel_wait_for_finish_blocking(led->chan); // can be removed, since we plan to run it at large intervals
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset
+    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 80ms
     sleep_us(100);
     dma_channel_set_read_addr(led->chan, led->buff, true);
     led->on = true;
@@ -107,5 +106,7 @@ void led_pixel_set_off(led_pixel_t* led) {
     uint32_t cs[led->count];
     memset(cs, 0, 4*led->count);
     led_pixel_set(led, cs, cs);
+    sleep_ms(2);
+    pio_sm_set_pins(led->pio, led->sm, 1);
     led->on = false;
 }

@@ -48,7 +48,7 @@ void key_scan_update(key_scan_t* ks) {
     for(uint row=0; row<ks->row_count; row++) {
         uint row_gpio = ks->gpio_rows[row];
         gpio_put(row_gpio, true);
-        sleep_us(10);
+        sleep_us(1);
 
         uint8_t keys = 0;
         for(uint col=0; col<ks->col_count; col++) {
