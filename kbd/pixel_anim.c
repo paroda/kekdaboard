@@ -13,43 +13,32 @@ static void anim_fixed(uint32_t* colors_left, uint32_t* colors_right, uint8_t co
 }
 
 static void anim_fade(uint32_t* colors_left, uint32_t* colors_right, uint8_t count, uint32_t color, uint8_t cycles) {
-    static uint8_t r = 0, g = 0, b = 0, d = 1, R = 0, G = 0, B = 0, dr = 0, dg = 0, db = 0, cyc = 0, cr = 0, cg = 0, cb = 0;
-    static uint32_t col = 0, i = 1;
-    uint8_t x;
+    static uint32_t c = 0;
+    static uint8_t n = 0, d = 1;
+    static uint8_t i, R, G, B;
+    static float AR, BR, AG, BG, AB, BB;
     cycles = cycles>0 ? cycles : 30; // can't be zero, default to 30 cycles, around 1 second
-    if(color!=col || cycles!=cyc) {
-        col = color;
-        cyc = cycles;
-        i = 1;
-        r = g = b = 0;
-        d = 1;
+    if(color!=c || cycles!=n) {
+        c = color;
+        n = cycles;
+        i = 0;
         R = (color & 0xff0000) >> 16;
         G = (color & 0x00ff00) >> 8;
         B = (color & 0x0000ff);
-        dr = R/cycles;
-        dg = G/cycles;
-        db = B/cycles;
-        x = R%cycles;
-        cr = x>0 ? cycles/x : 0;
-        x = G%cycles;
-        cg = x>0 ? cycles/x : 0;
-        x = B%cycles;
-        cb = x>0 ? cycles/x : 0;
+        // ci = A + B * i^2
+        AR = 0.3 * R;
+        AG = 0.3 * G;
+        AB = 0.3 * B;
+        BR = (R - AR) / n / n;
+        BG = (G - AG) / n / n;
+        BB = (B - AB) / n / n;
     }
-    uint8_t dri = (i%cr)==0 ? dr+1 : dr;
-    uint8_t dgi = (i%cg)==0 ? dg+1 : dg;
-    uint8_t dbi = (i%cb)==0 ? db+1 : db;
-    if(d==1) {
-        r = r<(R-dri) ? r+dri : R;
-        g = g<(G-dgi) ? g+dgi : G;
-        b = b<(B-dbi) ? b+dbi : B;
-        if(r==R && g==G && b==B) d=-1;
-    } else {
-        r = r>dri+dri ? r-dri : dri;
-        g = g>dgi+dgi ? g-dgi : dgi;
-        b = b>dgi+dgi ? b-dbi : dbi;
-        if(r<=dri && g<=dgi && b<=dbi) d=1;
-    }
+    uint8_t r = (uint8_t) (AR + BR * i * i);
+    uint8_t g = (uint8_t) (AG + BG * i * i);
+    uint8_t b = (uint8_t) (AB + BB * i * i);
+    i = d==1 ? i+1 : i-1;
+    if(i==n) d = 0;
+    else if(i==0) d = 1;
     color = r;
     color = (color<<8) | g;
     color = (color<<8) | b;
