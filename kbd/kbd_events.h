@@ -8,6 +8,9 @@ typedef enum {
     kbd_backlight_event_HIGH,
     kbd_backlight_event_LOW,
 
+    // led pixels adjsut events
+    kbd_led_pixels_TOGGLE,
+
     // screen events
     kbd_screen_event_INIT,
     // only info screen

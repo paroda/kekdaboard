@@ -29,6 +29,7 @@ kbd_system_t kbd_system = {
     .sb_right_task_response = NULL,
 
     .backlight = 30, // 30%
+    .pixels_on = true,
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
 
@@ -73,9 +74,8 @@ void init_data_model() {
     memset(&kbd_system.state, 0, sizeof(kbd_state_t));
     kbd_system.state.screen = kbd_info_screen_welcome;
     kbd_system.state.usb_hid_state = kbd_usb_hid_state_UNMOUNTED;
-    kbd_system.state.caps_lock = false;
-    kbd_system.state.num_lock = false;
-    kbd_system.state.scroll_lock = false;
+    kbd_system.state.flags = KBD_FLAG_PIXELS_ON;
+    kbd_system.state.backlight = 50;
     write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.state);
 
     memset(kbd_system.left_key_press, 0, KEY_ROW_COUNT);

@@ -15,6 +15,7 @@ led_pixel_t* led_pixel_create(pio_hw_t* pio, uint8_t sm, uint8_t gpio_left_DI, u
     led->sm = sm;
     led->gpio_left_DI = gpio_left_DI;
     led->count = count;
+    led->on = true;
     // 2 sides, each with `count` pixels, each 3 bytes of color (rgb)
     // one word (32 bit) stores two color components of each side.
     // hence (2*3*N/4) as many words needed.
@@ -34,7 +35,7 @@ led_pixel_t* led_pixel_create(pio_hw_t* pio, uint8_t sm, uint8_t gpio_left_DI, u
         channel_config_set_transfer_data_size(&led->chan_config, DMA_SIZE_32);
         dma_channel_configure(led->chan, &led->chan_config, &led->pio->txf[sm], NULL, led->buff_size, false);
     }
-    
+
     uint8_t offset = pio_add_program(led->pio, &led_pixel_program);
     led_pixel_program_init(led->pio, led->sm, offset, led->gpio_left_DI, LED_FREQ);
 
@@ -55,7 +56,7 @@ static inline uint32_t interleave_16bits(uint8_t a, uint8_t b) {
     return x;
 }
 
-static inline void encode_pixels(uint32_t* buff, uint32_t* left, uint32_t* right, uint8_t count, uint8_t buff_size) {    
+static inline void encode_pixels(uint32_t* buff, uint32_t* left, uint32_t* right, uint8_t count, uint8_t buff_size) {
     uint32_t c, ci = 0;
     for(int i=0; i<count; i++) {
         uint32_t cl = left[i], cr = right[i];
@@ -87,6 +88,7 @@ void led_pixel_set(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors
     pio_sm_set_pins(led->pio, led->sm, 0); // reset
     sleep_us(100);
     dma_channel_set_read_addr(led->chan, led->buff, true);
+    led->on = true;
 }
 
 void led_pixel_set2(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb) {
@@ -96,4 +98,14 @@ void led_pixel_set2(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* color
     for(int i=0; i<led->buff_size; i++) {
         pio_sm_put_blocking(led->pio, led->sm, led->buff[i]);
     }
+    led->on = true;
+}
+
+void led_pixel_set_off(led_pixel_t* led) {
+    if(!led->on) return;
+
+    uint32_t cs[led->count];
+    memset(cs, 0, 4*led->count);
+    led_pixel_set(led, cs, cs);
+    led->on = false;
 }

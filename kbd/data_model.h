@@ -62,7 +62,7 @@
  *                                left:led (status)
  */
 
-#define KBD_VERSION 0x04 // range x01 - 0x0F, for trivial match of both sides
+#define KBD_VERSION 0x05 // range x01 - 0x0F, for trivial match of both sides
 
 #define KBD_SB_COUNT 8
 
@@ -116,6 +116,11 @@ typedef enum {
     kbd_led_state_BLINK_FAST    // 100, 100
 } kbd_led_state_t;
 
+#define KBD_FLAG_CAPS_LOCK     0b10000000
+#define KBD_FLAG_NUM_LOCK      0b01000000
+#define KBD_FLAG_SCROLL_LOCK   0b00100000
+#define KBD_FLAG_PIXELS_ON     0b00010000
+
 typedef struct {
     // be careful about the size due to packing/alignment
     // order members larger to smaller
@@ -123,9 +128,7 @@ typedef struct {
     // keep it small and simple
     kbd_screen_t screen;
     kbd_usb_hid_state_t usb_hid_state;
-    bool caps_lock;
-    bool num_lock;
-    bool scroll_lock;
+    uint8_t flags;
     uint8_t backlight; // 0-100 %
 } kbd_state_t;
 
@@ -229,6 +232,7 @@ typedef struct {
     shared_buffer_t* sb_right_task_response;
 
     volatile uint8_t backlight; // 0-100 %
+    volatile bool pixels_on;
     volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
 

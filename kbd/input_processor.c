@@ -28,12 +28,13 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
     return k;
 }
 
-#define TRACK_KEY_COUNT 9
+#define TRACK_KEY_COUNT 10
 
 // keycodes tracked with new_key_press, old_key_press, cur_key_press
 uint8_t track_keys[TRACK_KEY_COUNT] = {
     KBD_KEY_SUN,
     KBD_KEY_BACKLIGHT,
+    KBD_KEY_PIXELS,
     HID_KEY_ARROW_UP,
     HID_KEY_ARROW_DOWN,
     HID_KEY_ARROW_LEFT,
@@ -46,6 +47,7 @@ uint8_t track_keys[TRACK_KEY_COUNT] = {
 typedef struct {
     uint8_t sun;
     uint8_t backlight;
+    uint8_t pixels;
     uint8_t up;
     uint8_t down;
     uint8_t left;
@@ -120,6 +122,9 @@ static void parse_code(uint8_t code, uint8_t base_code,
         switch(code) {
         case KBD_KEY_BACKLIGHT:
             cur_key_press.backlight = 1;
+            break;
+        case KBD_KEY_PIXELS:
+            cur_key_press.pixels = 1;
             break;
         case KBD_KEY_MOUSE_LEFT:
             outm->left=true;
@@ -296,6 +301,9 @@ kbd_event_t execute_input_processor() {
     // backlight change event
     if(new_key_press.backlight)
         return lmoon ? kbd_backlight_event_LOW : kbd_backlight_event_HIGH;
+
+    if(new_key_press.pixels)
+        return kbd_led_pixels_TOGGLE;
 
     return kbd_event_NONE;
 }

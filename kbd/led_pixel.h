@@ -16,6 +16,7 @@ typedef struct {
     dma_channel_config chan_config;
     uint32_t* buff; // buffer to hold pixel colors for dma
     uint8_t buff_size;
+    bool on;
 
     uint8_t count; // total pixel count
 } led_pixel_t;
@@ -30,5 +31,7 @@ void led_pixel_free(led_pixel_t* led);
 void led_pixel_set(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb);
 
 void led_pixel_set2(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb);
+
+void led_pixel_set_off(led_pixel_t* led);
 
 #endif

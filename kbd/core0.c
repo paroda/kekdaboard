@@ -56,9 +56,9 @@ void lcd_display_head_task(void* param) {
         kbd_system.date.hour,
         kbd_system.date.minute,
         kbd_system.date.weekday%8,
-        kbd_system.state.caps_lock ? 1 : 0,
-        kbd_system.state.num_lock ? 1 : 0,
-        kbd_system.state.scroll_lock ? 1 : 0,
+        kbd_system.state.flags & KBD_FLAG_CAPS_LOCK ? 1 : 0,
+        kbd_system.state.flags & KBD_FLAG_NUM_LOCK ? 1 : 0,
+        kbd_system.state.flags & KBD_FLAG_SCROLL_LOCK ? 1 : 0,
         kbd_system.date.month,
         kbd_system.date.date
     };
@@ -72,9 +72,9 @@ void lcd_display_head_task(void* param) {
     uint16_t fg = WHITE;
     uint16_t fg1 = YELLOW;
     uint16_t bg2 = DARK_GRAY;
-    uint16_t fgcl = RED;
-    uint16_t fgnl = GREEN;
-    uint16_t fgsl = BLUE;
+    uint16_t fgcl = 0xF800;
+    uint16_t fgnl = 0x07E0;
+    uint16_t fgsl = 0x001F;
 
     // 2 rows 240x(20+20)
     static lcd_canvas_t* cv = NULL;
@@ -105,13 +105,13 @@ void lcd_display_head_task(void* param) {
     // locksx3: w:20x2=40 h:16, x:5-65
     lcd_canvas_rect(cv, 5, 22, 20, 16, bg2, 1, true);
     if(state[5])
-        lcd_canvas_circle(cv, 15, 30, 3, fgcl, 1, true);
+        lcd_canvas_circle(cv, 15, 30, 5, fgcl, 1, true);
     lcd_canvas_rect(cv, 25, 22, 20, 16, bg2, 1, true);
     if(state[6])
-        lcd_canvas_circle(cv, 35, 30, 3, fgnl, 1, true);
+        lcd_canvas_circle(cv, 35, 30, 5, fgnl, 1, true);
     lcd_canvas_rect(cv, 45, 22, 20, 16, bg2, 1, true);
     if(state[7])
-        lcd_canvas_circle(cv, 55, 30, 3, fgsl, 1, true);
+        lcd_canvas_circle(cv, 55, 30, 5, fgsl, 1, true);
     // MM/dd: w:11x5=55 h:16, x:180-235
     sprintf(txt, "%02d/%02d", state[8], state[9]);
     lcd_canvas_text(cv, 180, 22, txt, &lcd_font16, fg, bg);
@@ -121,6 +121,12 @@ void lcd_display_head_task(void* param) {
 
 void led_pixel_task(void* param) {
     (void)param;
+
+    if(!kbd_system.pixels_on) {
+        led_pixel_set_off(kbd_hw.led_pixel);
+        return;
+    }
+
     pixel_anim_update(kbd_system.pixel_colors_left, kbd_system.pixel_colors_right, hw_led_pixel_count,
                       kbd_system.pixel_color, kbd_system.pixel_anim_style, kbd_system.pixel_anim_cycles);
     led_pixel_set(kbd_hw.led_pixel, kbd_system.pixel_colors_left, kbd_system.pixel_colors_right);
@@ -163,6 +169,9 @@ kbd_event_t process_basic_event(kbd_event_t event) {
     case kbd_backlight_event_LOW:
         kbd_system.backlight = kbd_system.backlight >= 10 ? kbd_system.backlight-10 : 0;
         return kbd_event_NONE;
+    case kbd_led_pixels_TOGGLE:
+        kbd_system.pixels_on = !kbd_system.pixels_on;
+        return kbd_event_NONE;
     default:
         return event;
     }
@@ -199,9 +208,15 @@ void process_inputs(void* param) {
     kbd_state_t old_state = kbd_system.state;
 
     // use the hid_report_in
-    kbd_system.state.caps_lock = kbd_system.hid_report_in.keyboard.CapsLock;
-    kbd_system.state.num_lock = kbd_system.hid_report_in.keyboard.NumLock;
-    kbd_system.state.scroll_lock = kbd_system.hid_report_in.keyboard.ScrollLock;
+    kbd_system.state.flags = kbd_system.hid_report_in.keyboard.CapsLock ?
+        kbd_system.state.flags | KBD_FLAG_CAPS_LOCK :
+        kbd_system.state.flags & (~KBD_FLAG_CAPS_LOCK);
+    kbd_system.state.flags = kbd_system.hid_report_in.keyboard.NumLock ?
+        kbd_system.state.flags | KBD_FLAG_NUM_LOCK :
+        kbd_system.state.flags & (~KBD_FLAG_NUM_LOCK);
+    kbd_system.state.flags = kbd_system.hid_report_in.keyboard.ScrollLock ?
+        kbd_system.state.flags | KBD_FLAG_SCROLL_LOCK :
+        kbd_system.state.flags & (~KBD_FLAG_SCROLL_LOCK);
 
     // read the task responses
     if(kbd_system.side==kbd_side_RIGHT) {
@@ -220,7 +235,7 @@ void process_inputs(void* param) {
     read_shared_buffer(kbd_system.sb_right_key_press, &ts, kbd_system.right_key_press);
     read_shared_buffer(kbd_system.sb_right_tb_motion, &ts, &kbd_system.right_tb_motion);
     static uint64_t last_ts_tb_motion = 0;
-    if(last_ts_tb_motion == ts) { 
+    if(last_ts_tb_motion == ts) {
         // discard the delta if already used
         kbd_system.right_tb_motion.dx = 0;
         kbd_system.right_tb_motion.dy = 0;
@@ -255,6 +270,9 @@ void process_inputs(void* param) {
     kbd_system.state.screen = kbd_system.screen;
     kbd_system.state.usb_hid_state = kbd_system.usb_hid_state;
     kbd_system.state.backlight = kbd_system.backlight;
+    kbd_system.state.flags = kbd_system.pixels_on ?
+        kbd_system.state.flags | KBD_FLAG_PIXELS_ON :
+        kbd_system.state.flags & (~KBD_FLAG_PIXELS_ON);
 
     // update the state if changed
     if(memcmp(&old_state, &kbd_system.state, sizeof(kbd_state_t)) != 0) {
@@ -297,12 +315,16 @@ void process_requests() {
 }
 
 void core0_main(void) {
+    // detect side
     init_kbd_side();
 
     kbd_system.led = kbd_led_state_BLINK_HIGH;
 
-    if(kbd_system.side == kbd_side_LEFT) init_hw_left();
-    else init_hw_right();
+    // init side specific hardware
+    if(kbd_system.side == kbd_side_LEFT)
+        init_hw_left();
+    else
+        init_hw_right();
 
     kbd_system.led = kbd_led_state_BLINK_FAST;
 
@@ -376,7 +398,7 @@ void core0_main(void) {
             do_if_elapsed(&tb_publish_last_ms, 20, &tbm, tb_scan_task_publish);
 
             // set caps lock led
-            kbd_system.led = kbd_system.state.caps_lock ? kbd_led_state_ON : kbd_led_state_OFF;
+            kbd_system.led = kbd_system.state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF;
 
             // set key switch leds, @ 30 ms
             do_if_elapsed(&led_pixel_last_ms, 30, NULL, led_pixel_task);
@@ -393,6 +415,7 @@ void core0_main(void) {
                 read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
 
             kbd_system.backlight = kbd_system.state.backlight;
+            kbd_system.pixels_on = kbd_system.state.flags & KBD_FLAG_PIXELS_ON;
             kbd_system.usb_hid_state = kbd_system.state.usb_hid_state;
             kbd_system.screen = kbd_system.state.screen;
         }
