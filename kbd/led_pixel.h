@@ -34,4 +34,6 @@ void led_pixel_set2(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* color
 
 void led_pixel_set_off(led_pixel_t* led);
 
+void led_pixel_finish_op(led_pixel_t* led);
+
 #endif

@@ -132,6 +132,11 @@ void led_pixel_task(void* param) {
     led_pixel_set(kbd_hw.led_pixel, kbd_system.pixel_colors_left, kbd_system.pixel_colors_right);
 }
 
+void led_pixel_task_2(void* param) {
+    (void)param;
+    led_pixel_finish_op(kbd_hw.led_pixel);
+}
+
 
 void tb_scan_task_capture(void* param) {
     kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
@@ -353,6 +358,7 @@ void core0_main(void) {
     uint32_t rtc_last_ms = 0;
     uint32_t lcd_last_ms = 0;
     uint32_t led_pixel_last_ms = 0;
+    uint32_t led_pixel_last_ms_2 = 0;
     uint32_t tb_capture_last_ms = 0;
     uint32_t tb_publish_last_ms = 0;
     uint32_t proc_last_ms = 0;
@@ -400,8 +406,18 @@ void core0_main(void) {
             // set caps lock led
             kbd_system.led = kbd_system.state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF;
 
-            // set key switch leds, @ 30 ms
-            do_if_elapsed(&led_pixel_last_ms, 30, NULL, led_pixel_task);
+            // NOTE: somehow, the new value is not activated on the first led
+            // until a reset. Hence, we are running two tasks offset by 5 ms.
+            // The first one sends the new values to DMA. The second one
+            // would raise the signal to high. The first operation ends in a
+            // 0, then after sufficient gap, we raise it to 1. The DMA, would take
+            // around 1 ms (42 * 1.2 us). Then need to keep it 0 for at least 80 us.
+            // So, using a gap of 2 ms to have some contingency.
+
+            // set key switch leds, @ 50 ms
+            do_if_elapsed(&led_pixel_last_ms, 50, NULL, led_pixel_task);
+            if(led_pixel_last_ms_2==0) sleep_ms(2); // offset by 2 ms
+            do_if_elapsed(&led_pixel_last_ms_2, 50, NULL, led_pixel_task_2);
         }
 
         if(kbd_system.role == kbd_role_MASTER) {

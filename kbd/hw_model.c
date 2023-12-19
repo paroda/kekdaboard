@@ -21,7 +21,7 @@ uint32_t board_millis() {
 
 void do_if_elapsed(uint32_t* t_ms, uint32_t dt_ms, void* param, void(*task)(void* param)) {
     uint32_t ms = board_millis();
-    if(ms > *t_ms+dt_ms) {
+    if(ms >= *t_ms+dt_ms) {
         task(param);
         if(dt_ms==0 || *t_ms==0) {
             *t_ms = ms;

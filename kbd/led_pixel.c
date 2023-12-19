@@ -106,7 +106,9 @@ void led_pixel_set_off(led_pixel_t* led) {
     uint32_t cs[led->count];
     memset(cs, 0, 4*led->count);
     led_pixel_set(led, cs, cs);
-    sleep_ms(2);
-    pio_sm_set_pins(led->pio, led->sm, 1);
     led->on = false;
+}
+
+void led_pixel_finish_op(led_pixel_t* led) {
+    pio_sm_set_pins(led->pio, led->sm, 1);
 }
