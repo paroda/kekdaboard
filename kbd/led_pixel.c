@@ -110,5 +110,10 @@ void led_pixel_set_off(led_pixel_t* led) {
 }
 
 void led_pixel_finish_op(led_pixel_t* led) {
+    // send a reset signal (keep low for >80 ms)
+    pio_sm_set_pins(led->pio, led->sm, 0);
+    sleep_us(90);
     pio_sm_set_pins(led->pio, led->sm, 1);
+    sleep_us(10);
+    pio_sm_set_pins(led->pio, led->sm, 0);
 }

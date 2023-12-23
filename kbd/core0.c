@@ -412,11 +412,11 @@ void core0_main(void) {
             // would raise the signal to high. The first operation ends in a
             // 0, then after sufficient gap, we raise it to 1. The DMA, would take
             // around 1 ms (42 * 1.2 us). Then need to keep it 0 for at least 80 us.
-            // So, using a gap of 2 ms to have some contingency.
+            // So, using a gap of 5 ms to have some contingency.
 
             // set key switch leds, @ 50 ms
             do_if_elapsed(&led_pixel_last_ms, 50, NULL, led_pixel_task);
-            if(led_pixel_last_ms_2==0) sleep_ms(2); // offset by 2 ms
+            if(led_pixel_last_ms_2==0) sleep_ms(5); // offset by 5 ms
             do_if_elapsed(&led_pixel_last_ms_2, 50, NULL, led_pixel_task_2);
         }
 

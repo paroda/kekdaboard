@@ -30,19 +30,6 @@ typedef struct TU_ATTR_PACKED {
     int16_t  pan;     // using AC Pan
 } kbd_mouse_report_t;
 
-static inline bool kbd_hid_mouse_report(uint8_t report_id, uint8_t buttons,
-                                        int16_t x, int16_t y, int16_t vertical, int16_t horizontal) {
-    kbd_mouse_report_t report = {
-        .buttons = buttons,
-        .x       = x,
-        .y       = y,
-        .wheel   = vertical,
-        .pan     = horizontal
-    };
-    uint8_t instance = 0;
-    return tud_hid_n_report(instance, report_id, &report, sizeof(report));
-}
-
 static bool send_hid_mouse_report() {
     hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
 
@@ -53,7 +40,15 @@ static bool send_hid_mouse_report() {
         (m->backward ? MOUSE_BUTTON_BACKWARD : 0) |
         (m->forward  ? MOUSE_BUTTON_FORWARD  : 0);
 
-    if(kbd_hid_mouse_report(REPORT_ID_MOUSE, buttons, m->deltaX, m->deltaY, m->scrollY, m->scrollX)) {
+    kbd_mouse_report_t report = {
+        .buttons = buttons,
+        .x       = m->deltaX,
+        .y       = m->deltaY,
+        .wheel   = m->scrollY,
+        .pan     = m->scrollX
+    };
+
+    if(tud_hid_n_report(ITF_NUM_HID1, REPORT_ID_MOUSE, &report, sizeof(report))) {
         m->deltaX = 0;
         m->deltaY = 0;
         m->scrollX = 0;
@@ -76,11 +71,11 @@ static bool send_hid_keyboard_report() {
         (k->rightAlt   ? KEYBOARD_MODIFIER_RIGHTALT   : 0) |
         (k->rightGui   ? KEYBOARD_MODIFIER_RIGHTGUI   : 0);
 
-    return tud_hid_keyboard_report(REPORT_ID_KEYBOARD, modifiers, k->key_codes);
+    return tud_hid_n_keyboard_report(ITF_NUM_HID1, REPORT_ID_KEYBOARD, modifiers, k->key_codes);
 }
 
 static bool send_hid_report(uint8_t report_id) {
-    if(!tud_hid_ready()) return false;
+    if(!tud_hid_n_ready(ITF_NUM_HID1)) return false;
 
     // NOTE: you must send report for all previous reports in report id sequence
     //       otherwise your target report will never get called.
@@ -140,7 +135,7 @@ void usb_hid_init(void) {
     tud_init(BOARD_TUD_RHPORT);
 
     if(board_init_after_tusb) {
-      board_init_after_tusb();
+        board_init_after_tusb();
     }
 }
 
@@ -181,14 +176,15 @@ void tud_resume_cb(void)
 // Note: For composite reports, report[0] is report ID
 void tud_hid_report_complete_cb(uint8_t instance, uint8_t const *report, uint16_t len)
 {
-    (void)instance;
     (void)len;
 
-    uint8_t next_report_id = report[0] + 1;
+    if(instance==ITF_NUM_HID1) {
+        // for keyboard interface send next report
+        uint8_t next_report_id = report[0] + 1;
 
-    if (next_report_id < REPORT_ID_COUNT)
-    {
-        send_hid_report(next_report_id);
+        if (next_report_id < REPORT_ID_COUNT) {
+            send_hid_report(next_report_id);
+        }
     }
 }
 
@@ -213,13 +209,9 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_t
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
                            uint8_t const *buffer, uint16_t bufsize)
 {
-    (void)instance;
-
-    if (report_type == HID_REPORT_TYPE_OUTPUT)
-    {
+    if (report_type == HID_REPORT_TYPE_OUTPUT) {
         // Set keyboard LED e.g. Caps_Lock, Num_Lock etc..
-        if (report_id == REPORT_ID_KEYBOARD)
-        {
+        if (instance == ITF_NUM_HID1 && report_id == REPORT_ID_KEYBOARD) {
             // bufsize should be at least 1
             if (bufsize < 1)
                 return;
@@ -230,6 +222,10 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
             kbd_system.hid_report_in.keyboard.ScrollLock = kbd_leds & KEYBOARD_LED_SCROLLLOCK;
             kbd_system.hid_report_in.keyboard.Compose = kbd_leds & KEYBOARD_LED_COMPOSE;
             kbd_system.hid_report_in.keyboard.Kana = kbd_leds & KEYBOARD_LED_KANA;
+        } else if (instance == ITF_NUM_HID2) {
+            // Process Generic In/Out
+            // testing: just echo back
+            tud_hid_n_report(instance, 0, buffer, bufsize);
         }
     }
 }
