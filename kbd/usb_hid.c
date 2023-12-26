@@ -11,6 +11,14 @@
 #include "usb_descriptors.h"
 #include "usb_hid.h"
 
+static struct {
+    uint32_t last_reset_ms;
+    uint32_t mouse;
+    uint32_t keyboard;
+    uint32_t not_ready;
+    uint32_t ms;
+} tud_fail_counter;
+
 static bool send_hid_gamepad_report() {
     // Not Used
     return true;
@@ -48,14 +56,16 @@ static bool send_hid_mouse_report() {
         .pan     = m->scrollX
     };
 
+    bool success = false;
     if(tud_hid_n_report(ITF_NUM_HID1, REPORT_ID_MOUSE, &report, sizeof(report))) {
         m->deltaX = 0;
         m->deltaY = 0;
         m->scrollX = 0;
         m->scrollY = 0;
-        return true;
+        success = true;
     }
-    return false;
+    if(!success) tud_fail_counter.mouse++;
+    return success;
 }
 
 static bool send_hid_keyboard_report() {
@@ -71,11 +81,16 @@ static bool send_hid_keyboard_report() {
         (k->rightAlt   ? KEYBOARD_MODIFIER_RIGHTALT   : 0) |
         (k->rightGui   ? KEYBOARD_MODIFIER_RIGHTGUI   : 0);
 
-    return tud_hid_n_keyboard_report(ITF_NUM_HID1, REPORT_ID_KEYBOARD, modifiers, k->key_codes);
+    bool success = tud_hid_n_keyboard_report(ITF_NUM_HID1, REPORT_ID_KEYBOARD, modifiers, k->key_codes);
+    if(!success) tud_fail_counter.keyboard++;
+    return success;
 }
 
 static bool send_hid_report(uint8_t report_id) {
-    if(!tud_hid_n_ready(ITF_NUM_HID1)) return false;
+    if(!tud_hid_n_ready(ITF_NUM_HID1)) {
+        tud_fail_counter.not_ready++;
+        return false;
+    }
 
     // NOTE: you must send report for all previous reports in report id sequence
     //       otherwise your target report will never get called.
@@ -121,6 +136,16 @@ static void hid_task(void) {
 
 void usb_hid_idle_task(void) {
     tud_task();
+
+    uint32_t dt = 10000; // 10 second interval
+    tud_fail_counter.ms = board_millis();
+    if(tud_fail_counter.ms >= tud_fail_counter.last_reset_ms+dt) {
+        tud_fail_counter.keyboard = 0;
+        tud_fail_counter.mouse = 0;
+        tud_fail_counter.not_ready = 0;
+        tud_fail_counter.last_reset_ms = tud_fail_counter.last_reset_ms==0 ?
+            tud_fail_counter.ms : tud_fail_counter.last_reset_ms+dt;
+    }
 }
 
 void usb_hid_task(void) {
@@ -224,8 +249,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
             kbd_system.hid_report_in.keyboard.Kana = kbd_leds & KEYBOARD_LED_KANA;
         } else if (instance == ITF_NUM_HID2) {
             // Process Generic In/Out
-            // testing: just echo back
-            tud_hid_n_report(instance, 0, buffer, bufsize);
+            tud_hid_n_report(instance, 0, &tud_fail_counter, sizeof(tud_fail_counter));
         }
     }
 }

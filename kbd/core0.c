@@ -397,11 +397,14 @@ void core0_main(void) {
             }
         }
         else { // RIGHT
-            // scan track ball scroll (capture), @ 3 ms
-            do_if_elapsed(&tb_capture_last_ms, 3, &tbm, tb_scan_task_capture);
+            // scan track ball scroll (capture), @ 5 ms
+            // scan at a high rate to eliminate trackball register overflow
+            do_if_elapsed(&tb_capture_last_ms, 5, &tbm, tb_scan_task_capture);
 
-            // scan track ball scroll (publish), @ 20 ms
-            do_if_elapsed(&tb_publish_last_ms, 20, &tbm, tb_scan_task_publish);
+            // publish track ball scroll (publish), @ 25 ms
+            // publish at a lower rate than master process, to eliminate loss
+            if(tb_publish_last_ms==0) sleep_ms(2); // offset by 2 ms;
+            do_if_elapsed(&tb_publish_last_ms, 25, &tbm, tb_scan_task_publish);
 
             // set caps lock led
             kbd_system.led = kbd_system.state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF;
@@ -421,12 +424,13 @@ void core0_main(void) {
         }
 
         if(kbd_system.role == kbd_role_MASTER) {
-            // process input to output/usb, @ 10 ms
-            do_if_elapsed(&proc_last_ms, 10, NULL, process_inputs);
+            // process input to output/usb, @ 20 ms
+            do_if_elapsed(&proc_last_ms, 20, NULL, process_inputs);
 
             // handle idleness, only MASTER has activeness tracking
             process_idle();
         } else { // SLAVE
+            // sync the state from master
             if(kbd_system.state_ts != kbd_system.sb_state->ts)
                 read_shared_buffer(kbd_system.sb_state, &kbd_system.state_ts, &kbd_system.state);
 

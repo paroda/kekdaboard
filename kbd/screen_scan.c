@@ -36,8 +36,9 @@ static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_k
     }
 }
 
-static uint16_t get_tb_motion_scale() {
-    return kbd_hw.tb->cpi/100;
+static int16_t scale_tb_motion(int32_t x, uint16_t max) {
+    x = x / (kbd_hw.tb->cpi/max);
+    return (int16_t) (x > max ? max : x < -max ? -max : x);
 }
 
 static void init_screen() {
@@ -72,17 +73,18 @@ static void init_screen() {
     memcpy(&tbm, req+3+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
     if(!tbm.on_surface) lcd_canvas_rect(cv, 115, 95, 10, 10, RED, 1, true);
 
-    uint16_t motion_scale = get_tb_motion_scale();
     if(tbm.has_motion) {
-        if(tbm.dx>0)
-            lcd_canvas_rect(cv, 130, 95, (tbm.dx/motion_scale), 10, YELLOW, 1, true);
+        int16_t dx = scale_tb_motion(tbm.dx, 85);
+        if(dx>0)
+            lcd_canvas_rect(cv, 130, 95, dx, 10, YELLOW, 1, true);
         else
-            lcd_canvas_rect(cv, 110+(tbm.dx/motion_scale), 95, -(tbm.dx/motion_scale), 10, YELLOW, 1, true);
+            lcd_canvas_rect(cv, 110+dx, 95, -dx, 10, YELLOW, 1, true);
 
-        if(tbm.dy>0)
-            lcd_canvas_rect(cv, 115, 110, 10, (tbm.dy/motion_scale), YELLOW, 1, true);
+        int16_t dy = scale_tb_motion(tbm.dy, 85);
+        if(dy>0)
+            lcd_canvas_rect(cv, 115, 110, 10, dy, YELLOW, 1, true);
         else
-            lcd_canvas_rect(cv, 115, 90+(tbm.dy/motion_scale), 10, -(tbm.dy/motion_scale), YELLOW, 1, true);
+            lcd_canvas_rect(cv, 115, 90+dy, 10, -dy, YELLOW, 1, true);
     }
 
     lcd_display_body();
@@ -119,12 +121,13 @@ static void update_screen() {
     cv = canvas;
     lcd_canvas_clear(cv);
 
-    uint16_t motion_scale = get_tb_motion_scale();
+
     if(tbm.has_motion) {
-        if(tbm.dx>0)
-            lcd_canvas_rect(cv, 105, 0, (tbm.dx/motion_scale), 10, YELLOW, 1, true);
+        int16_t dx = scale_tb_motion(tbm.dx, 85);
+        if(dx>0)
+            lcd_canvas_rect(cv, 105, 0, dx, 10, YELLOW, 1, true);
         else
-            lcd_canvas_rect(cv, 85+(tbm.dx/motion_scale), 0, -(tbm.dx/motion_scale), 10, YELLOW, 1, true);
+            lcd_canvas_rect(cv, 85+dx, 0, -dx, 10, YELLOW, 1, true);
     }
     lcd_display_canvas(kbd_hw.lcd, 25, 135, cv);
 
@@ -132,10 +135,11 @@ static void update_screen() {
     cv->height = 190;
     lcd_canvas_clear(cv);
     if(tbm.has_motion) {
-        if(tbm.dy>0)
-            lcd_canvas_rect(cv, 0, 105, 10, (tbm.dy/motion_scale), YELLOW, 1, true);
+        int16_t dy = scale_tb_motion(tbm.dy, 85);
+        if(dy>0)
+            lcd_canvas_rect(cv, 0, 105, 10, dy, YELLOW, 1, true);
         else
-            lcd_canvas_rect(cv, 0, 85+(tbm.dy/motion_scale), 10, -(tbm.dy/motion_scale), YELLOW, 1, true);
+            lcd_canvas_rect(cv, 0, 85+dy, 10, -dy, YELLOW, 1, true);
     }
     if(!tbm.on_surface) lcd_canvas_rect(cv, 0, 90, 10, 10, RED, 1, true);
     lcd_display_canvas(kbd_hw.lcd, 115, 45, cv);

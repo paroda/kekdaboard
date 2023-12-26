@@ -100,10 +100,10 @@ typedef enum {
 typedef struct {
     // be careful about the size due to packing/alignment
     // order members larger to smaller
-    bool has_motion;
-    bool on_surface;
     int32_t dx;
     int32_t dy;
+    uint8_t has_motion; // using uint8_t instead of bool
+    uint8_t on_surface; // as bool may be larger
 } kbd_tb_motion_t;
 
 typedef enum {
@@ -126,8 +126,8 @@ typedef struct {
     // order members larger to smaller
     // note that we are using memcmp to detect change
     // keep it small and simple
-    kbd_screen_t screen;
-    kbd_usb_hid_state_t usb_hid_state;
+    uint8_t screen; // using uint8_t instead of enum, as enum may be larger
+    uint8_t usb_hid_state;
     uint8_t flags;
     uint8_t backlight; // 0-100 %
 } kbd_state_t;
