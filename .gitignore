@@ -1,5 +1,9 @@
-/.vscode/
+**/.vscode/
+**/.cpcache/
 /build/
+/pico/build/
+/picow/build/
 
 a.out
-/kbd/generated/
+/pico/kbd/generated/
+/picow/kbd/generated/

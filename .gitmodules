@@ -1,3 +1,6 @@
 [submodule "pico-sdk"]
 	path = pico-sdk
 	url = https://github.com/raspberrypi/pico-sdk
+[submodule "pico_fota_bootloader"]
+	path = pico_fota_bootloader
+	url = https://github.com/JZimnol/pico_fota_bootloader
