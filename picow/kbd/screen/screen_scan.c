@@ -1,7 +1,32 @@
 #include <string.h>
 
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../hw_model.h"
+#include "../data_model.h"
+
+#ifdef KBD_NODE_AP
+
+void handle_screen_event_scan(kbd_event_t event) {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->left_task_request;
+
+    if(is_nav_event(event)) return;
+
+    init_task_request(req, &c->left_task_request_ts, kbd_info_screen_scan);
+
+    req[2] = (event == kbd_screen_event_INIT) ? 0 : 1;
+
+    // add scan data
+    uint8_t pos=3;
+    memcpy(req+pos, c->left_key_press, KEY_ROW_COUNT);
+    pos += KEY_ROW_COUNT;
+    memcpy(req+pos, c->right_key_press, KEY_ROW_COUNT);
+    pos += KEY_ROW_COUNT;
+    memcpy(req+pos, &c->tb_motion, sizeof(kbd_tb_motion_t));
+}
+
+#endif
+
+#ifdef KBD_NODE_LEFT
 
 uint8_t key_press[KEY_ROW_COUNT][KEY_COL_COUNT*2];
 
@@ -37,7 +62,7 @@ static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_k
 }
 
 static int16_t scale_tb_motion(int32_t x, uint16_t max) {
-    x = x / (kbd_hw.tb->cpi/max);
+    x = x / (kbd_system.core0.tb_config.cpi/max);
     return (int16_t) (x > max ? max : x < -max ? -max : x);
 }
 
@@ -45,7 +70,7 @@ static void init_screen() {
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
 
-    uint8_t* req = kbd_system.left_task_request;
+    uint8_t* req = kbd_system.core0.task_request;
     key_layout_read(true, req+3, req+3+KEY_ROW_COUNT);
 
     // x: 5 (10+5)x7=105 5 10 5 (5+10)x7=105 5
@@ -96,8 +121,8 @@ static void update_screen() {
     lcd_canvas_t* cv1 = lcd_new_shared_canvas(canvas->buf+100, 10, 10, MAGENTA);
     lcd_canvas_t* cv;
 
-    uint8_t* req = kbd_system.left_task_request;
-    key_layout_read(true, req+3, req+3+KEY_ROW_COUNT);
+    uint8_t* req = kbd_system.core0.task_request;
+    key_layout_read(false, req+3, req+3+KEY_ROW_COUNT);
 
     uint8_t i,j,k,r,c,v;
     uint16_t x, y, xs[4]={5, 135, 5, 135}, ys[4]={55, 55, 165, 165};
@@ -149,31 +174,21 @@ static void update_screen() {
     lcd_free_canvas(cv1);
 }
 
-void execute_screen_scan(kbd_event_t event) {
-    uint8_t* req = kbd_system.left_task_request;
-
-    if(is_nav_event(event)) return;
-
-    mark_left_request(kbd_info_screen_scan);
-
-    req[2] = (event == kbd_screen_event_INIT) ? 0 : 1;
-
-    // add scan data
-    uint8_t pos=3;
-    memcpy(req+pos, kbd_system.left_key_press, KEY_ROW_COUNT);
-    pos += KEY_ROW_COUNT;
-    memcpy(req+pos, kbd_system.right_key_press, KEY_ROW_COUNT);
-    pos += KEY_ROW_COUNT;
-    memcpy(req+pos, &kbd_system.right_tb_motion, sizeof(kbd_tb_motion_t));
-}
-
-void respond_screen_scan() {
-    uint8_t* req = kbd_system.left_task_request;
+void work_screen_task_scan() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* res = c->task_response;
 
     if(req[2]==0)
         init_screen();
     else
         update_screen();
 
-    mark_left_response();
+    init_task_response(res, &c->task_response_ts, req);
 }
+
+#else
+
+void work_screen_task_scan() {}
+
+#endif

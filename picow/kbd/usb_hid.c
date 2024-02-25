@@ -39,7 +39,7 @@ typedef struct TU_ATTR_PACKED {
 } kbd_mouse_report_t;
 
 static bool send_hid_mouse_report() {
-    hid_report_out_mouse_t* m = &(kbd_system.hid_report_out.mouse);
+    hid_report_out_mouse_t* m = &(kbd_system.core0.hid_report_out.mouse);
 
     uint8_t buttons = 0 |
         (m->left     ? MOUSE_BUTTON_LEFT     : 0) |
@@ -69,7 +69,7 @@ static bool send_hid_mouse_report() {
 }
 
 static bool send_hid_keyboard_report() {
-    hid_report_out_keyboard_t* k = &(kbd_system.hid_report_out.keyboard);
+    hid_report_out_keyboard_t* k = &(kbd_system.core0.hid_report_out.keyboard);
 
     uint8_t modifiers = 0 |
         (k->leftCtrl   ? KEYBOARD_MODIFIER_LEFTCTRL   : 0) |
@@ -112,7 +112,7 @@ static bool send_hid_report(uint8_t report_id) {
 }
 
 static void hid_task(void) {
-    if(tud_suspended() && kbd_system.hid_report_out.has_events) {
+    if(tud_suspended() && kbd_system.core0.hid_report_out.has_events) {
         // Wake up host if we are in suspended mode
         // and REMOTE_WAKEUP feature is enabled by host
         tud_remote_wakeup();
@@ -122,7 +122,7 @@ static void hid_task(void) {
         //  - new events (like keypress)
         //  - end of events (like release of keypress)
         static bool had_events = false;
-        if(kbd_system.hid_report_out.has_events) { // has some events
+        if(kbd_system.core0.hid_report_out.has_events) { // has some events
             send_hid_report(REPORT_ID_KEYBOARD);
             had_events = true;
         } else {
@@ -242,11 +242,12 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
                 return;
 
             uint8_t const kbd_leds = buffer[0];
-            kbd_system.hid_report_in.keyboard.NumLock = kbd_leds & KEYBOARD_LED_NUMLOCK;
-            kbd_system.hid_report_in.keyboard.CapsLock = kbd_leds & KEYBOARD_LED_CAPSLOCK;
-            kbd_system.hid_report_in.keyboard.ScrollLock = kbd_leds & KEYBOARD_LED_SCROLLLOCK;
-            kbd_system.hid_report_in.keyboard.Compose = kbd_leds & KEYBOARD_LED_COMPOSE;
-            kbd_system.hid_report_in.keyboard.Kana = kbd_leds & KEYBOARD_LED_KANA;
+            hid_report_in_keyboard_t* keyboard = &kbd_system.core0.hid_report_in.keyboard;
+            keyboard->NumLock = kbd_leds & KEYBOARD_LED_NUMLOCK;
+            keyboard->CapsLock = kbd_leds & KEYBOARD_LED_CAPSLOCK;
+            keyboard->ScrollLock = kbd_leds & KEYBOARD_LED_SCROLLLOCK;
+            keyboard->Compose = kbd_leds & KEYBOARD_LED_COMPOSE;
+            keyboard->Kana = kbd_leds & KEYBOARD_LED_KANA;
         } else if (instance == ITF_NUM_HID2) {
             // Process Generic In/Out
             tud_hid_n_report(instance, 0, &tud_fail_counter, sizeof(tud_fail_counter));

@@ -1,7 +1,7 @@
 #ifndef _INPUT_PROCESSOR_H
 #define _INPUT_PROCESSOR_H
 
-#include "data_model.h"
+#include "kbd_events.h"
 
 kbd_event_t execute_input_processor();
 

@@ -10,16 +10,16 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
 
 add_executable(kbd_ap
   ap/main.c
-  ap/core0.c
-  ap/core1.c
 
+  core0.c
+  core1.c
   data_model.c
   hw_model.c
   input_processor.c
-  screen_processor.c
   key_layout.c
   usb_hid.c
 
+  screen_model.c
   screen/date.c
   screen/pixel.c
   screen/power.c
@@ -47,16 +47,17 @@ target_link_libraries(kbd_ap
   pico_fota_bootloader_lib
   pico_cyw43_arch_lwip_poll
   pico_stdlib
+  pico_multicore
   hardware_spi
   tinyusb_device
   tinyusb_board
 )
 
-target_link_options(picow_ap PRIVATE
+target_link_options(kbd_ap PRIVATE
   "-L${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common"
 )
 
-pico_set_linker_script(picow_ap
+pico_set_linker_script(kbd_ap
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
 )
 
@@ -74,13 +75,14 @@ pico_add_extra_outputs(kbd_ap)
 
 add_executable(kbd_left
   left/main.c
-  left/core0.c
-  left/core1.c
 
+  core0.c
+  core1.c
   data_model.c
   hw_model.c
   key_layout.c
 
+  screen_model.c
   screen/date.c
   screen/pixel.c
   screen/power.c
@@ -99,20 +101,20 @@ add_executable(kbd_left
 )
 
 # generate the header file into the source tree
-pico_generate_pio_header(kbd
+pico_generate_pio_header(kbd_left
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
-target_include_directories(kbd_ap PRIVATE
+target_include_directories(kbd_left PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/left
-  ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
 )
 
 target_link_libraries(kbd_left
   pico_fota_bootloader_lib
   pico_cyw43_arch_lwip_poll
   pico_stdlib
+  pico_multicore
   hardware_spi
   hardware_i2c
   hardware_pwm
@@ -120,11 +122,11 @@ target_link_libraries(kbd_left
   hardware_dma
 )
 
-target_link_options(picow_ap PRIVATE
+target_link_options(kbd_left PRIVATE
   "-L${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common"
 )
 
-pico_set_linker_script(picow_ap
+pico_set_linker_script(kbd_left
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
 )
 
@@ -142,13 +144,14 @@ pico_add_extra_outputs(kbd_left)
 
 add_executable(kbd_right
   right/main.c
-  right/core0.c
-  right/core1.c
 
+  core0.c
+  core1.c
   data_model.c
   hw_model.c
   key_layout.c
 
+  screen_model.c
   screen/date.c
   screen/pixel.c
   screen/power.c
@@ -165,14 +168,13 @@ add_executable(kbd_right
 )
 
 # generate the header file into the source tree
-pico_generate_pio_header(kbd
+pico_generate_pio_header(kbd_right
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
-target_include_directories(kbd_ap PRIVATE
+target_include_directories(kbd_right PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/right
-  ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
 )
 
 target_link_libraries(kbd_right
@@ -185,11 +187,11 @@ target_link_libraries(kbd_right
   hardware_dma
 )
 
-target_link_options(picow_ap PRIVATE
+target_link_options(kbd_right PRIVATE
   "-L${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common"
 )
 
-pico_set_linker_script(picow_ap
+pico_set_linker_script(kbd_right
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
 )
 

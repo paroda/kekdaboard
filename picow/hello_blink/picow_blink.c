@@ -1,6 +1,25 @@
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 
+typedef struct {
+    int a;
+    int b;
+} item_t;
+
+typedef struct {
+    item_t i;
+    item_t j;
+    int x;
+} object_t;
+
+object_t o = {
+    .x = 3,
+
+    .i = {
+        .a = 4
+    }
+};
+
 int main() {
     stdio_init_all();
     if(cyw43_arch_init()) {

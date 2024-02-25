@@ -9,7 +9,7 @@
 
 typedef struct {
     uint8_t data[FLASH_DATASET_SIZE];
-    uint8_t id;    // 1-256
+    uint8_t id;    // 1-255
 
     bool need_flash_init; // not present in flash
     uint16_t pos; // current position in allocated block

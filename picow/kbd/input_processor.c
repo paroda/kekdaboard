@@ -2,6 +2,7 @@
 
 #include "class/hid/hid.h"
 
+#include "data_model.h"
 #include "input_processor.h"
 
 #define KEY_PRESS_MAX 16
@@ -13,13 +14,13 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
     for(row=0
             ; k<KEY_PRESS_MAX && row<KEY_ROW_COUNT
             ; row++) {
-        for(col=KEY_COL_COUNT-1, v=kbd_system.left_key_press[row]
+        for(col=KEY_COL_COUNT-1, v=kbd_system.core0.left_key_press[row]
                 ; v>0 && k<KEY_PRESS_MAX && col>=0
                 ; col--, v>>=1) {
             if(v & 1) key_press[k++] = key_layout[row][col];
         }
 
-        for(col=KEY_COL_COUNT-1, v=kbd_system.right_key_press[row]
+        for(col=KEY_COL_COUNT-1, v=kbd_system.core0.right_key_press[row]
                 ; v>0 && k<KEY_PRESS_MAX && col>=0
                 ; col--, v>>=1) {
             if(v & 1) key_press[k++] = key_layout[row][KEY_COL_COUNT+col];
@@ -165,16 +166,21 @@ static inline int16_t add_cap16_value(int16_t v1, int16_t v2) {
     return cap16_value((int32_t)v1 + (int32_t)v2);
 }
 
-static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm) {
-    if(kbd_system.right_tb_motion.has_motion) {
-        uint8_t scale = moon ? kbd_system.tb_scroll_scale : kbd_system.tb_delta_scale;
-        uint8_t quad_weight = moon ? kbd_system.tb_scroll_quad_weight : kbd_system.tb_delta_quad_weight;
+static bool parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm) {
+    // only parse the motion, no need to reset it to zero
+    // the reset is taken care of by core0 processor, where it is read
+    // and checked each time before calling input processor
+    kbd_tb_motion_t* tb_motion = &kbd_system.core0.tb_motion;
+    if(tb_motion->has_motion) {
+        kbd_tb_config_t* tb_config = &kbd_system.core0.tb_config;
+        uint8_t scale = moon ? tb_config->tb_scroll_scale : tb_config->tb_delta_scale;
+        uint8_t quad_weight = moon ? tb_config->tb_scroll_quad_weight : tb_config->tb_delta_quad_weight;
         int32_t x,y,q,x_abs,y_abs;
-        uint16_t m = kbd_system.tb_cpi / scale;
-        x = kbd_system.right_tb_motion.dx/scale;
+        uint16_t m = tb_config->tb_cpi / scale;
+        x = tb_motion->dx/scale;
         q = (x<0 ? -x*x : x*x) / m;
         x = (x + quad_weight * q) / (1 + quad_weight);
-        y = kbd_system.right_tb_motion.dy/scale;
+        y = tb_motion->dy/scale;
         q = (y<0 ? -y*y : y*y) / m;
         y = (y + quad_weight * q) / (1 + quad_weight);
         if(shift) {
@@ -193,7 +199,9 @@ static void parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm)
             outm->deltaX = cap16_value(x);
             outm->deltaY = cap16_value(y);
         }
+        return true;
     }
+    return false;
 }
 
 static kbd_event_t parse_config_screen_event(bool moon) {
@@ -261,35 +269,37 @@ kbd_event_t execute_input_processor() {
     }
 
     // parse tb motion
-    parse_tb_motion(moon, outk.leftShift || outk.rightShift, &outm);
+    bool has_motion = parse_tb_motion(moon, outk.leftShift || outk.rightShift, &outm);
 
     // decide presence of user input
     bool has_events = (n_key_codes>0
                        || outk.leftCtrl  || outk.leftShift  || outk.leftAlt  || outk.leftGui
                        || outk.rightCtrl || outk.rightShift || outk.rightAlt || outk.rightGui
                        || outm.left || outm.right || outm.middle || outm.backward || outm.forward
-                       || kbd_system.right_tb_motion.has_motion);
+                       || has_motion);
 
     // note key press events for screen
     update_track_key_press();
 
+    hid_report_out_t* hid_report_out = &kbd_system.core0.hid_report_out;
+
     bool config_mode = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
     if(config_mode) {
         // no hid report in config mode
-        memset(&kbd_system.hid_report_out, 0, sizeof(hid_report_out_t));
+        memset(hid_report_out, 0, sizeof(hid_report_out_t));
 
         // config screen event
         return parse_config_screen_event(moon);
     }
 
     // set the hid report
-    kbd_system.hid_report_out.has_events = has_events;
-    kbd_system.hid_report_out.keyboard = outk;
-    outm.deltaX = add_cap16_value(outm.deltaX, kbd_system.hid_report_out.mouse.deltaX);
-    outm.deltaY = add_cap16_value(outm.deltaY, kbd_system.hid_report_out.mouse.deltaY);
-    outm.scrollX = add_cap16_value(outm.scrollX, kbd_system.hid_report_out.mouse.scrollX);
-    outm.scrollY = add_cap16_value(outm.scrollY, kbd_system.hid_report_out.mouse.scrollY);
-    kbd_system.hid_report_out.mouse = outm;
+    hid_report_out->has_events = has_events;
+    hid_report_out->keyboard = outk;
+    outm.deltaX = add_cap16_value(outm.deltaX, hid_report_out->mouse.deltaX);
+    outm.deltaY = add_cap16_value(outm.deltaY, hid_report_out->mouse.deltaY);
+    outm.scrollX = add_cap16_value(outm.scrollX, hid_report_out->mouse.scrollX);
+    outm.scrollY = add_cap16_value(outm.scrollY, hid_report_out->mouse.scrollY);
+    hid_report_out->mouse = outm;
 
     // screen change event
     if(new_key_press.sun) {

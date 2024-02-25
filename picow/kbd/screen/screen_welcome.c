@@ -1,14 +1,7 @@
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../screen_model.h"
 
-void execute_screen_welcome(kbd_event_t event) {
-    if(event != kbd_screen_event_INIT) return;
+#ifdef KBD_NODE_AP
+void handle_screen_event_welcome(kbd_event_t event){}
+#endif
 
-    mark_left_request(kbd_info_screen_welcome);
-}
-
-void respond_screen_welcome() {
-    lcd_show_welcome();
-
-    mark_left_response();
-}
+void work_screen_task_welcome() {}

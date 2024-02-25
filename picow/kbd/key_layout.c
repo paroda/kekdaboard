@@ -233,46 +233,46 @@ const uint8_t key_layout[KEY_LAYOUT_ROW_COUNT][KEY_LAYOUT_COL_COUNT][3] = {
     /// Row 5
     {
         /// Col 0
-        {KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_CONTROL_LEFT, 0},
-
-        /// Col 1
-        {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT, 0},
-
-        /// Col 2
         {0, HID_KEY_ARROW_LEFT, HID_KEY_HOME},
 
-        /// Col 3
+        /// Col 1
         {0, HID_KEY_ARROW_RIGHT, HID_KEY_END},
 
-        /// Col 4
+        /// Col 2
         {0, HID_KEY_BACKSPACE, 0},
 
-        /// Col 5
+        /// Col 3
         {KEYBOARD_MODIFIER_LEFTALT, HID_KEY_ALT_LEFT, 0},
 
-        /// Col 6
+        /// Col 4
         {0, KBD_KEY_LEFT_MOON, 0},
 
+        /// Col 5
+        {KEYBOARD_MODIFIER_LEFTGUI, HID_KEY_GUI_LEFT, 0},
+
+        /// Col 6
+        {KEYBOARD_MODIFIER_LEFTCTRL, HID_KEY_CONTROL_LEFT, 0},
+
         /// Col 7
-        {0, KBD_KEY_RIGHT_MOON, 0},
+        {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT, 0},
 
         /// Col 8
-        {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT, 0},
-
-        /// Col 9
-        {0, HID_KEY_SPACE, 0},
-
-        /// Col 10
-        {0, HID_KEY_BRACKET_LEFT, 0},
-
-        /// Col 11
-        {0, HID_KEY_BRACKET_RIGHT, 0},
-
-        /// Col 12
-        // {0, HID_KEY_APPLICATION},
+        // {0, HID_KEY_APPLICATION, 0},
         {KEYBOARD_MODIFIER_RIGHTGUI, HID_KEY_GUI_RIGHT, 0},
 
+        /// Col 9
+        {0, KBD_KEY_RIGHT_MOON, 0},
+
+        /// Col 10
+        {KEYBOARD_MODIFIER_RIGHTALT, HID_KEY_ALT_RIGHT, 0},
+
+        /// Col 11
+        {0, HID_KEY_SPACE, 0},
+
+        /// Col 12
+        {0, HID_KEY_BRACKET_LEFT, 0},
+
         /// Col 13
-        {KEYBOARD_MODIFIER_RIGHTCTRL, HID_KEY_CONTROL_RIGHT, 0},
+        {0, HID_KEY_BRACKET_RIGHT, 0},
     },
 };
