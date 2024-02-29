@@ -189,6 +189,6 @@ void work_screen_task_scan() {
 
 #else
 
-void work_screen_task_scan() {}
+void work_screen_task_scan() {} // no action
 
 #endif

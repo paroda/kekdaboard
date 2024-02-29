@@ -16,18 +16,18 @@ static kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
 
 #ifdef KBD_NODE_AP
 
-screen_event_handler_t* handle_screen_event_welcome;
-screen_event_handler_t* handle_screen_event_scan;
+screen_event_handler_t handle_screen_event_welcome;
+screen_event_handler_t handle_screen_event_scan;
 
 static screen_event_handler_t* info_screen_event_handlers[KBD_INFO_SCREEN_COUNT] = {
     handle_screen_event_welcome,
     handle_screen_event_scan,
 };
 
-screen_event_handler_t* handle_screen_event_date;
-screen_event_handler_t* handle_screen_event_power;
-screen_event_handler_t* handle_screen_event_tb;
-screen_event_handler_t* handle_screen_event_pixel;
+screen_event_handler_t handle_screen_event_date;
+screen_event_handler_t handle_screen_event_power;
+screen_event_handler_t handle_screen_event_tb;
+screen_event_handler_t handle_screen_event_pixel;
 
 static screen_event_handler_t* config_screen_event_handlers[KBD_CONFIG_SCREEN_COUNT] = {
     handle_screen_event_date,
@@ -38,18 +38,18 @@ static screen_event_handler_t* config_screen_event_handlers[KBD_CONFIG_SCREEN_CO
 
 #endif
 
-screen_task_worker_t* work_screen_task_welcome;
-screen_task_worker_t* work_screen_task_scan;
+screen_task_worker_t work_screen_task_welcome;
+screen_task_worker_t work_screen_task_scan;
 
 static screen_task_worker_t* info_screen_task_workers[KBD_INFO_SCREEN_COUNT] = {
     work_screen_task_welcome,
     work_screen_task_scan,
 };
 
-screen_task_worker_t* work_screen_task_date;
-screen_task_worker_t* work_screen_task_power;
-screen_task_worker_t* work_screen_task_tb;
-screen_task_worker_t* work_screen_task_pixel;
+screen_task_worker_t work_screen_task_date;
+screen_task_worker_t work_screen_task_power;
+screen_task_worker_t work_screen_task_tb;
+screen_task_worker_t work_screen_task_pixel;
 
 static screen_task_worker_t* config_screen_task_workers[KBD_CONFIG_SCREEN_COUNT] = {
     work_screen_task_date,
@@ -58,10 +58,10 @@ static screen_task_worker_t* config_screen_task_workers[KBD_CONFIG_SCREEN_COUNT]
     work_screen_task_pixel,
 };
 
-config_screen_data_initiator_t* init_config_screen_data_date;
-config_screen_data_initiator_t* init_config_screen_data_power;
-config_screen_data_initiator_t* init_config_screen_data_tb;
-config_screen_data_initiator_t* init_config_screen_data_pixel;
+config_screen_data_initiator_t init_config_screen_data_date;
+config_screen_data_initiator_t init_config_screen_data_power;
+config_screen_data_initiator_t init_config_screen_data_tb;
+config_screen_data_initiator_t init_config_screen_data_pixel;
 
 static config_screen_data_initiator_t* config_screen_data_initiators[KBD_CONFIG_SCREEN_COUNT] = {
     init_config_screen_data_date,
@@ -70,10 +70,10 @@ static config_screen_data_initiator_t* config_screen_data_initiators[KBD_CONFIG_
     init_config_screen_data_pixel,
 };
 
-config_screen_data_applier_t* apply_config_screen_data_date;
-config_screen_data_applier_t* apply_config_screen_data_power;
-config_screen_data_applier_t* apply_config_screen_data_tb;
-config_screen_data_applier_t* apply_config_screen_data_pixel;
+config_screen_data_applier_t apply_config_screen_data_date;
+config_screen_data_applier_t apply_config_screen_data_power;
+config_screen_data_applier_t apply_config_screen_data_tb;
+config_screen_data_applier_t apply_config_screen_data_pixel;
 
 static config_screen_data_applier_t* config_screen_data_appliers[KBD_CONFIG_SCREEN_COUNT] = {
     apply_config_screen_data_date,
@@ -89,7 +89,7 @@ config_screen_data_getter_t get_config_screen_data_power;
 config_screen_data_getter_t get_config_screen_data_tb;
 config_screen_data_getter_t get_config_screen_data_pixel;
 
-config_screen_data_getter_t config_screen_data_getters[KBD_CONFIG_SCREEN_COUNT] = {
+static config_screen_data_getter_t* config_screen_data_getters[KBD_CONFIG_SCREEN_COUNT] = {
     get_config_screen_data_date,
     get_config_screen_data_power,
     get_config_screen_data_tb,
@@ -103,7 +103,7 @@ config_screen_data_setter_t set_config_screen_data_power;
 config_screen_data_setter_t set_config_screen_data_tb;
 config_screen_data_setter_t set_config_screen_data_pixel;
 
-config_screen_data_setter_t config_screen_data_setters[KBD_CONFIG_SCREEN_COUNT] = {
+static config_screen_data_setter_t* config_screen_data_setters[KBD_CONFIG_SCREEN_COUNT] = {
     set_config_screen_data_date,
     set_config_screen_data_power,
     set_config_screen_data_tb,

@@ -7,7 +7,7 @@
 #include "main.h"
 
 #define hw_ap_name "kekdaboard"
-#define hw_ap_password "kekdaboard"
+#define hw_ap_password "3picow"
 #define hw_ap_ip "192.168.4.1"
 #define hw_left_ip "192.168.4.2"
 #define hw_right_ip "192.168.4.3"
@@ -26,6 +26,8 @@
 #ifdef KBD_NODE_AP
 
 #define hw_gpio_CS_flash 5
+#define hw_gpio_LED_LEFT 10
+#define hw_gpio_LED_RIGHT 21
 
 #endif
 
@@ -73,18 +75,18 @@
 #define hw_gpio_LED 28
 
 // trackball
-#define hw_gpio_CS_tb 7 // TODO
-#define hw_gpio_tb_MT 0xFF  // not used TODO
-#define hw_gpio_tb_RST 0xFF // not used TODO
+#define hw_gpio_CS_tb 7
+#define hw_gpio_tb_MT 0xFF  // not used
+#define hw_gpio_tb_RST 0xFF // not used
 
 // key scan layout
-#define hw_gpio_rows  {10, 11, 12, 13, 14, 15} // 6 rows TODO
-#define hw_gpio_cols {16, 17, 18, 19, 20, 21, 22} // 7 cols TODO
+#define hw_gpio_rows  {21, 20, 19, 18, 17, 16} // 6 rows
+#define hw_gpio_cols {9, 10, 11, 12, 13, 14, 15} // 7 cols
 
 // key pixels
 #define hw_inst_PIO 0
 #define hw_inst_PIO_SM 0
-#define hw_gpio_led_DI 6 // TODO
+#define hw_gpio_led_DI 6
 #define hw_key_led_mapping {                    \
         { 6,  5,  4,  3,  2,  1,  0},           \
         { 7,  8,  9, 10, 11, 12, 13}            \

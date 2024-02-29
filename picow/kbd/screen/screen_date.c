@@ -1,8 +1,49 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../hw_model.h"
+#include "../data_model.h"
+
+
+#ifdef KBD_NODE_AP
+
+void handle_screen_event_date(kbd_event_t event) {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->left_task_request;
+
+    if(is_nav_event(event)) return;
+
+    init_task_request(req, &c->left_task_request_ts, kbd_info_screen_date);
+
+    switch(event) {
+    case kbd_screen_event_INIT:
+        req[2] = 0;
+        break;
+    case kbd_screen_event_LEFT:
+    case kbd_screen_event_UP:
+        req[2] = 1;
+        break;
+    case kbd_screen_event_RIGHT:
+    case kbd_screen_event_DOWN:
+        req[2] = 2;
+        break;
+    case kbd_screen_event_SEL_PREV:
+        req[2] = 3;
+        break;
+    case kbd_screen_event_SEL_NEXT:
+        req[2] = 4;
+        break;
+    case kbd_screen_event_SAVE:
+        req[2] = 5;
+        break;
+    default: break;
+    }
+}
+
+#endif
+
+
+#ifdef KBD_NODE_LEFT
 
 #define FIELD_COUNT 7
 
@@ -38,6 +79,7 @@ static uint16_t set_field(uint8_t field, uint8_t value) {
 
 static void save() {
     rtc_set_time(kbd_hw.rtc, &date);
+    kbd_system.core0.date = date;
 }
 
 static void draw_field(lcd_canvas_t* cv, uint16_t x, uint16_t y, uint8_t field, bool selected) {
@@ -57,8 +99,6 @@ static void draw_field(lcd_canvas_t* cv, uint16_t x, uint16_t y, uint8_t field, 
 }
 
 static void init_screen() {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
     for(uint8_t i=0; i<7; i++) {
@@ -67,18 +107,16 @@ static void init_screen() {
     lcd_display_body();
 }
 
-static void update_screen(uint8_t field, uint8_t sel_field) {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
+static void update_screen(uint8_t old_field, uint8_t field) {
     lcd_canvas_t* cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 120, 24, LCD_BODY_BG);
 
-    if(field!=sel_field) {
-        draw_field(cv, 0, 0, field, false);
-        lcd_display_body_canvas(60, 10+field*26, cv);
+    if(old_field!=field) {
+        draw_field(cv, 0, 0, old_field, false);
+        lcd_display_body_canvas(60, 10+old_field*26, cv);
         lcd_canvas_clear(cv);
     }
-    draw_field(cv, 0, 0, sel_field, true);
-    lcd_display_body_canvas(60, 10+sel_field*26, cv);
+    draw_field(cv, 0, 0, field, true);
+    lcd_display_body_canvas(60, 10+field*26, cv);
     lcd_free_canvas(cv);
 
     if(dirty) {
@@ -89,97 +127,52 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
     }
 }
 
-void execute_screen_date(kbd_event_t event) {
-    uint8_t* lreq = kbd_system.left_task_request;
-    uint8_t* rreq = kbd_system.right_task_request;
+void work_screen_task_date() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* res = c->task_response;
+    uint8_t old_field;
 
-    if(is_nav_event(event)) return;
-
-    switch(event) {
-    case kbd_screen_event_INIT:
-        date = kbd_system.date;
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 0;
-        lreq[3] = field = 0;
-        memcpy(lreq+4, &date, sizeof(rtc_datetime_t));
-        dirty = false;
-        break;
-    case kbd_screen_event_LEFT:
-    case kbd_screen_event_UP:
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 1;
-        lreq[3] = field;
-        lreq[4] = field = field>0 ? field-1 : FIELD_COUNT-1;
-        break;
-    case kbd_screen_event_RIGHT:
-    case kbd_screen_event_DOWN:
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 1;
-        lreq[3] = field;
-        lreq[4] = field = field==FIELD_COUNT-1 ? 0 : field+1;
-        break;
-    case kbd_screen_event_SEL_PREV:
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 2;
-        lreq[3] = field;
-        lreq[4] = set_field(field, get_field(field) - 1);
-        lreq[5] = dirty = true;
-        break;
-    case kbd_screen_event_SEL_NEXT:
-        mark_left_request(kbd_config_screen_date);
-        lreq[2] = 2;
-        lreq[3] = field;
-        lreq[4] = set_field(field, get_field(field) + 1);
-        lreq[5] = dirty = true;
-        break;
-    case kbd_screen_event_SAVE:
-        mark_left_request(kbd_config_screen_date);
-        mark_right_request(kbd_config_screen_date);
-        rreq[2] = lreq[2] = 3;
-        rreq[3] = lreq[3] = field = 0;
-        memcpy(lreq+4, &date, sizeof(rtc_datetime_t));
-        memcpy(rreq+4, &date, sizeof(rtc_datetime_t));
-        dirty = false;
-        break;
-    default: break;
-    }
-}
-
-void respond_screen_date() {
-    uint8_t* req = kbd_system.side == kbd_side_LEFT ?
-        kbd_system.left_task_request : kbd_system.right_task_request;
     switch(req[2]) {
-    case 0: // init
-    case 3: // save
-        field = req[3];
-        memcpy(&date, req+4, sizeof(rtc_datetime_t));
-        if(req[2]==3) save();
+    case 0: //init
+    case 1: // save
+        if(req[2]==0) date = c->date; else save();
+        field = 0;
         dirty = false;
         init_screen();
         break;
-    case 1: // select field
-        field = req[4];
-        update_screen(req[3], req[4]);
+    case 2: // left field
+    case 3: // right field
+        old_field = field;
+        field = (req[2]==2)
+            ? (field>0 ? field-1 : FIELD_COUNT-1)
+            : (field==FIELD_COUNT-1 ? 0 : field+1);
+        update_screen(old_field, field);
         break;
-    case 2: // set field
-        field = req[3];
-        set_field(req[3], req[4]);
-        dirty = req[5];
-        update_screen(req[3], req[3]);
+    case 4: // prev value
+    case 5: // next value
+        set_field(field, get_field(field) + (req[2]==4?-1:1));
+        dirty = true;
+        update_screen(field, field);
         break;
     default: break;
     }
 
-    if(kbd_system.side == kbd_side_LEFT)
-        mark_left_response();
-    else
-        mark_right_response();
+    init_task_response(res, &c->task_response_ts, req);
 }
 
-void init_config_screen_default_date() {
-    // No action
-}
+#else
 
-void apply_config_screen_date() {
-    // No action
-}
+void work_screen_task_date() {} // no action
+
+#endif
+
+void init_config_screen_data_date() {} // no action
+
+void apply_config_screen_data_date() {} // no action
+
+#ifdef KBD_NODE_AP
+bool get_config_screen_data_date(uint8_t* data) {return false;} // no action
+#else
+void set_config_screen_data_date(const uint8_t* data) {} // no action
+#endif
