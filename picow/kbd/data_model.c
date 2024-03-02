@@ -124,13 +124,6 @@ kbd_system_t kbd_system = {
     .sb_task_request = NULL,
     .sb_task_response = NULL,
 
-#ifdef KBD_NODE_AP
-    .sb_config_left_screen_data = NULL,
-    .sb_config_right_screen_data = NULL,
-#else
-    .sb_config_screen_data = NULL,
-#endif
-
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     .sb_tb_motion = NULL,
 #endif
@@ -158,21 +151,14 @@ void init_data_model() {
 #endif
 
 #ifdef KBD_NODE_AP
-    kbd_system.sb_left_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE, spin_lock);
-    kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE, spin_lock);
-    kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE, spin_lock);
-    kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE, spin_lock);
+    kbd_system.sb_left_task_request = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
+    kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
+    kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
+    kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
 #endif
 
-    kbd_system.sb_task_request = new_shared_buffer(KBD_TASK_REQUEST_SIZE, spin_lock);
-    kbd_system.sb_task_response = new_shared_buffer(KBD_TASK_RESPONSE_SIZE, spin_lock);
-
-#ifdef KBD_NODE_AP
-    kbd_system.sb_config_left_screen_data = new_shared_buffer(FLASH_DATASET_SIZE+2, spin_lock);
-    kbd_system.sb_config_right_screen_data = new_shared_buffer(FLASH_DATASET_SIZE+2, spin_lock);
-#else
-    kbd_system.sb_config_screen_data = new_shared_buffer(FLASH_DATASET_SIZE+2, spin_lock);
-#endif
+    kbd_system.sb_task_request = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
+    kbd_system.sb_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     kbd_system.sb_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t), spin_lock);

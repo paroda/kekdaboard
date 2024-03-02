@@ -8,9 +8,6 @@
 
 #define hw_ap_name "kekdaboard"
 #define hw_ap_password "3picow"
-#define hw_ap_ip "192.168.4.1"
-#define hw_left_ip "192.168.4.2"
-#define hw_right_ip "192.168.4.3"
 #define hw_udp_port 81
 #define hw_tcp_port 82
 

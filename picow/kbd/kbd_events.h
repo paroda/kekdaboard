@@ -24,6 +24,7 @@ typedef enum {
     kbd_screen_event_SEL_PREV,  // Space+L.MOON
     kbd_screen_event_SAVE,   // Enter
     kbd_screen_event_EXIT,   // Escape
+    kbd_screen_event_RESPONSE,  // Response received for further processing
     // both info and config screens
     kbd_screen_event_NEXT,   // SUN
     kbd_screen_event_PREV,   // SUN+R.MOON

@@ -17,24 +17,24 @@ void handle_screen_event_date(kbd_event_t event) {
 
     switch(event) {
     case kbd_screen_event_INIT:
-        req[2] = 0;
+        req[2] = 1;
+        break;
+    case kbd_screen_event_SAVE:
+        req[2] = 2;
         break;
     case kbd_screen_event_LEFT:
     case kbd_screen_event_UP:
-        req[2] = 1;
+        req[2] = 3;
         break;
     case kbd_screen_event_RIGHT:
     case kbd_screen_event_DOWN:
-        req[2] = 2;
-        break;
-    case kbd_screen_event_SEL_PREV:
-        req[2] = 3;
-        break;
-    case kbd_screen_event_SEL_NEXT:
         req[2] = 4;
         break;
-    case kbd_screen_event_SAVE:
+    case kbd_screen_event_SEL_PREV:
         req[2] = 5;
+        break;
+    case kbd_screen_event_SEL_NEXT:
+        req[2] = 6;
         break;
     default: break;
     }
@@ -134,24 +134,24 @@ void work_screen_task_date() {
     uint8_t old_field;
 
     switch(req[2]) {
-    case 0: //init
-    case 1: // save
-        if(req[2]==0) date = c->date; else save();
+    case 1: //init
+    case 2: // save
+        if(req[2]==1) date = c->date; else save();
         field = 0;
         dirty = false;
         init_screen();
         break;
-    case 2: // left field
-    case 3: // right field
+    case 3: // left field
+    case 4: // right field
         old_field = field;
-        field = (req[2]==2)
+        field = (req[2]==3)
             ? (field>0 ? field-1 : FIELD_COUNT-1)
             : (field==FIELD_COUNT-1 ? 0 : field+1);
         update_screen(old_field, field);
         break;
-    case 4: // prev value
-    case 5: // next value
-        set_field(field, get_field(field) + (req[2]==4?-1:1));
+    case 5: // prev value
+    case 6: // next value
+        set_field(field, get_field(field) + (req[2]==5?-1:1));
         dirty = true;
         update_screen(field, field);
         break;
@@ -170,9 +170,3 @@ void work_screen_task_date() {} // no action
 void init_config_screen_data_date() {} // no action
 
 void apply_config_screen_data_date() {} // no action
-
-#ifdef KBD_NODE_AP
-bool get_config_screen_data_date(uint8_t* data) {return false;} // no action
-#else
-void set_config_screen_data_date(const uint8_t* data) {} // no action
-#endif

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../hw_model.h"
+#include "../data_model.h"
 
 #define CONFIG_VERSION 0x01
 #define FIELD_COUNT 2
@@ -237,3 +237,30 @@ void apply_config_screen_power() {
     backlight = kbd_system.backlight = data[1];
     idle_minutes = kbd_system.idle_minutes = data[2];
 }
+
+
+
+#ifdef KBD_NODE_AP
+void handle_screen_event_power(kbd_event_t event) {}
+
+#endif
+
+void work_screen_task_power() {}
+
+
+void init_config_screen_data_power() {}
+
+#ifdef KBD_NODE_AP
+
+void apply_config_screen_data_power() {
+    uint8_t* data = fd->data;
+    if(data[0]!=CONFIG_VERSION) return;
+    backlight = kbd_system.backlight = data[1];
+    idle_minutes = kbd_system.core0.idle_minutes = data[2];
+}
+
+#else
+
+void apply_config_screen_data_power() {} // no action
+
+#endif

@@ -81,8 +81,10 @@
 
 #define KBD_SB_COUNT 8
 
-#define KBD_TASK_REQUEST_SIZE 32
-#define KBD_TASK_RESPONSE_SIZE 32
+// request/response should be large enough to fit 4 bytes header and 32 bytes data
+// data is 32 bytes so as to fit flash dataset which is also 32 bytes
+// header 4 bytes are id, screen, command, data-size
+#define KBD_TASK_SIZE 36
 
 typedef enum {
     kbd_usb_hid_state_UNMOUNTED = 0,
@@ -212,20 +214,20 @@ typedef struct {
     hid_report_out_t hid_report_out; // outgoing to usb host
 
     uint64_t left_task_request_ts;
-    uint8_t left_task_request[KBD_TASK_REQUEST_SIZE];
+    uint8_t left_task_request[KBD_TASK_SIZE];
     uint64_t left_task_response_ts;
-    uint8_t left_task_response[KBD_TASK_RESPONSE_SIZE];
+    uint8_t left_task_response[KBD_TASK_SIZE];
 
     uint64_t right_task_request_ts;
-    uint8_t right_task_request[KBD_TASK_REQUEST_SIZE];
+    uint8_t right_task_request[KBD_TASK_SIZE];
     uint64_t right_task_response_ts;
-    uint8_t right_task_response[KBD_TASK_RESPONSE_SIZE];
+    uint8_t right_task_response[KBD_TASK_SIZE];
 #endif
 
     uint64_t task_request_ts;
-    uint8_t task_request[KBD_TASK_REQUEST_SIZE];
+    uint8_t task_request[KBD_TASK_SIZE];
     uint64_t task_response_ts;
-    uint8_t task_response[KBD_TASK_RESPONSE_SIZE];
+    uint8_t task_response[KBD_TASK_SIZE];
 
 #ifdef KBD_NODE_AP
     uint64_t active_ts; // timestamp of last activity (input_processor)
@@ -310,13 +312,6 @@ typedef struct {
 
     shared_buffer_t* sb_task_request;
     shared_buffer_t* sb_task_response;
-
-#ifdef KBD_NODE_AP
-    shared_buffer_t* sb_config_left_screen_data;
-    shared_buffer_t* sb_config_right_screen_data;
-#else
-    shared_buffer_t* sb_config_screen_data;
-#endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     shared_buffer_t* sb_tb_motion;

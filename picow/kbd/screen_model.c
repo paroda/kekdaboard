@@ -82,36 +82,6 @@ static config_screen_data_applier_t* config_screen_data_appliers[KBD_CONFIG_SCRE
     apply_config_screen_data_pixel,
 };
 
-#ifdef KBD_NODE_AP
-
-config_screen_data_getter_t get_config_screen_data_date;
-config_screen_data_getter_t get_config_screen_data_power;
-config_screen_data_getter_t get_config_screen_data_tb;
-config_screen_data_getter_t get_config_screen_data_pixel;
-
-static config_screen_data_getter_t* config_screen_data_getters[KBD_CONFIG_SCREEN_COUNT] = {
-    get_config_screen_data_date,
-    get_config_screen_data_power,
-    get_config_screen_data_tb,
-    get_config_screen_data_pixel,
-};
-
-#else
-
-config_screen_data_setter_t set_config_screen_data_date;
-config_screen_data_setter_t set_config_screen_data_power;
-config_screen_data_setter_t set_config_screen_data_tb;
-config_screen_data_setter_t set_config_screen_data_pixel;
-
-static config_screen_data_setter_t* config_screen_data_setters[KBD_CONFIG_SCREEN_COUNT] = {
-    set_config_screen_data_date,
-    set_config_screen_data_power,
-    set_config_screen_data_tb,
-    set_config_screen_data_pixel,
-};
-
-#endif
-
 ////////////////////////////////////////////////////////////
 
 bool is_nav_event(kbd_event_t event) {
@@ -126,12 +96,14 @@ bool is_nav_event(kbd_event_t event) {
 void init_task_request(uint8_t* task_request, uint64_t* task_request_ts, kbd_screen_t screen) {
     set_next_id(task_request[0]);
     task_request[1] = screen;
+    task_request[2] = task_request[3] = 0; // init with no command/data
     *task_request_ts = time_us_64();
 }
 
 void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint8_t* task_request) {
     task_response[0] = task_request[0];
     task_response[1] = task_request[1];
+    task_response[2] = task_response[3] = 0; // init with no command/data
     *task_response_ts = time_us_64();
 }
 
@@ -154,7 +126,11 @@ void handle_screen_event(kbd_event_t event) {
     kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
     uint8_t si = screen - s0;
 
-    if(is_nav_event(event)) { // switch to screen init event if nav event
+    if((res[1]==screen && res[2])
+       || (lres[1]==screen && lres[2])
+       || (rres[1]==screen && rres[2])) { // process response command for this screen
+        event = kbd_screen_event_RESPONSE;
+    } else if(is_nav_event(event)) { // switch to screen init event if nav event
         if(event == kbd_screen_event_CONFIG && !config) {
             config = true;
             s0 = kbd_config_screen_date;
@@ -202,37 +178,3 @@ void apply_config_screen_data() {
     for(uint i=0; i<KBD_CONFIG_SCREEN_COUNT; i++)
         config_screen_data_appliers[i]();
 }
-
-#ifdef KBD_NODE_AP
-
-void publish_config_screen_data(shared_buffer_t* sb) {
-    static uint8_t si = 0;
-    static uint8_t vs[KBD_CONFIG_SCREEN_COUNT] = {0}; // version counter
-    // use two additional bytes for screen index and version
-    uint8_t buf[FLASH_DATASET_SIZE+2];
-    si = (si+1) < KBD_CONFIG_SCREEN_COUNT ? si+1 : 0;
-    // skip if not applicable to current screen
-    if(!config_screen_data_getters[si](buf+2)) return;
-    buf[0] = si;
-    buf[1] = vs[si] = vs[si]+1;
-    write_shared_buffer(sb, time_us_64(), buf);
-}
-
-#else
-
-void receive_config_screen_data(shared_buffer_t* sb) {
-    static uint64_t last_ts = 0;
-    static uint8_t vs[KBD_CONFIG_SCREEN_COUNT] = {0}; // version counter
-    // use tow additional bytes for screen index and version
-    uint8_t buf[FLASH_DATASET_SIZE+2];
-    uint64_t ts;
-    read_shared_buffer(sb, &ts, buf);
-    if(ts==last_ts) return;
-    last_ts = ts;
-    uint8_t si = buf[0];
-    if(buf[1]==vs[si]) return;
-    vs[si] = buf[1];
-    config_screen_data_setters[si](buf+2);
-}
-
-#endif

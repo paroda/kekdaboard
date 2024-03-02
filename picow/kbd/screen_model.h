@@ -53,11 +53,6 @@ extern kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT];
 // the task and response flow is reset on connection betwen AP and LEFT/RIGHT node
 // also when screen is switched, pending tasks are discarded
 
-// config screen data needs to be published from AP node to LEFT/RIGHT,
-// as only AP node has flash memory. The AP node will keep publishing the config
-// screen data in the primary loop, one screen at a time per pass. To keep it simple,
-// without complex checks, it just publishes again and again, regardless of old or new.
-
 // check if the event is to switch screen
 bool is_nav_event(kbd_event_t event);
 
@@ -79,13 +74,5 @@ config_screen_data_initiator_t init_config_screen_data; // system data -> screen
 
 typedef void config_screen_data_applier_t();
 config_screen_data_applier_t apply_config_screen_data; // flash data -> screen data -> system data
-
-#ifdef KBD_NODE_AP
-typedef bool config_screen_data_getter_t(uint8_t* data);
-void publish_config_screen_data(shared_buffer_t* sb); // publishes one screen per call
-#else
-typedef void config_screen_data_setter_t(const uint8_t* data);
-void receive_config_screen_data(shared_buffer_t* sb);
-#endif
 
 #endif
