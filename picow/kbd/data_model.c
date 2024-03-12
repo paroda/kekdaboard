@@ -55,13 +55,19 @@ kbd_system_t kbd_system = {
             .delta_quad_weight = 0,
         },
 
-#ifdef KBD_NODE_AP
-        .flash_datasets = {0}, // default to NULL
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+        .pixel_colors = {0}, // default to 0
         .pixel_config = {
             .color = 0x0f000f, // magenta
             .anim_style = pixel_anim_style_FADE, // fade
             .anim_cycles = 30 // not applicable when fixed
-        },
+        }
+#endif
+
+#ifdef KBD_NODE_AP
+        .flash_datasets = {0}, // default to NULL
+#else
+        .flash_data = {}, // default to 0
 #endif
 
         .state_ts = 0,
@@ -76,13 +82,6 @@ kbd_system_t kbd_system = {
     .core1 = { /// CORE 1 ///
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
         .key_press = {0},    // default to 0
-        .pixel_colors = {0}, // default to 0
-        .pixel_config_ts = 0,
-        .pixel_config = {
-            .color = 0x0f000f, // magenta
-            .anim_style = pixel_anim_style_FADE, // fade
-            .anim_cycles = 30 // not applicable when fixed
-        }
 #endif
     },
 
@@ -94,7 +93,10 @@ kbd_system_t kbd_system = {
     .backlight = 30, // 30%
 #endif
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+#ifdef KBD_NODE_AP
+    .led_left = kbd_led_state_ON,
+    .led_right = kbd_led_state_ON,
+#else
     .led = kbd_led_state_ON,
 #endif
 
@@ -119,17 +121,13 @@ kbd_system_t kbd_system = {
     .sb_left_task_response = NULL,
     .sb_right_task_request = NULL,
     .sb_right_task_response = NULL,
-#endif
-
+#else
     .sb_task_request = NULL,
     .sb_task_response = NULL,
+#endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     .sb_tb_motion = NULL,
-#endif
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    .sb_pixel_config = NULL,
 #endif
 
     .spin_lock = NULL
@@ -155,17 +153,13 @@ void init_data_model() {
     kbd_system.sb_left_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
     kbd_system.sb_right_task_request = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
     kbd_system.sb_right_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
-#endif
-
+#else
     kbd_system.sb_task_request = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
     kbd_system.sb_task_response = new_shared_buffer(KBD_TASK_SIZE, spin_lock);
+#endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     kbd_system.sb_tb_motion = new_shared_buffer(sizeof(kbd_tb_motion_t), spin_lock);
-#endif
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    kbd_system.sb_pixel_config = new_shared_buffer(sizeof(kbd_pixel_config_t), spin_lock);
 #endif
 
 }

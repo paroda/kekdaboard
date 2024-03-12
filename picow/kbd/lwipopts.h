@@ -1,7 +1,7 @@
 #ifndef _LWIPOPTS_H
 #define _LWIPOPTS_H
 
-#include "hw_config.h"
+#include "main.h"
 
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)

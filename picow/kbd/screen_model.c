@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "pico/stdlib.h"
 
 #include "data_model.h"
@@ -84,6 +86,20 @@ static config_screen_data_applier_t* config_screen_data_appliers[KBD_CONFIG_SCRE
 
 ////////////////////////////////////////////////////////////
 
+inline bool is_config_screen(kbd_screen_t screen) {
+    return screen & KBD_CONFIG_SCREEN;
+}
+
+uint8_t get_screen_index(kbd_screen_t screen) {
+    bool config = is_config_screen(screen);
+    kbd_screen_t* screens = config ? kbd_config_screens : kbd_info_screens;
+    uint8_t count = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
+    for(uint8_t i=0; i<count; i++)
+        if(screens[i]==screen) return i;
+
+    return 0xFF; // invalid index
+}
+
 bool is_nav_event(kbd_event_t event) {
     return event == kbd_screen_event_CONFIG
         || event == kbd_screen_event_EXIT
@@ -108,6 +124,23 @@ void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint
 }
 
 #ifdef KBD_NODE_AP
+
+static void publish_config() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* lreq = c->left_task_request;
+    uint8_t* rreq = c->right_task_request;
+    // sync config - send the config as a task request and iterate to next config screen
+    static uint8_t si = 0;
+    si = si+1<n ? si+1 : 0;
+    kbd_screen_t screen = kbd_config_screens[si];
+    init_task_request(lreq, &c->left_task_request_ts, screen);
+    init_task_request(rreq, &c->right_task_request_ts, screen);
+    flash_dataset_t* fd = c->flash_datasets[si];
+    lreq[3] = rreq[3] = fd->pos;
+    memcpy(lreq+4, fd->data, FLASH_DATASET_SIZE);
+    memcpy(rreq+4, fd->data, FLASH_DATASET_SIZE);
+}
+
 void handle_screen_event(kbd_event_t event) {
     uint8_t* req = kbd_system.core0.task_request;
     uint8_t* res = kbd_system.core0.task_response;
@@ -121,10 +154,9 @@ void handle_screen_event(kbd_event_t event) {
     }
 
     kbd_screen_t screen = kbd_system.screen;
-    bool config = screen & KBD_CONFIG_SCREEN_MASK;
+    bool config = is_config_screen(screen);
     uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
-    kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = screen - s0;
+    uint8_t si = get_screen_index(screen);
 
     if((res[1]==screen && res[2])
        || (lres[1]==screen && lres[2])
@@ -133,12 +165,10 @@ void handle_screen_event(kbd_event_t event) {
     } else if(is_nav_event(event)) { // switch to screen init event if nav event
         if(event == kbd_screen_event_CONFIG && !config) {
             config = true;
-            s0 = kbd_config_screen_date;
             si = 0;
         }
         else if(event == kbd_screen_event_EXIT && config) {
             config = false;
-            s0 = kbd_info_screen_welcome;
             si = 0;
         }
         else if(event == kbd_screen_event_NEXT) {
@@ -146,27 +176,37 @@ void handle_screen_event(kbd_event_t event) {
         } else if(event == kbd_screen_event_PREV) {
             si = si>0 ? si-1 : n-1;
         }
-        screen = s0+si;
+        screen = config ? kbd_config_screens[si] : kbd_info_screens[si];
 
         kbd_system.screen = screen;
         event = kbd_screen_event_INIT;
     }
 
-    (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);
+    if(event==kbd_event_NONE && screen==kbd_info_screen_welcome) {
+        publish_config();
+    } else {
+        (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);
+    }
 }
+
 #endif
 
 void work_screen_task() {
-    uint8_t* req = kbd_system.task_request;
-    uint8_t* res = kbd_system.task_response;
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* res = c->task_response;
 
     if(req[0]==res[0]) return;
 
     kbd_screen_t screen = req[1];
-    bool config = screen & KBD_CONFIG_SCREEN_MASK;
-    kbd_screen_t s0 = config ? kbd_config_screen_date : kbd_info_screen_welcome;
-    uint8_t si = screen - s0;
-    (config ? config_screen_responders[si] : info_screen_responders[si])();
+    bool config = is_config_screen(screen);
+    uint8_t si = get_screen_index(screen);
+    if(config && req[2]==0) {
+        memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE);
+        init_task_response(res, &c->task_response_ts, req);
+    } else {
+        (config ? config_screen_task_workers[si] : info_screen_task_workers[si])();
+    }
 }
 
 void init_config_screen_data() {

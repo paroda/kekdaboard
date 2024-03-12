@@ -81,10 +81,15 @@
 
 #define KBD_SB_COUNT 8
 
-// request/response should be large enough to fit 4 bytes header and 32 bytes data
-// data is 32 bytes so as to fit flash dataset which is also 32 bytes
-// header 4 bytes are id, screen, command, data-size
+// The request/response should be large enough to fit 4 bytes header and 32 bytes data
+// The data is 32 bytes so as to fit flash dataset which is also 32 bytes
+// The header 4 bytes are 0:id, 1:screen, 2:command, 3:(data size or config version)
+// The command==0 typically means skip or ignore, except when it is a config screen request.
+// For config screen request, the command 0 means set config.
+// The last header byte is always the count of data bytes, except for set config request,
+// in which case it is the config version. The data size is fixed to flash size (32).
 #define KBD_TASK_SIZE 36
+#define KBD_TASK_DATA_SIZE 32
 
 typedef enum {
     kbd_usb_hid_state_UNMOUNTED = 0,
@@ -239,14 +244,21 @@ typedef struct {
     uint8_t temperature;
 #endif
 
+    // ap - for processing, left - for display, right - for scanning
     kbd_tb_config_t tb_config;
+
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+    uint32_t pixel_colors[hw_led_pixel_count];
+    kbd_pixel_config_t pixel_config;
+#endif
 
 #ifdef KBD_NODE_AP
     // flash loaded and saved on AP
     // the update is done via config screens (core0)
     flash_dataset_t* flash_datasets[KBD_CONFIG_SCREEN_COUNT];
-
-    kbd_pixel_config_t pixel_config;
+#else
+    // flash data as received from AP
+    uint8_t flash_data[KBD_CONFIG_SCREEN_COUNT][KBD_TASK_DATA_SIZE];
 #endif
 
     uint64_t state_ts;
@@ -260,9 +272,6 @@ typedef struct {
 typedef struct {
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     uint8_t key_press[KEY_ROW_COUNT];
-    uint32_t pixel_colors[hw_led_pixel_count];
-    uint64_t pixel_config_ts;
-    kbd_pixel_config_t pixel_config;
 #endif
 } kbd_system_core1_t;
 
@@ -282,12 +291,14 @@ typedef struct {
     volatile uint8_t backlight; // 0-100 %
 #endif
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+#ifdef KBD_NODE_AP
+    volatile kbd_led_state_t led_left; // left node indicator
+    volatile kbd_led_state_t led_right; // right node indicator
+#else
     volatile kbd_led_state_t led;  // left: USB state, right: caps lock
 #endif
 
     volatile kbd_led_state_t ledB; // board led: connection state
-
 
 #ifdef KBD_NODE_AP
     volatile bool left_active;
@@ -308,17 +319,13 @@ typedef struct {
     shared_buffer_t* sb_left_task_response;
     shared_buffer_t* sb_right_task_request;
     shared_buffer_t* sb_right_task_response;
-#endif
-
+#else
     shared_buffer_t* sb_task_request;
     shared_buffer_t* sb_task_response;
+#endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
     shared_buffer_t* sb_tb_motion;
-#endif
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    shared_buffer_t* sb_pixel_config;
 #endif
 
     volatile spin_lock_t* spin_lock; // for multicore data access
