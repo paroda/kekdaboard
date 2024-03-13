@@ -68,6 +68,7 @@ kbd_system_t kbd_system = {
         .flash_datasets = {0}, // default to NULL
 #else
         .flash_data = {}, // default to 0
+        .flash_data_version = {}, // default to 0
 #endif
 
         .state_ts = 0,

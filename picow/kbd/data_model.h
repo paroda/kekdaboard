@@ -259,6 +259,7 @@ typedef struct {
 #else
     // flash data as received from AP
     uint8_t flash_data[KBD_CONFIG_SCREEN_COUNT][KBD_TASK_DATA_SIZE];
+    uint8_t flash_data_version[KBD_CONFIG_SCREEN_COUNT];
 #endif
 
     uint64_t state_ts;

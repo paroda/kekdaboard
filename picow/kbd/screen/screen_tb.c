@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../hw_model.h"
+#include "../data_model.h"
 
 #define CONFIG_VERSION 0x01
-#define FIELD_COUNT 5
 
 /*
  *   0123456789012  font
@@ -29,7 +28,82 @@ typedef struct {
 } tb_motion_config_t;
 
 static tb_motion_config_t tb_motion_config;
+
+#ifdef KBD_NODE_AP
 static flash_dataset_t* fd;
+#else
+static uint8_t* fd_data;
+#endif
+
+#ifdef KBD_NODE_AP
+
+void handle_screen_event_tb(kbd_event_t event) {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* lreq = c->left_task_request;
+    uint8_t* lres = c->left_task_response;
+
+    if(is_nav_event(event)) return;
+
+    switch(event) {
+    case kbd_screen_event_INIT:
+        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        lreq[2] = 1;
+        lreq[3] = sizeof(tb_motion_config_t);
+        memcpy(lreq+4, &tb_motion_config, lreq[3]);
+        break;
+    case kbd_screen_event_SAVE:
+        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        lreq[2] = 2;
+        break;
+    case kbd_screen_event_LEFT:
+    case kbd_screen_event_RIGHT:
+    case kbd_screen_event_UP:
+    case kbd_screen_event_DOWN:
+        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        lreq[2] = 3;
+        lreq[3] = 1;
+        lreq[4] = event;
+        break;
+    case kbd_screen_event_SEL_PREV:
+    case kbd_screen_event_SEL_NEXT:
+        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        lreq[2] = 4;
+        lreq[3] = 1;
+        lreq[4] = event;
+        break;
+    case kbd_screen_event_RESPONSE:
+        if(lres[2]==1) {
+            init_task_request(req, &c->task_request_ts, kbd_config_screen_tb);
+            req[2] = 1;
+            req[3] = lres[3];
+            memcpy(req+4, lres+4, lres[3]);
+        }
+        break;
+    default: break;
+    }
+}
+
+void work_screen_task_tb() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+
+    uint8_t* data = fd->data;
+    switch(req[2]) {
+    case 1: // save flash
+        memcpy(&tb_motion_config, req+4, req[3]);
+        memcpy(fd->data, &tb_motion_config, sizeof(tb_motion_config_t));
+        flash_store_save(fd);
+        break;
+    default: break;
+    }
+}
+
+#endif
+
+#ifdef KBD_NODE_LEFT
+
+#define FIELD_COUNT 5
 
 static uint8_t field;
 static bool dirty;
@@ -109,11 +183,6 @@ static uint8_t set_field(uint8_t field, uint8_t value) {
         return tb_motion_config.delta_quad_weight;
     default: return 0; // invalid
     }
-}
-
-static void save() {
-    memcpy(fd->data, &tb_motion_config, sizeof(tb_motion_config_t));
-    flash_store_save(fd);
 }
 
 static void draw_cpi(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool selected) {
@@ -221,143 +290,107 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
     }
 }
 
-static void init_data() {
-    tb_motion_config.version = CONFIG_VERSION;
-    tb_motion_config.cpi_multiplier = kbd_system.tb_cpi / CPI_BASE;
-    tb_motion_config.scroll_scale = kbd_system.tb_scroll_scale;
-    tb_motion_config.scroll_quad_weight = kbd_system.tb_scroll_quad_weight;
-    tb_motion_config.delta_scale = kbd_system.tb_delta_scale;
-    tb_motion_config.delta_quad_weight = kbd_system.tb_delta_quad_weight;
-}
+void work_screen_task_tb() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* res = c->task_response;
 
-void execute_screen_tb(kbd_event_t event) {
-    uint8_t* lreq = kbd_system.left_task_request;
-    uint8_t* rreq = kbd_system.right_task_request;
-
-    if(is_nav_event(event)) return;
-
-    switch(event) {
-    case kbd_screen_event_INIT:
-        init_data();
-        mark_left_request(kbd_config_screen_tb);
-        lreq[2] = 0;
-        lreq[3] = field = 0;
-        memcpy(lreq+4, &tb_motion_config, sizeof(tb_motion_config_t));
-        dirty = false;
-        break;
-    case kbd_screen_event_LEFT:
-    case kbd_screen_event_RIGHT:
-    case kbd_screen_event_UP:
-    case kbd_screen_event_DOWN:
-        mark_left_request(kbd_config_screen_tb);
-        lreq[2] = 1;
-        lreq[3] = field;
-        switch(event) {
-        case kbd_screen_event_LEFT:
-            lreq[4] = field = field==0 ? FIELD_COUNT-1 : field-1;
-            break;
-        case kbd_screen_event_RIGHT:
-            lreq[4] = field = field==FIELD_COUNT-1 ? 0 : field+1;
-            break;
-        case kbd_screen_event_UP:
-            switch(field) {
-            case 0: lreq[4] = field = 4; break;
-            case 1: lreq[4] = field = 0; break;
-            case 2: lreq[4] = field = 3; break;
-            case 3: lreq[4] = field = 1; break;
-            case 4: lreq[4] = field = 2; break;
-            default: lreq[4] = field = 0; break;
-            }
-            break;
-        case kbd_screen_event_DOWN:
-            switch(field) {
-            case 0: lreq[4] = field = 1; break;
-            case 1: lreq[4] = field = 3; break;
-            case 2: lreq[4] = field = 4; break;
-            case 3: lreq[4] = field = 2; break;
-            case 4: lreq[4] = field = 0; break;
-            default: lreq[4] = field = 0; break;
-            }
-            break;
-        default: lreq[4] = field = 0; break;
-        }
-        break;
-    case kbd_screen_event_SEL_PREV:
-    case kbd_screen_event_SEL_NEXT:
-        mark_left_request(kbd_config_screen_tb);
-        lreq[2] = 2;
-        lreq[3] = field;
-        lreq[4] = event==kbd_screen_event_SEL_PREV ? select_prev_value(field) : select_next_value(field);
-        lreq[5] = dirty = true;
-        break;
-    case kbd_screen_event_SAVE:
-        mark_left_request(kbd_config_screen_tb);
-        mark_right_request(kbd_config_screen_tb);
-        rreq[2] = lreq[2] = 3;
-        rreq[3] = lreq[3] = field = 0;
-        memcpy(lreq+4, &tb_motion_config, sizeof(tb_motion_config_t));
-        memcpy(rreq+4, &tb_motion_config, sizeof(tb_motion_config_t));
-        dirty = false;
-        break;
-    default: break;
-    }
-}
-
-void respond_screen_tb() {
-    uint8_t* req = kbd_system.side == kbd_side_LEFT ?
-        kbd_system.left_task_request : kbd_system.right_task_request;
+    uint8_t up_fields[FIELD_COUNT] = {4,0,3,1,2};
+    uint8_t down_fields[FIELD_COUNT] = {1,3,4,2,0};
+    uint8_t old_field;
     switch(req[2]) {
-    case 0: // init
-    case 3: // save
-        field = req[3];
-        memcpy(&tb_motion_config, req+4, sizeof(tb_motion_config_t));
-        if(req[2]==3) save();
-        dirty = false;
+    case 1: // init
+    case 2: // save
+        if(req[2]==1) {
+            memcpy(&tb_motion_config, req+4, req[3]);
+        } else {
+            res[2] = 1;
+            res[3] = sizeof(tb_motion_config_t);
+            memcpy(res+4, &tb_motion_config, res[3]);
+        }
+        field = 0; dirty = false;
         init_screen();
         break;
-    case 1: // select field
-        field = req[4];
-        update_screen(req[3], req[4]);
+    case 3: // select field
+        old_field = field;
+        switch(req[4]) {
+        case kbd_screen_event_LEFT:
+            field = field==0 ? FIELD_COUNT-1 : field-1;
+            break;
+        case kbd_screen_event_RIGHT:
+            field = field==FIELD_COUNT-1 ? 0 : field+1;
+            break;
+        case kbd_screen_event_UP:
+            field = up_fields[field];
+            break;
+        case kbd_screen_event_DOWN:
+            field = down_fields[field];
+            break;
+        default: break;
+        }
+        update_screen(old_field, field);
         break;
-    case 2: // set field
-        field = req[3];
-        set_field(req[3], req[4]);
-        dirty = req[5];
-        update_screen(req[3], req[3]);
+    case 4: // select value
+        set_field(field, req[4]==kbd_screen_event_SEL_PREV
+                  ? select_prev_value(field)
+                  : select_next_value(field));
+        dirty = true;
+        update_screen(field, field);
         break;
     default: break;
     }
-
-    if(kbd_system.side == kbd_side_LEFT)
-        mark_left_response();
-    else
-        mark_right_response();
 }
 
-void init_config_screen_default_tb() {
-    init_data();
+#endif
 
-    fd = kbd_system.flash_datasets[get_screen_index(kbd_config_screen_tb)];
-    memset(fd->data, 0xFF, FLASH_DATASET_SIZE); // use 0xFF = erased state in flash
-    memcpy(fd->data, &tb_motion_config, sizeof(tb_motion_config_t));
+#ifdef KBD_NODE_RIGHT
+void work_screen_task_power() {} // no action
+#endif
+
+void init_config_screen_data_tb() {
+    uint8_t si = get_screen_index(kbd_config_screen_tb);
+#ifdef KBD_NODE_AP
+    fd = kbd_system.core0.flash_datasets[si];
+    uint8_t* data = fd->data;
+#else
+    fd_data = kbd_syste.core0.flash_data[si];
+    uint8_t* data = fd_data;
+#endif
+
+    memset(data, 0xFF, KBD_TASK_DATA_SIZE); // use 0xFF = erased state in flash
+
+    kbd_tb_config_t* tbc = &kbd_system.core0.tb_config;
+    tb_motion_config.version = CONFIG_VERSION;
+    tb_motion_config.cpi_multiplier = c->cpi / CPI_BASE;
+    tb_motion_config.scroll_scale = c->scroll_scale;
+    tb_motion_config.scroll_quad_weight = c->scroll_quad_weight;
+    tb_motion_config.delta_scale = c->delta_scale;
+    tb_motion_config.delta_quad_weight = c->delta_quad_weight;
+    memcpy(data, &tb_motion_config, sizeof(tb_motion_config_t));
 }
 
-void apply_config_screen_tb() {
-    if(fd->data[0]!=CONFIG_VERSION) return;
+void apply_config_screen_data_tb() {
+#ifdef KBD_NODE_AP
+    uint8_t* data = fd->data;
+#else
+    uint8_t* data = fd_data;
+#endif
+    if(data[0]!=CONFIG_VERSION) return;
 
-    memcpy(&tb_motion_config, fd->data, sizeof(tb_motion_config_t));
+    memcpy(&tb_motion_config, data, sizeof(tb_motion_config_t));
 
-    kbd_system.tb_cpi = CPI_BASE * tb_motion_config.cpi_multiplier;
-    kbd_system.tb_scroll_scale = tb_motion_config.scroll_scale;
-    kbd_system.tb_scroll_quad_weight = tb_motion_config.scroll_quad_weight;
-    kbd_system.tb_delta_scale = tb_motion_config.delta_scale;
-    kbd_system.tb_delta_quad_weight = tb_motion_config.delta_quad_weight;
+    kbd_tb_config_t* tbc = &kbd_system.core0.tb_config;
+    tbc->cpi = CPI_BASE * tb_motion_config.cpi_multiplier;
+    tbc->scroll_scale = tb_motion_config.scroll_scale;
+    tbc->scroll_quad_weight = tb_motion_config.scroll_quad_weight;
+    tbc->delta_scale = tb_motion_config.delta_scale;
+    tbc->delta_quad_weight = tb_motion_config.delta_quad_weight;
 
-    if(kbd_system.side == kbd_side_RIGHT) {
-        // must clearout the motion registers before setting the CPI
-        int16_t dx,dy;
-        bool on_surface;
-        tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy); // make a dummy call to clear motions
-        tb_set_cpi(kbd_hw.tb, kbd_system.tb_cpi);
-    }
+#ifdef KBD_NODE_RIGHT
+    // must clearout the motion registers before setting the CPI
+    int16_t dx,dy;
+    bool on_surface;
+    tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy); // make a dummy call to clear motions
+    tb_set_cpi(kbd_hw.tb, kbd_system.tb_cpi);
+#endif
 }

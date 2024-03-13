@@ -178,7 +178,6 @@ static void update_screen() {
 void work_screen_task_scan() {
     kbd_system_core0_t* c = &kbd_system.core0;
     uint8_t* req = c->task_request;
-    uint8_t* res = c->task_response;
 
     switch(req[2]) {
     case 1:
@@ -189,8 +188,6 @@ void work_screen_task_scan() {
         break;
     default: break;
     }
-
-    init_task_response(res, &c->task_response_ts, req);
 }
 
 #else

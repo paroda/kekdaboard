@@ -201,9 +201,14 @@ void work_screen_task() {
     kbd_screen_t screen = req[1];
     bool config = is_config_screen(screen);
     uint8_t si = get_screen_index(screen);
+
+    init_task_response(res, &c->task_response_ts, req);
+
     if(config && req[2]==0) {
-        memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE);
-        init_task_response(res, &c->task_response_ts, req);
+        if(req[3] != c->flash_data_version[si]) {
+            c->flash_data_version = req[3];
+            memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE);
+        }
     } else {
         (config ? config_screen_task_workers[si] : info_screen_task_workers[si])();
     }
@@ -215,6 +220,20 @@ void init_config_screen_data() {
 }
 
 void apply_config_screen_data() {
-    for(uint i=0; i<KBD_CONFIG_SCREEN_COUNT; i++)
-        config_screen_data_appliers[i]();
+    kbd_system_core0_t* c = &kbd_system.core0;
+    static uint8_t applied[KBD_CONFIG_SCREEN_COUNT] = {0};
+    for(uint i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) {
+#ifdef KBD_NODE_AP
+        flash_dataset_t* fd = c->flash_datasets[si];
+        if(applied[si] != fd->pos) {
+            config_screen_data_appliers[i]();
+            applied[si] = fd->pos;
+        }
+#else
+        if(applied[si] != c->flash_data_version[si]) {
+            config_screen_data_appliers[i]();
+            applied[si] = c->flash_data_version[si];
+        }
+#endif
+    }
 }

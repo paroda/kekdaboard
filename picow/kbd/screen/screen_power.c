@@ -59,13 +59,11 @@ void handle_screen_event_power(kbd_event_t event) {
         break;
     default: break;
     }
-
 }
 
 void work_screen_task_power() {
     kbd_system_core0_t* c = &kbd_system.core0;
     uint8_t* req = c->task_request;
-    uint8_t* res = c->task_response;
 
     uint8_t* data = fd->data;
     switch(req[2]) {
@@ -77,8 +75,6 @@ void work_screen_task_power() {
         break;
     default: break;
     }
-
-    init_task_response(res, &c->task_response_ts, req);
 }
 
 #endif
@@ -201,8 +197,6 @@ void work_screen_task_power() {
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
-    init_task_response(res, &c->task_response_ts, req);
-
     uint8_t old_field;
     switch(req[2]) {
     case 1: // init
@@ -235,7 +229,6 @@ void work_screen_task_power() {
         break;
     default: break;
     }
-
 }
 
 #endif
