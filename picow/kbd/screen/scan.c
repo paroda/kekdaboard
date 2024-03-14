@@ -3,6 +3,8 @@
 #include "../hw_model.h"
 #include "../data_model.h"
 
+#define THIS_SCREEN kbd_info_screen_scan
+
 #ifdef KBD_NODE_AP
 
 void handle_screen_event_scan(kbd_event_t event) {
@@ -11,7 +13,7 @@ void handle_screen_event_scan(kbd_event_t event) {
 
     if(is_nav_event(event)) return;
 
-    init_task_request(req, &c->left_task_request_ts, kbd_info_screen_scan);
+    init_task_request(req, &c->left_task_request_ts, THIS_SCREEN);
 
     req[2] = (event == kbd_screen_event_INIT) ? 1 : 2;
     req[3] = KEY_ROW_COUNT*2 + sizeof(kbd_tb_motion_t);

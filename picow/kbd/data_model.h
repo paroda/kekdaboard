@@ -83,11 +83,7 @@
 
 // The request/response should be large enough to fit 4 bytes header and 32 bytes data
 // The data is 32 bytes so as to fit flash dataset which is also 32 bytes
-// The header 4 bytes are 0:id, 1:screen, 2:command, 3:(data size or config version)
-// The command==0 typically means skip or ignore, except when it is a config screen request.
-// For config screen request, the command 0 means set config.
-// The last header byte is always the count of data bytes, except for set config request,
-// in which case it is the config version. The data size is fixed to flash size (32).
+// The header 4 bytes are 0:flag, 1:screen, 2:command, 3:(data size or config version)
 #define KBD_TASK_SIZE 36
 #define KBD_TASK_DATA_SIZE 32
 
@@ -114,13 +110,11 @@ typedef struct {
     uint8_t delta_quad_weight;
 } kbd_tb_config_t;
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
 typedef struct {
     uint32_t color;
     pixel_anim_style_t anim_style; // fixed, key press, fade etc
     uint8_t anim_cycles; // number of cycles for a full transition (on to off)
 } kbd_pixel_config_t;
-#endif
 
 typedef enum {
     kbd_led_state_OFF,
@@ -246,10 +240,10 @@ typedef struct {
 
     // ap - for processing, left - for display, right - for scanning
     kbd_tb_config_t tb_config;
+    kbd_pixel_config_t pixel_config;
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     uint32_t pixel_colors[hw_led_pixel_count];
-    kbd_pixel_config_t pixel_config;
 #endif
 
 #ifdef KBD_NODE_AP
@@ -259,7 +253,7 @@ typedef struct {
 #else
     // flash data as received from AP
     uint8_t flash_data[KBD_CONFIG_SCREEN_COUNT][KBD_TASK_DATA_SIZE];
-    uint8_t flash_data_version[KBD_CONFIG_SCREEN_COUNT];
+    uint8_t flash_data_pos[KBD_CONFIG_SCREEN_COUNT];
 #endif
 
     uint64_t state_ts;

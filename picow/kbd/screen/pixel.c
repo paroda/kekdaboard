@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hw_model.h"
-#include "screen_processor.h"
+#include "../hw_model.h"
+#include "../data_model.h"
 
+#define THIS_SCREEN kbd_config_screen_pixel
 #define CONFIG_VERSION 0x01
-#define FIELD_COUNT 8
 
 typedef struct {
     uint8_t version;
@@ -17,7 +17,82 @@ typedef struct {
 } pixel_config_t;
 
 static pixel_config_t pixel_config;
+
+#ifdef KBD_NODE_AP
 static flash_dataset_t* fd;
+#else
+static uint8_t* fd_data;
+#endif
+
+#ifdef KBD_NODE_AP
+
+void handle_screen_event_pixel(kbd_event_t event) {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* lreq = c->left_task_request;
+    uint8_t* lres = c->left_task_response;
+
+    if(is_nav_event(event)) return;
+
+    switch(event) {
+    case kbd_screen_event_INIT:
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 1;
+        lreq[3] = sizeof(pixel_config_t);
+        memcpy(lreq+4, &pixel_config, lreq[3]);
+        break;
+    case kbd_screen_event_SAVE:
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 2;
+        break;
+    case kbd_screen_event_LEFT:
+    case kbd_screen_event_RIGHT:
+    case kbd_screen_event_UP:
+    case kbd_screen_event_DOWN:
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 3;
+        lreq[3] = 1;
+        lreq[4] = event;
+        break;
+    case kbd_screen_event_SEL_PREV:
+    case kbd_screen_event_SEL_NEXT:
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 4;
+        lreq[3] = 1;
+        lreq[4] = event;
+        break;
+    case kbd_screen_event_RESPONSE:
+        if(lres[2]==1) {
+            init_task_request(req, &c->task_request_ts, THIS_SCREEN);
+            req[2] = 1;
+            req[3] = lres[3];
+            memcpy(req+4, lres+4, lres[3]);
+        }
+        break;
+    default: break;
+    }
+}
+
+void work_screen_task_pixel() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+
+    uint8_t* data = fd->data;
+    switch(req[2]) {
+    case 1: // save flash
+        memcpy(&pixel_config, req+4, req[3]);
+        memcpy(fd->data, &pixel_config, sizeof(pixel_config_t));
+        flash_store_save(fd);
+        break;
+    default: break;
+    }
+}
+
+#endif
+
+#ifdef KBD_NODE_LEFT
+
+#define FIELD_COUNT 8
 
 static uint8_t field;
 static bool dirty;
@@ -121,13 +196,6 @@ static uint8_t set_field(uint8_t field, uint8_t value) {
     default: return 0; // invalid
     }
 }
-
-static void save() {
-    memcpy(fd->data, &pixel_config, sizeof(pixel_config_t));
-    flash_store_save(fd);
-}
-
-// TODO: update_screen init_screen
 
 static void draw_color_component(lcd_canvas_t* cv, uint8_t component, uint16_t x, uint16_t y, uint8_t selected) {
     char* hex[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
@@ -250,136 +318,96 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
     update_dirty();
 }
 
-static void init_data() {
-    pixel_config.version = CONFIG_VERSION;
-    pixel_config.color_red = (uint8_t) ((kbd_system.pixel_color & 0xff0000) >> 16);
-    pixel_config.color_green = (uint8_t) ((kbd_system.pixel_color & 0x00ff00) >> 8);
-    pixel_config.color_blue = (uint8_t) (kbd_system.pixel_color & 0x0000ff);
-    pixel_config.anim_style = kbd_system.pixel_anim_style;
-    pixel_config.anim_cycles = kbd_system.pixel_anim_cycles;
-}
+void works_screen_task_tb() {
+    kbd_system_core0_t* c = &kbd_system.core0;
+    uint8_t* req = c->task_request;
+    uint8_t* res = c->task_response;
 
-/*
- * req array (32 bytes):
- *   0,1 : request identifier (set by marker)
- *   2 : command: 0-init, 1-select field, 2-set field, 3-save
- *   3 : current field
- *   4-: config data, when init/save
- *   4 : field to select, when selecting field
- *   4 : new value of current field, when setting field
- *   5 : if to show dirty, when setting field
- *
- * res array (32 bytes):
- *   0,1 : response identifier (set by marker)
- *   rest: not used
- */
-
-void execute_screen_pixel(kbd_event_t event) {
-    uint8_t* lreq = kbd_system.left_task_request;
-    uint8_t* rreq = kbd_system.right_task_request;
-
-    if(is_nav_event(event)) return;
-
-    switch(event) {
-    case kbd_screen_event_INIT:
-        init_data();
-        mark_left_request(kbd_config_screen_pixel);
-        lreq[2] = 0;
-        lreq[3] = field = 0;
-        memcpy(lreq+4, &pixel_config, sizeof(pixel_config_t));
-        dirty = false;
-        break;
-    case kbd_screen_event_LEFT:
-    case kbd_screen_event_RIGHT:
-    case kbd_screen_event_UP:
-    case kbd_screen_event_DOWN:
-        mark_left_request(kbd_config_screen_pixel);
-        lreq[2] = 1; // select field
-        lreq[3] = field; // current field
-        switch(event) { // target field
-        case kbd_screen_event_LEFT:
-            lreq[4] = field = field==0 ? FIELD_COUNT-1 : field-1;
-            break;
-        case kbd_screen_event_RIGHT:
-            lreq[4] = field = field==FIELD_COUNT-1 ? 0 : field+1;
-            break;
-        case kbd_screen_event_UP:
-            lreq[4] = field = field>5 ? field-1 : FIELD_COUNT-1;
-            break;
-        case kbd_screen_event_DOWN:
-            lreq[4] = field = field>5 ? (field==FIELD_COUNT-1 ? 0 : field+1) : 6;
-            break;
-        default: lreq[4] = field = 0; break;
-        }
-        break;
-    case kbd_screen_event_SEL_PREV:
-    case kbd_screen_event_SEL_NEXT:
-        mark_left_request(kbd_config_screen_pixel);
-        lreq[2] = 2;
-        lreq[3] = field;
-        lreq[4] = event==kbd_screen_event_SEL_PREV ? select_prev_value(field) : select_next_value(field);
-        lreq[5] = dirty = true;
-        break;
-    case kbd_screen_event_SAVE:
-        mark_left_request(kbd_config_screen_pixel);
-        mark_right_request(kbd_config_screen_pixel);
-        rreq[2] = lreq[2] = 3;
-        rreq[3] = lreq[3] = field = 0;
-        memcpy(lreq+4, &pixel_config, sizeof(pixel_config_t));
-        memcpy(rreq+4, &pixel_config, sizeof(pixel_config_t));
-        dirty = false;
-        break;
-    default: break;
-    }
-}
-
-void respond_screen_pixel() {
-    uint8_t* req = kbd_system.side == kbd_side_LEFT ?
-        kbd_system.left_task_request : kbd_system.right_task_request;
+    uint8_t old_field;
     switch(req[2]) {
-    case 0: // init
-    case 3: // save
-        field = req[3];
-        memcpy(&pixel_config, req+4, sizeof(pixel_config_t));
-        if(req[2]==3) save();
-        dirty = false;
+    case 1: // init
+    case 2: // save
+        if(req[2]==1) {
+            memcpy(&pixel_config, req+4, req[3]);
+        } else {
+            res[2] = 1;
+            res[3] = sizeof(pixel_config_t);
+            memcpy(res+4, &pixel_config, res[3]);
+        }
+        field = 0; dirty = false;
         init_screen();
         break;
-    case 1: // select field
-        field = req[4];
-        update_screen(req[3], req[4]);
+    case 3: // select field
+        old_field = field;
+        switch(req[4]) {
+        case kbd_screen_event_LEFT:
+            field = field==0 ? FIELD_COUNT-1 : field-1;
+            break;
+        case kbd_screen_event_RIGHT:
+            field = field==FIELD_COUNT-1 ? 0 : field+1;
+            break;
+        case kbd_screen_event_UP:
+            field = field>5 ? field-1 : FIELD_COUNT-1;
+            break;
+        case kbd_screen_event_DOWN:
+            field = field>5 ? (field==FIELD_COUNT-1 ? 0 : field+1) : 6;
+            break;
+        default: break;
+        }
+        update_screen(old_field, field);
         break;
-    case 2: // set field
-        field = req[3];
-        set_field(req[3], req[4]);
-        dirty = req[5];
-        update_screen(req[3], req[3]);
+    case 4: // select value
+        set_field(field, req[4]==kbd_screen_event_SEL_PREV
+                  ? select_prev_value(field)
+                  : select_next_value(field));
+        dirty = true;
+        update_screen(field, field);
         break;
     default: break;
     }
-
-    if(kbd_system.side == kbd_side_LEFT)
-        mark_left_response();
-    else
-        mark_right_response();
 }
 
-void init_config_screen_default_pixel() {
-    init_data();
+#endif
 
-    fd = kbd_system.flash_datasets[get_screen_index(kbd_config_screen_pixel)];
-    memset(fd->data, 0xFF, FLASH_DATASET_SIZE); // use 0xFF = erased state in flash
-    memcpy(fd->data, &pixel_config, sizeof(pixel_config_t));
+#ifdef KBD_NODE_RIGHT
+void work_screen_task_power() {} // no action
+#endif
+
+void init_config_screen_data_pixel() {
+    uint8_t si = get_screen_index(THIS_SCREEN);
+#ifdef KBD_NODE_AP
+    fd = kbd_system.core0.flash_datasets[si];
+    uint8_t* data = fd->data;
+#else
+    fd_data = kbd_syste.core0.flash_data[si];
+    uint8_t* data = fd_data;
+#endif
+
+    memset(data, 0xFF, KBD_TASK_DATA_SIZE); // use 0xFF = erased state in flash
+    kbd_pixel_config_t* pc = &kbd_system.core0.pixel_config;
+    pixel_config.version = CONFIG_VERSION;
+    pixel_config.color_red = (uint8_t) ((pc->color & 0xff0000) >> 16);
+    pixel_config.color_green = (uint8_t) ((pc->color & 0x00ff00) >> 8);
+    pixel_config.color_blue = (uint8_t) (pc->color & 0x0000ff);
+    pixel_config.anim_style = pc->anim_style;
+    pixel_config.anim_cycles = pc->anim_cycles;
+    memcpy(data, &pixel_config, sizeof(pixel_config_t));
 }
 
-void apply_config_screen_pixel() {
-    if(fd->data[0]!=CONFIG_VERSION) return;
+void apply_config_screen_data_pixel() {
+#ifdef KBD_NODE_AP
+    uint8_t* data = fd->data;
+#else
+    uint8_t* data = fd_data;
+#endif
+    if(data[0]!=CONFIG_VERSION) return;
 
-    memcpy(&pixel_config, fd->data, sizeof(pixel_config_t));
+    memcpy(&pixel_config, data, sizeof(pixel_config_t));
 
-    kbd_system.pixel_color = (((uint32_t) pixel_config.color_red) << 16)
+    kbd_pixel_config_t* pc = &kbd_system.core0.pixel_config;
+    pc->color = (((uint32_t) pixel_config.color_red) << 16)
         | (((uint32_t) pixel_config.color_green) << 8)
         | ((uint32_t) pixel_config.color_blue);
-    kbd_system.pixel_anim_style = pixel_config.anim_style;
-    kbd_system.pixel_anim_cycles = pixel_config.anim_cycles;
+    pc->anim_style = pixel_config.anim_style;
+    pc->anim_cycles = pixel_config.anim_cycles;
 }

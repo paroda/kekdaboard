@@ -4,9 +4,10 @@
 #include "../hw_model.h"
 #include "../data_model.h"
 
-#ifdef KBD_NODE_AP
-
+#define THIS_SCREEN kbd_config_screen_power
 #define CONFIG_VERSION 0x01
+
+#ifdef KBD_NODE_AP
 
 static flash_dataset_t* fd;
 
@@ -20,37 +21,37 @@ void handle_screen_event_power(kbd_event_t event) {
 
     switch(event) {
     case kbd_screen_event_INIT:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
         lreq[3] = 2;
         lreq[4] = kbd_system.backlight;
         lreq[5] = c->idle_minutes;
         break;
     case kbd_screen_event_SAVE:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 2;
         break;
     case kbd_screen_event_LEFT:
     case kbd_screen_event_UP:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 3;
         break;
     case kbd_screen_event_RIGHT:
     case kbd_screen_event_DOWN:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 4;
         break;
     case kbd_screen_event_SEL_PREV:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 5;
         break;
     case kbd_screen_event_SEL_NEXT:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_power);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 6;
         break;
     case kbd_screen_event_RESPONSE:
         if(lres[2]==1) {
-            init_task_request(req, &c->task_request_ts, kbd_config_screen_power);
+            init_task_request(req, &c->task_request_ts, THIS_SCREEN);
             req[2] = 1;
             req[3] = 2;
             req[4] = kbd_system.backlight = lres[4];
@@ -240,7 +241,7 @@ void work_screen_task_power() {} // no action
 #ifdef KBD_NODE_AP
 
 void init_config_screen_data_power() {
-    uint8_t si = get_screen_index(kbd_config_screen_power);
+    uint8_t si = get_screen_index(THIS_SCREEN);
     fd = kbd_system.core0.flash_datasets[si];
     uint8_t* data = fd->data;
 

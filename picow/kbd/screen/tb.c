@@ -4,6 +4,7 @@
 #include "../hw_model.h"
 #include "../data_model.h"
 
+#define THIS_SCREEN kbd_config_screen_tb
 #define CONFIG_VERSION 0x01
 
 /*
@@ -47,34 +48,34 @@ void handle_screen_event_tb(kbd_event_t event) {
 
     switch(event) {
     case kbd_screen_event_INIT:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
         lreq[3] = sizeof(tb_motion_config_t);
         memcpy(lreq+4, &tb_motion_config, lreq[3]);
         break;
     case kbd_screen_event_SAVE:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 2;
         break;
     case kbd_screen_event_LEFT:
     case kbd_screen_event_RIGHT:
     case kbd_screen_event_UP:
     case kbd_screen_event_DOWN:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 3;
         lreq[3] = 1;
         lreq[4] = event;
         break;
     case kbd_screen_event_SEL_PREV:
     case kbd_screen_event_SEL_NEXT:
-        init_task_request(lreq, &c->left_task_request_ts, kbd_config_screen_tb);
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 4;
         lreq[3] = 1;
         lreq[4] = event;
         break;
     case kbd_screen_event_RESPONSE:
         if(lres[2]==1) {
-            init_task_request(req, &c->task_request_ts, kbd_config_screen_tb);
+            init_task_request(req, &c->task_request_ts, THIS_SCREEN);
             req[2] = 1;
             req[3] = lres[3];
             memcpy(req+4, lres+4, lres[3]);
@@ -348,7 +349,7 @@ void work_screen_task_power() {} // no action
 #endif
 
 void init_config_screen_data_tb() {
-    uint8_t si = get_screen_index(kbd_config_screen_tb);
+    uint8_t si = get_screen_index(THIS_SCREEN);
 #ifdef KBD_NODE_AP
     fd = kbd_system.core0.flash_datasets[si];
     uint8_t* data = fd->data;

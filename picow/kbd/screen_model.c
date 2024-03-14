@@ -107,39 +107,21 @@ bool is_nav_event(kbd_event_t event) {
         || event == kbd_screen_event_PREV;
 }
 
-#define set_next_id(x) x=x==0xFF?0:x+1
-
 void init_task_request(uint8_t* task_request, uint64_t* task_request_ts, kbd_screen_t screen) {
-    set_next_id(task_request[0]);
+    task_request[0] = 1;
     task_request[1] = screen;
     task_request[2] = task_request[3] = 0; // init with no command/data
     *task_request_ts = time_us_64();
 }
 
 void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint8_t* task_request) {
-    task_response[0] = task_request[0];
+    task_response[0] = 1;
     task_response[1] = task_request[1];
     task_response[2] = task_response[3] = 0; // init with no command/data
     *task_response_ts = time_us_64();
 }
 
 #ifdef KBD_NODE_AP
-
-static void publish_config() {
-    kbd_system_core0_t* c = &kbd_system.core0;
-    uint8_t* lreq = c->left_task_request;
-    uint8_t* rreq = c->right_task_request;
-    // sync config - send the config as a task request and iterate to next config screen
-    static uint8_t si = 0;
-    si = si+1<n ? si+1 : 0;
-    kbd_screen_t screen = kbd_config_screens[si];
-    init_task_request(lreq, &c->left_task_request_ts, screen);
-    init_task_request(rreq, &c->right_task_request_ts, screen);
-    flash_dataset_t* fd = c->flash_datasets[si];
-    lreq[3] = rreq[3] = fd->pos;
-    memcpy(lreq+4, fd->data, FLASH_DATASET_SIZE);
-    memcpy(rreq+4, fd->data, FLASH_DATASET_SIZE);
-}
 
 void handle_screen_event(kbd_event_t event) {
     uint8_t* req = kbd_system.core0.task_request;
@@ -158,9 +140,7 @@ void handle_screen_event(kbd_event_t event) {
     uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
     uint8_t si = get_screen_index(screen);
 
-    if((res[1]==screen && res[2])
-       || (lres[1]==screen && lres[2])
-       || (rres[1]==screen && rres[2])) { // process response command for this screen
+    if(res[0] || lres[0] || rres[0]) { // process response command for this screen
         event = kbd_screen_event_RESPONSE;
     } else if(is_nav_event(event)) { // switch to screen init event if nav event
         if(event == kbd_screen_event_CONFIG && !config) {
@@ -182,11 +162,9 @@ void handle_screen_event(kbd_event_t event) {
         event = kbd_screen_event_INIT;
     }
 
-    if(event==kbd_event_NONE && screen==kbd_info_screen_welcome) {
-        publish_config();
-    } else {
-        (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);
-    }
+    req[0] = lreq[0] = rreq[0] = 0;
+    (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);
+    res[0] = lres[0] = rres[0] = 0;
 }
 
 #endif
@@ -196,7 +174,9 @@ void work_screen_task() {
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
-    if(req[0]==res[0]) return;
+    res[0] = 0;
+    if(!req[0]) return;
+    req[0] = 0;
 
     kbd_screen_t screen = req[1];
     bool config = is_config_screen(screen);
@@ -204,14 +184,7 @@ void work_screen_task() {
 
     init_task_response(res, &c->task_response_ts, req);
 
-    if(config && req[2]==0) {
-        if(req[3] != c->flash_data_version[si]) {
-            c->flash_data_version = req[3];
-            memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE);
-        }
-    } else {
-        (config ? config_screen_task_workers[si] : info_screen_task_workers[si])();
-    }
+    (config ? config_screen_task_workers[si] : info_screen_task_workers[si])();
 }
 
 void init_config_screen_data() {
@@ -230,9 +203,9 @@ void apply_config_screen_data() {
             applied[si] = fd->pos;
         }
 #else
-        if(applied[si] != c->flash_data_version[si]) {
+        if(applied[si] != c->flash_data_pos[si]) {
             config_screen_data_appliers[i]();
-            applied[si] = c->flash_data_version[si];
+            applied[si] = c->flash_data_pos[si];
         }
 #endif
     }

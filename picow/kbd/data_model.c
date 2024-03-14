@@ -54,21 +54,21 @@ kbd_system_t kbd_system = {
             .delta_scale = 4,
             .delta_quad_weight = 0,
         },
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-        .pixel_colors = {0}, // default to 0
         .pixel_config = {
             .color = 0x0f000f, // magenta
             .anim_style = pixel_anim_style_FADE, // fade
             .anim_cycles = 30 // not applicable when fixed
         }
+
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+        .pixel_colors = {0}, // default to 0
 #endif
 
 #ifdef KBD_NODE_AP
         .flash_datasets = {0}, // default to NULL
 #else
         .flash_data = {}, // default to 0
-        .flash_data_version = {}, // default to 0
+        .flash_data_pos = {}, // default to 0
 #endif
 
         .state_ts = 0,

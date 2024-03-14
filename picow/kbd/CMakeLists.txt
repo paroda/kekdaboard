@@ -40,7 +40,6 @@ add_executable(kbd_ap
 target_include_directories(kbd_ap PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/ap
-  ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
 )
 
 target_link_libraries(kbd_ap
