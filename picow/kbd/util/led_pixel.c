@@ -9,18 +9,18 @@
 
 #define LED_FREQ 800000 // 800kHz
 
-led_pixel_t* led_pixel_create(pio_hw_t* pio, uint8_t sm, uint8_t gpio_left_DI, uint8_t count) {
+led_pixel_t* led_pixel_create(pio_hw_t* pio, uint8_t sm, uint8_t gpio_DI, uint8_t count) {
     led_pixel_t* led = (led_pixel_t*) malloc(sizeof(led_pixel_t));
     led->pio = pio;
     led->sm = sm;
-    led->gpio_left_DI = gpio_left_DI;
+    led->gpio_DI = gpio_DI;
     led->count = count;
     led->on = true;
-    // 2 sides, each with `count` pixels, each 3 bytes of color (rgb)
-    // one word (32 bit) stores two color components of each side.
-    // hence (2*3*N/4) as many words needed.
+    // as many as `count` pixels, each 3 bytes of color (rgb)
+    // one word (32 bit) holds 4 bytes of color
+    // hence (3*N/4) as many words needed.
     // And add one more to handle round down odd number of pixels.
-    uint32_t n = 6 * (uint32_t) led->count;
+    uint32_t n = 3 * (uint32_t) led->count;
     led->buff_size = n/4 + (n%4 ? 1 : 0);
     led->buff = (uint32_t*) malloc(led->buff_size*4);
     memset(led->buff, 0, 4*led->buff_size);
@@ -37,7 +37,7 @@ led_pixel_t* led_pixel_create(pio_hw_t* pio, uint8_t sm, uint8_t gpio_left_DI, u
     }
 
     uint8_t offset = pio_add_program(led->pio, &led_pixel_program);
-    led_pixel_program_init(led->pio, led->sm, offset, led->gpio_left_DI, LED_FREQ);
+    led_pixel_program_init(led->pio, led->sm, offset, led->gpio_DI, LED_FREQ);
 
     return led;
 }
@@ -47,51 +47,35 @@ void led_pixel_free(led_pixel_t* led) {
     free(led);
 }
 
-static inline uint32_t interleave_16bits(uint8_t a, uint8_t b) {
-    uint32_t x = 0;
-    for(int i=7; i>=0; i--) {
-        x = x<<1 | (a & 1<<i)>>i;
-        x = x<<1 | (b & 1<<i)>>i;
+static inline void encode_pixels(uint32_t* buff, uint32_t* rgb, uint8_t count, uint8_t buff_size) {
+    uint8_t i,j;
+    uint8_t* b = (uint8_t*)buff;
+    memset(buff, 0, buff_size*4);
+    for(i=0,j=0; i<count; i++) {
+        b[j++] = (rgb[i]>>8) & 0xff;  // green
+        b[j++] = (rgb[i]>>16) & 0xff; // red
+        b[j++] = (rgb[i]) & 0xff;     // blue
     }
-    return x;
-}
-
-static inline void encode_pixels(uint32_t* buff, uint32_t* left, uint32_t* right, uint8_t count, uint8_t buff_size) {
-    uint32_t c, ci = 0;
-    for(int i=0; i<count; i++) {
-        uint32_t cl = left[i], cr = right[i];
-        uint8_t clr = (cl & 0xff0000) >> 16,
-            clg = (cl & 0xff00) >> 8,
-            clb = (cl & 0xff),
-            crr = (cr & 0xff0000) >> 16,
-            crg = (cr & 0xff00) >> 8,
-            crb = (cr & 0xff);
-        c = interleave_16bits(crg, clg); // pack green
-        buff[ci/2] = ci%2 ? buff[ci/2]|c : c<<16;
-        ci++;
-        c = interleave_16bits(crr, clr); // pack red
-        buff[ci/2] = ci%2 ? buff[ci/2]|c : c<<16;
-        ci++;
-        c = interleave_16bits(crb, clb); // pack blue
-        buff[ci/2] = ci%2 ? buff[ci/2]|c : c<<16;
-        ci++;
-    }
-    for(; ci<2*buff_size; ci++) {
-        buff[ci/2] = ci%2 ? buff[ci/2] : 0;
+    for(i=0,j=0; i<buff_size; i++) {
+        uint32_t c = b[j++];
+        c = (c<<8) | b[j++];
+        c = (c<<8) | b[j++];
+        c = (c<<8) | b[j++];
+        buff[i] = c;
     }
 }
 
-void led_pixel_set(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb) {
-    encode_pixels(led->buff, colors_left_rgb, colors_right_rgb, led->count, led->buff_size);
-    dma_channel_wait_for_finish_blocking(led->chan); // can be removed, since we plan to run it at large intervals
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 80ms
-    sleep_us(100);
+void led_pixel_set(led_pixel_t* led, uint32_t* colors_rgb) {
+    encode_pixels(led->buff, colors_rgb, led->count, led->buff_size);
     dma_channel_set_read_addr(led->chan, led->buff, true);
+    dma_channel_wait_for_finish_blocking(led->chan);
+    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 50ms
+    sleep_us(100);
     led->on = true;
 }
 
-void led_pixel_set2(led_pixel_t* led, uint32_t* colors_left_rgb, uint32_t* colors_right_rgb) {
-    encode_pixels(led->buff, colors_left_rgb, colors_right_rgb, led->count, led->buff_size);
+void led_pixel_set2(led_pixel_t* led, uint32_t* colors_rgb) {
+    encode_pixels(led->buff, colors_rgb, led->count, led->buff_size);
     pio_sm_set_pins(led->pio, led->sm, 0); // reset
     sleep_us(100);
     for(int i=0; i<led->buff_size; i++) {
@@ -105,15 +89,6 @@ void led_pixel_set_off(led_pixel_t* led) {
 
     uint32_t cs[led->count];
     memset(cs, 0, 4*led->count);
-    led_pixel_set(led, cs, cs);
+    led_pixel_set(led, cs);
     led->on = false;
-}
-
-void led_pixel_finish_op(led_pixel_t* led) {
-    // send a reset signal (keep low for >80 ms)
-    pio_sm_set_pins(led->pio, led->sm, 0);
-    sleep_us(90);
-    pio_sm_set_pins(led->pio, led->sm, 1);
-    sleep_us(10);
-    pio_sm_set_pins(led->pio, led->sm, 0);
 }

@@ -33,3 +33,5 @@ add_subdirectory(pico_fota_bootloader)
 add_subdirectory(hello_blink)
 
 add_subdirectory(hello_wifi)
+
+add_subdirectory(hello_ws2812)

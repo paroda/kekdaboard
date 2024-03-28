@@ -4,7 +4,7 @@
 ; SPDX-License-Identifier: BSD-3-Clause
 ;
 
-.program led_pixel
+.program ws2812
 
 .define public T1 4
 .define public T2 3
@@ -19,20 +19,21 @@
 % c-sdk {
 #include "hardware/clocks.h"
 
-static inline void led_pixel_program_init(PIO pio, uint sm, uint offset, uint pin, float freq) {
+static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin, float freq) {
+
     pio_gpio_init(pio, pin);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
-    
-    pio_sm_config c = led_pixel_program_get_default_config(offset);
-    sm_config_set_out_shift(&c, false, true, 32); // pull fresh data after 32 bits
+
+    pio_sm_config c = ws2812_program_get_default_config(offset);
+    sm_config_set_out_shift(&c, false, true, 24); // pull fresh data after 24 bits
     sm_config_set_out_pins(&c, pin, 1);
     sm_config_set_set_pins(&c, pin, 1);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
-    
-    int cycles_per_bit = led_pixel_T1 + led_pixel_T2 + led_pixel_T3;
+
+    int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;
     float div = clock_get_hz(clk_sys) / (freq * cycles_per_bit);
     sm_config_set_clkdiv(&c, div);
-    
+
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
 }
