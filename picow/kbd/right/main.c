@@ -7,30 +7,24 @@
 #include "hw_model.h"
 #include "data_model.h"
 
-/*
- * Process Overview
- *
- * - init data_model
- * - init hw
- * - init core1
- *   - init hw wifi
- *     - UDP: receive state, led_pixels
- *     - TCP: receive program and flash self
- *   - loop
- *     - wifi poll
- *     - scan keys 6x7
- *     - UDP: send key_scan, tb_motion
- *     - update leds
- * - loop tasks
- *   - process requests
- *     - update responses
- *   - scan tb_motion
- */
+void core1_main();
 
-void core1_main(void);
+void core0_main();
 
-void core0_main(void);
+void launch_core1() {
+    init_hw_core1();
 
-int main(void) {
+    core1_main();
+}
 
+int main() {
+    // stdio_init_all();
+
+    init_data_model();
+
+    init_hw_core0();
+
+    multicore_launch_core1(launch_core1);
+
+    core0_main();
 }

@@ -10,6 +10,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
 
 add_executable(kbd_ap
   ap/main.c
+  ap/dhcp_server.c
 
   core0.c
   core1.c
@@ -27,13 +28,10 @@ add_executable(kbd_ap
   screen/tb.c
   screen/welcome.c
 
-  dhcpserver/dhcpserver.c
-
   util/shared_buffer.c
   util/master_spi.c
   util/flash_store.c
   util/flash_w25qxx.c
-  util/pixel_anim.c
   util/usb_descriptors.c
 )
 
@@ -97,6 +95,7 @@ add_executable(kbd_left
   util/led_pixel.c
   util/rtc_ds3231.c
   util/key_scan.c
+  util/pixel_anim.c
 )
 
 # generate the header file into the source tree
@@ -164,6 +163,7 @@ add_executable(kbd_right
   util/srom_pmw3389.c
   util/tb_pmw3389.c
   util/key_scan.c
+  util/pixel_anim.c
 )
 
 # generate the header file into the source tree

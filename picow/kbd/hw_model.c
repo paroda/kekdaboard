@@ -1,4 +1,9 @@
-#include "hw_config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "pico/cyw43_arch.h"
+
 #include "hw_model.h"
 
 kbd_hw_t kbd_hw;
@@ -86,7 +91,6 @@ void init_hw_core0() {
 
 #ifdef KBD_NODE_AP
     kbd_hw.flash = flash_create(kbd_hw.m_spi, hw_gpio_CS_flash);
-    kbd_hw.ledB_on = false;
 #endif
 
 #ifdef KBD_NODE_LEFT
@@ -115,41 +119,50 @@ void init_hw_core0() {
 #endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    // init LEDs
-    kbd_hw.led.gpio = hw_gpio_LED;
-    kbd_hw.led.on = false;
-    kbd_hw.ledB.gpio = 25;
-    kbd_hw.ledB.on = false;
-
-    uint i;
-
-    uint8_t gpio_leds[2] = { kbd_hw.led.gpio, kbd_hw.ledB.gpio };
-    for(i=0; i<2; i++) {
-        uint8_t gpio = gpio_leds[i];
-        gpio_init(gpio);
-        gpio_set_dir(gpio, GPIO_OUT);
-        gpio_put(gpio, true);
-    }
-
-    // init key scanner
-    uint8_t gpio_rows[KEY_ROW_COUNT] = hw_gpio_rows;
-    uint8_t gpio_cols[KEY_COL_COUNT] = hw_gpio_cols;
-    kbd_hw.ks = key_scan_create(KEY_ROW_COUNT, KEY_COL_COUNT, gpio_rows, gpio_cols);
+    // setup key pixels
+    pio_hw_t* pio = hw_inst_PIO == 0 ? pio0 : pio1;
+    kbd_hw.led_pixel = led_pixel_create(pio, hw_inst_PIO_SM, hw_gpio_led_DI, hw_led_pixel_count);
 #endif
 
 }
 
 void init_hw_core1() {
-    // TODO
-    // - init wifi
+    cyw43_arch_init(); // wifi chip init
 
-    /* uart_inst_t* uart = hw_inst_UART == 0 ? uart0 : uart1; */
-    /* kbd_hw.comm = uart_comm_create(uart, hw_gpio_TX, hw_gpio_RX, comm); */
+    kbd_hw.ledB.wl_led = true;
+    kbd_hw.ledB.gpio = CYW43_WL_GPIO_LED_PIN;
+    kbd_hw.ledB.on = true;
+    cyw43_arch_gpio_put(hbd_hw.ledB.gpio, true);
+
+#ifdef KBD_NODE_AP
+    kbd_hw.led_left.wl_led = false;
+    kbd_hw.led_left.gpio = hw_gpio_LED_LEFT;
+    kbd_hw.led_left.on = true;
+    gpio_init(kbd_hw.led_left.gpio);
+    gpio_set_dir(kbd_hw.led_left.gpio, GPIO_OUT);
+    gpio_put(kbd_hw.led_left.gpio, true);
+
+    kbd_hw.led_right.wl_led = false;
+    kbd_hw.led_right.gpio = hw_gpio_LED_RIGHT:
+    kbd_hw.led_right.on = true;
+    gpio_init(kbd_hw.led_right.gpio);
+    gpio_set_dir(kbd_hw.led_right.gpio, GPIO_OUT);
+    gpio_put(kbd_hw.led_right.gpio, true);
+#endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    // setup key pixels
-    pio_hw_t* pio = hw_inst_PIO == 0 ? pio0 : pio1;
-    kbd_hw.led_pixel = led_pixel_create(pio, hw_inst_PIO_SM, hw_gpio_led_DI, hw_led_pixel_count);
+    // init LEDs
+    kbd_hw.led.wl_led = false;
+    kbd_hw.led.gpio = hw_gpio_LED;
+    kbd_hw.led.on = true;
+    gpio_init(kbd_hw.led.gpio);
+    gpio_set_dir(kbd_hw.led.gpio, GPIO_OUT);
+    gpio_put(kbd_hw.led.gpio, true);
+
+    // init key scanner
+    uint8_t gpio_rows[KEY_ROW_COUNT] = hw_gpio_rows;
+    uint8_t gpio_cols[KEY_COL_COUNT] = hw_gpio_cols;
+    kbd_hw.ks = key_scan_create(KEY_ROW_COUNT, KEY_COL_COUNT, gpio_rows, gpio_cols);
 #endif
 
 }

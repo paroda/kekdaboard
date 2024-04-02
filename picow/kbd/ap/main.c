@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "pico/multicore.h"
 
@@ -9,32 +7,37 @@
 
 #include "usb_hid.h"
 
-/*
- * Process Overview
- *
- * - init data_model
- * - init hw
- * - init core1
- *   - init hw wifi
- *     - UDP: receive key_scan and tb_motion, reply state, led_pixels
- *     - TCP: receive program and flash self
- *   - loop
- *     - wifi poll
- *     - animate led pixels
- * - init usb
- * - loop tasks
- *   - process inputs (hid_report_in key_scan, tb_motion, responses)
- *   - update usb hid_report_out
- *   - update left/right request
- *   - update system_state
- */
+void core1_main();
 
-void core1_main(void);
+void core0_main();
 
-void core0_main(void);
+void launch_core1() {
+    init_hw_core1();
 
-void load_flash();
+    core1_main();
+}
 
-int main(void) {
+void load_flash() {
+    // load FLASH DATASETS
+    init_flash_datasets(kbd_system.core0.flash_datasets);
 
+    init_config_screen_data();
+
+    load_flash_datasets(kbd_system.core0.flash_datasets);
+}
+
+int main() {
+    // stdio_init_all();
+
+    init_data_model();
+
+    init_hw_core0();
+
+    multicore_launch_core1(launch_core1);
+
+    load_flash();
+
+    usb_hid_init();
+
+    core0_main();
 }

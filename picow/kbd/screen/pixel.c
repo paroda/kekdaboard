@@ -62,7 +62,7 @@ void handle_screen_event_pixel(kbd_event_t event) {
         lreq[4] = event;
         break;
     case kbd_screen_event_RESPONSE:
-        if(lres[2]==1) {
+        if(lres[0] && lres[2]==1) {
             init_task_request(req, &c->task_request_ts, THIS_SCREEN);
             req[2] = 1;
             req[3] = lres[3];

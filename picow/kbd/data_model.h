@@ -4,9 +4,12 @@
 #include "main.h"
 #include "hw_config.h"
 #include "screen_model.h"
+#include "tcp_server.h"
+#include "udp_server.h"
 #include "util/shared_buffer.h"
 
 #ifdef KBD_NODE_AP
+#include "dhcp_server.h"
 #include "key_layout.h"
 #include "util/flash_store.h"
 #endif
@@ -25,7 +28,6 @@
  * core-1: scan key_press (left/right)            @ 5 ms
  *         UDP send/recv (all)                    @ 5 ms
  *         led blinking (left/right)              @ no-delay
- *         led pixels (left/right)                @ 30 ms
  *
  * core-0: scan tb_motion (right)                 @ 5 ms
  *         publish tb_motion (right)              @ 20 ms
@@ -37,6 +39,7 @@
  *         process state->led (left/right)        @ no-delay
  *         process state->lcd (left)              @ 100 ms
  *         apply configs (all)                    @ on demand
+ *         led pixels (left/right)                @ 30 ms
  *         read date-time & temperature (left)    @ 1 second
  *
  * It is critical to time the scan and processing for track ball
@@ -86,6 +89,13 @@
 // The header 4 bytes are 0:flag, 1:screen, 2:command, 3:(data size or config version)
 #define KBD_TASK_SIZE 36
 #define KBD_TASK_DATA_SIZE 32
+
+typedef enum {
+    kbd_comm_state_init = 0, // initial state waiting to handshake
+    kbd_comm_state_ready,    // handshake done, ready to transfer data
+    kbd_comm_state_data,     // active state, data transfer ongoing
+    kbd_comm_state_reset     // wait till system is initialized back to init
+} kbd_comm_state_t;
 
 typedef enum {
     kbd_usb_hid_state_UNMOUNTED = 0,
@@ -265,6 +275,14 @@ typedef struct {
  */
 
 typedef struct {
+    tcp_server_t tcp_server;
+    udp_server_t udp_server;
+    bool reboot;
+
+#ifdef KBD_NODE_AP
+    dhcp_server_t dhcp_server;
+#endif
+
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     uint8_t key_press[KEY_ROW_COUNT];
 #endif
@@ -281,6 +299,8 @@ typedef struct {
     volatile bool pixels_on;
     volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
+
+    volatile kbd_comm_state_t comm_state[2]; // 0-left, 1-right
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_LEFT)
     volatile uint8_t backlight; // 0-100 %

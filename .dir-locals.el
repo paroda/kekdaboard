@@ -140,7 +140,7 @@
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_stdlib/include"
              "/home/dipu/my/pico/kbd/pico-sdk/src/rp2_common/pico_unique_id/include"
 
-             "/home/dipu/my/pico/kbd/pico-sdk/lib/lwip/src/include/lwip"
+             "/home/dipu/my/pico/kbd/pico-sdk/lib/lwip/src/include"
 
 
              )))))

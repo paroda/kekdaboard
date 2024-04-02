@@ -7,6 +7,7 @@
 #include "pico/stdlib.h"
 
 #include "main.h"
+#include "hw_config.h"
 
 #include "hardware/spi.h"
 #include "hardware/gpio.h"
@@ -42,19 +43,17 @@
 #define LCD_BODY_FG WHITE
 #endif
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
 typedef struct {
+    bool wl_led;
     uint8_t gpio;
     bool on;
 } kbd_led_t;
-#endif
 
 typedef struct {
     master_spi_t* m_spi;
 
 #ifdef KBD_NODE_AP
     flash_t* flash;
-    bool ledB_on; // board led
 #endif
 
 #ifdef KBD_NODE_LEFT
@@ -67,9 +66,15 @@ typedef struct {
     tb_t* tb;
 #endif
 
+    kbd_led_t ledB; // board led
+
+#ifdef KBD_NODE_AP
+    kbd_led_t led_left;
+    kbd_led_t led_right;
+#endif
+
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     kbd_led_t led;  // status led
-    kbd_led_t ledB; // board led
 
     led_pixel_t* led_pixel;
     key_scan_t* ks;

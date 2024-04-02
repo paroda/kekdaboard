@@ -10,6 +10,7 @@
 #define hw_ap_password "3picow"
 #define hw_udp_port 81
 #define hw_tcp_port 82
+#define hw_tcp_poll_time_s 5
 
 #define hw_led_pixel_count 42 // each side
 

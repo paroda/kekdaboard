@@ -81,6 +81,16 @@ kbd_system_t kbd_system = {
     },
 
     .core1 = { /// CORE 1 ///
+        .tcp_server = {},
+        .udp_server = {
+            .recv_size = {0};
+            .send_size = {0};
+        }
+        .reboot = true,
+#ifdef KBD_NODE_AP
+        .dhcp_server = {},
+#endif
+
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
         .key_press = {0},    // default to 0
 #endif
@@ -89,6 +99,7 @@ kbd_system_t kbd_system = {
     .pixels_on = true,
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
+    .comm_state = kbd_comm_state_init,
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_LEFT)
     .backlight = 30, // 30%
@@ -140,6 +151,8 @@ void init_data_model() {
     spin_lock_t* spin_lock = spin_lock_init(spin_lock_num);
 
     kbd_system.spin_lock = spin_lock;
+
+    SET_MY_IP4_ADDR(&kbd_system.core1.tcp_server->gw);
 
     kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t), spin_lock);
     write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.core0.state);

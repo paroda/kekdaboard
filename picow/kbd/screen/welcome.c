@@ -63,12 +63,14 @@ void handle_screen_event_welcome(kbd_event_t event) {
 
 void work_screen_task_welcome() {}
 
-#else
+#else // LEFT/RIGHT
 
 void work_screen_task_welcome() {
     kbd_system_core0_t* c = &kbd_system.core0;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
+
+    // req[2] is either a config screen (0x1#) or a command (0x0#)
 
     kbd_screen_t screen = req[2];
     bool config = is_config_screen(screen);
