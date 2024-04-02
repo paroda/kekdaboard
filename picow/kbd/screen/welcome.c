@@ -15,8 +15,10 @@ static uint8_t next_si = 0;
 
 void handle_screen_event_welcome(kbd_event_t event) {
     kbd_system_core0_t* c = &kbd_system.core0;
-    uint8_t* rreq = c->right_task_request;
     uint8_t* lreq = c->left_task_request;
+    uint8_t* rreq = c->right_task_request;
+    uint8_t* lres = c->left_task_response;
+    uint8_t* rres = c->right_task_response;
 
     if(is_nav_event(event)) return;
 
@@ -29,21 +31,21 @@ void handle_screen_event_welcome(kbd_event_t event) {
         si = next_si;
         screen = kbd_config_screens[si];
         fd = c->flash_datasets[si];
-        if(fd->pos != left_fd_pos) {
+        if(fd->pos != left_fd_pos[si]) {
             init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
             lreq[2] = screen;
             lreq[3] = fd->pos;
             memcpy(lreq+4, fd->data, FLASH_DATASET_SIZE);
         }
-        if(fd->pos != right_fd_pos) {
+        if(fd->pos != right_fd_pos[si]) {
             init_task_request(rreq, &c->right_task_request_ts, THIS_SCREEN);
             rreq[2] = screen;
             rreq[3] = fd->pos;
             memcpy(rreq+4, fd->data, FLASH_DATASET_SIZE);
         }
-        next_si = si+1<n ? si+1 : 0;
+        next_si = si+1<KBD_CONFIG_SCREEN_COUNT ? si+1 : 0;
         break;
-    case kbd_event_INIT:
+    case kbd_screen_event_INIT:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
         break;

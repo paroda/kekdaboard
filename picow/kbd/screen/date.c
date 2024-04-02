@@ -4,7 +4,7 @@
 #include "../hw_model.h"
 #include "../data_model.h"
 
-#define THIS_SCREEN kbd_info_screen_date
+#define THIS_SCREEN kbd_config_screen_date
 
 #ifdef KBD_NODE_AP
 

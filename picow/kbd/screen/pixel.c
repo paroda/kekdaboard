@@ -22,6 +22,7 @@ static pixel_config_t pixel_config;
 static flash_dataset_t* fd;
 #else
 static uint8_t* fd_data;
+static uint8_t* fd_pos;
 #endif
 
 #ifdef KBD_NODE_AP
@@ -81,7 +82,7 @@ void work_screen_task_pixel() {
     switch(req[2]) {
     case 1: // save flash
         memcpy(&pixel_config, req+4, req[3]);
-        memcpy(fd->data, &pixel_config, sizeof(pixel_config_t));
+        memcpy(data, &pixel_config, sizeof(pixel_config_t));
         flash_store_save(fd);
         break;
     default: break;
@@ -252,13 +253,11 @@ static void draw_anim_cycles(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool sele
 }
 
 static void init_screen() {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
 
     char txt[16];
-    sprintf(txt, "Pixels-%04d", fd->pos);
+    sprintf(txt, "Pixels-%04d", *fd_pos);
     lcd_canvas_text(cv, 43, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
     draw_color(cv, 10, 60, field);
@@ -301,8 +300,6 @@ static void draw_field(lcd_canvas_t* cv, uint8_t field, bool selected) {
 }
 
 static void update_screen(uint8_t field, uint8_t sel_field) {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 220, 24, LCD_BODY_BG);
 
     // fields 0-5 are the color components which are drawn together
@@ -318,7 +315,7 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
     update_dirty();
 }
 
-void works_screen_task_tb() {
+void work_screen_task_pixel() {
     kbd_system_core0_t* c = &kbd_system.core0;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
@@ -370,7 +367,7 @@ void works_screen_task_tb() {
 #endif
 
 #ifdef KBD_NODE_RIGHT
-void work_screen_task_power() {} // no action
+void work_screen_task_pixel() {} // no action
 #endif
 
 void init_config_screen_data_pixel() {
@@ -379,7 +376,8 @@ void init_config_screen_data_pixel() {
     fd = kbd_system.core0.flash_datasets[si];
     uint8_t* data = fd->data;
 #else
-    fd_data = kbd_syste.core0.flash_data[si];
+    fd_data = kbd_system.core0.flash_data[si];
+    fd_pos = kbd_system.core0.flash_data_pos+si;
     uint8_t* data = fd_data;
 #endif
 

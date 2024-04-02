@@ -16,6 +16,8 @@ add_executable(kbd_ap
   core1.c
   data_model.c
   hw_model.c
+  tcp_server.c
+  udp_server.c
   input_processor.c
   key_layout.c
   usb_hid.c
@@ -33,6 +35,7 @@ add_executable(kbd_ap
   util/flash_store.c
   util/flash_w25qxx.c
   util/usb_descriptors.c
+  util/pixel_anim.c
 )
 
 target_include_directories(kbd_ap PRIVATE
@@ -59,6 +62,7 @@ pico_set_linker_script(kbd_ap
 )
 
 target_compile_definitions(kbd_ap PRIVATE
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
 pico_enable_stdio_usb(kbd_ap 0)
@@ -77,7 +81,8 @@ add_executable(kbd_left
   core1.c
   data_model.c
   hw_model.c
-  key_layout.c
+  tcp_server.c
+  udp_server.c
 
   screen_model.c
   screen/date.c
@@ -129,6 +134,7 @@ pico_set_linker_script(kbd_left
 )
 
 target_compile_definitions(kbd_left PRIVATE
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
 pico_enable_stdio_usb(kbd_left 0)
@@ -147,7 +153,8 @@ add_executable(kbd_right
   core1.c
   data_model.c
   hw_model.c
-  key_layout.c
+  tcp_server.c
+  udp_server.c
 
   screen_model.c
   screen/date.c
@@ -195,6 +202,7 @@ pico_set_linker_script(kbd_right
 )
 
 target_compile_definitions(kbd_right PRIVATE
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
 pico_enable_stdio_usb(kbd_right 0)

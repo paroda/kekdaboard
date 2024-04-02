@@ -37,7 +37,7 @@ typedef enum {
 extern kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT];
 extern kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT];
 
-inline bool is_config_screen(kbd_screen_t screen);
+bool is_config_screen(kbd_screen_t screen);
 uint8_t get_screen_index(kbd_screen_t screen);
 
 // every screen renderer would render the body of the display

@@ -7,7 +7,7 @@
 #include <errno.h>
 
 #include "cyw43_config.h"
-#include "dhcpserver.h"
+#include "dhcp_server.h"
 #include "lwip/udp.h"
 
 #define DHCPDISCOVER    (1)

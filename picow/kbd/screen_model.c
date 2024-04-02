@@ -4,12 +4,12 @@
 
 #include "data_model.h"
 
-static kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
+kbd_screen_t kbd_info_screens[KBD_INFO_SCREEN_COUNT] = {
     kbd_info_screen_welcome,
     kbd_info_screen_scan,
 };
 
-static kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
+kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
     kbd_config_screen_date,
     kbd_config_screen_power,
     kbd_config_screen_tb,
@@ -18,18 +18,18 @@ static kbd_screen_t kbd_config_screens[KBD_CONFIG_SCREEN_COUNT] = {
 
 #ifdef KBD_NODE_AP
 
-screen_event_handler_t handle_screen_event_welcome;
-screen_event_handler_t handle_screen_event_scan;
+extern screen_event_handler_t handle_screen_event_welcome;
+extern screen_event_handler_t handle_screen_event_scan;
 
 static screen_event_handler_t* info_screen_event_handlers[KBD_INFO_SCREEN_COUNT] = {
     handle_screen_event_welcome,
     handle_screen_event_scan,
 };
 
-screen_event_handler_t handle_screen_event_date;
-screen_event_handler_t handle_screen_event_power;
-screen_event_handler_t handle_screen_event_tb;
-screen_event_handler_t handle_screen_event_pixel;
+extern screen_event_handler_t handle_screen_event_date;
+extern screen_event_handler_t handle_screen_event_power;
+extern screen_event_handler_t handle_screen_event_tb;
+extern screen_event_handler_t handle_screen_event_pixel;
 
 static screen_event_handler_t* config_screen_event_handlers[KBD_CONFIG_SCREEN_COUNT] = {
     handle_screen_event_date,
@@ -40,18 +40,18 @@ static screen_event_handler_t* config_screen_event_handlers[KBD_CONFIG_SCREEN_CO
 
 #endif
 
-screen_task_worker_t work_screen_task_welcome;
-screen_task_worker_t work_screen_task_scan;
+extern screen_task_worker_t work_screen_task_welcome;
+extern screen_task_worker_t work_screen_task_scan;
 
 static screen_task_worker_t* info_screen_task_workers[KBD_INFO_SCREEN_COUNT] = {
     work_screen_task_welcome,
     work_screen_task_scan,
 };
 
-screen_task_worker_t work_screen_task_date;
-screen_task_worker_t work_screen_task_power;
-screen_task_worker_t work_screen_task_tb;
-screen_task_worker_t work_screen_task_pixel;
+extern screen_task_worker_t work_screen_task_date;
+extern screen_task_worker_t work_screen_task_power;
+extern screen_task_worker_t work_screen_task_tb;
+extern screen_task_worker_t work_screen_task_pixel;
 
 static screen_task_worker_t* config_screen_task_workers[KBD_CONFIG_SCREEN_COUNT] = {
     work_screen_task_date,
@@ -60,10 +60,10 @@ static screen_task_worker_t* config_screen_task_workers[KBD_CONFIG_SCREEN_COUNT]
     work_screen_task_pixel,
 };
 
-config_screen_data_initiator_t init_config_screen_data_date;
-config_screen_data_initiator_t init_config_screen_data_power;
-config_screen_data_initiator_t init_config_screen_data_tb;
-config_screen_data_initiator_t init_config_screen_data_pixel;
+extern config_screen_data_initiator_t init_config_screen_data_date;
+extern config_screen_data_initiator_t init_config_screen_data_power;
+extern config_screen_data_initiator_t init_config_screen_data_tb;
+extern config_screen_data_initiator_t init_config_screen_data_pixel;
 
 static config_screen_data_initiator_t* config_screen_data_initiators[KBD_CONFIG_SCREEN_COUNT] = {
     init_config_screen_data_date,
@@ -72,10 +72,10 @@ static config_screen_data_initiator_t* config_screen_data_initiators[KBD_CONFIG_
     init_config_screen_data_pixel,
 };
 
-config_screen_data_applier_t apply_config_screen_data_date;
-config_screen_data_applier_t apply_config_screen_data_power;
-config_screen_data_applier_t apply_config_screen_data_tb;
-config_screen_data_applier_t apply_config_screen_data_pixel;
+extern config_screen_data_applier_t apply_config_screen_data_date;
+extern config_screen_data_applier_t apply_config_screen_data_power;
+extern config_screen_data_applier_t apply_config_screen_data_tb;
+extern config_screen_data_applier_t apply_config_screen_data_pixel;
 
 static config_screen_data_applier_t* config_screen_data_appliers[KBD_CONFIG_SCREEN_COUNT] = {
     apply_config_screen_data_date,
@@ -204,16 +204,16 @@ void init_config_screen_data() {
 void apply_config_screen_data() {
     kbd_system_core0_t* c = &kbd_system.core0;
     static uint8_t applied[KBD_CONFIG_SCREEN_COUNT] = {0};
-    for(uint i=0; i<KBD_CONFIG_SCREEN_COUNT; i++) {
+    for(uint8_t si=0; si<KBD_CONFIG_SCREEN_COUNT; si++) {
 #ifdef KBD_NODE_AP
         flash_dataset_t* fd = c->flash_datasets[si];
         if(applied[si] != fd->pos) {
-            config_screen_data_appliers[i]();
+            config_screen_data_appliers[si]();
             applied[si] = fd->pos;
         }
 #else
         if(applied[si] != c->flash_data_pos[si]) {
-            config_screen_data_appliers[i]();
+            config_screen_data_appliers[si]();
             applied[si] = c->flash_data_pos[si];
         }
 #endif

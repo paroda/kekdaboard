@@ -27,6 +27,9 @@
 #define hw_gpio_LED_LEFT 10
 #define hw_gpio_LED_RIGHT 21
 
+#define hw_row_count 6
+#define hw_col_count 7
+
 #endif
 
 //////////////////////////////////////////////////////////// LEFT NODE
@@ -80,6 +83,8 @@
 #define hw_gpio_tb_RST 0xFF // not used
 
 // key scan layout
+#define hw_row_count 6
+#define hw_col_count 7
 #define hw_gpio_rows  {21, 20, 19, 18, 17, 16} // 6 rows
 #define hw_gpio_cols {9, 10, 11, 12, 13, 14, 15} // 7 cols
 

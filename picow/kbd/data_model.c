@@ -58,7 +58,7 @@ kbd_system_t kbd_system = {
             .color = 0x0f000f, // magenta
             .anim_style = pixel_anim_style_FADE, // fade
             .anim_cycles = 30 // not applicable when fixed
-        }
+        },
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
         .pixel_colors = {0}, // default to 0
@@ -75,17 +75,21 @@ kbd_system_t kbd_system = {
         .state = {
             .screen = kbd_info_screen_welcome,
             .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
-            .flags = KBD_FLAGS_PIXELS_ON,
+            .flags = KBD_FLAG_PIXELS_ON,
             .backlight = 30
         }
     },
 
     .core1 = { /// CORE 1 ///
-        .tcp_server = {},
+        .tcp_server = {
+            .gw = {
+                .addr = KBD_NODE_IP,
+            },
+        },
         .udp_server = {
-            .recv_size = {0};
-            .send_size = {0};
-        }
+            .recv_size = {0},
+            .send_size = {0},
+        },
         .reboot = true,
 #ifdef KBD_NODE_AP
         .dhcp_server = {},
@@ -99,7 +103,7 @@ kbd_system_t kbd_system = {
     .pixels_on = true,
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
-    .comm_state = kbd_comm_state_init,
+    .comm_state = {kbd_comm_state_init, kbd_comm_state_init},
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_LEFT)
     .backlight = 30, // 30%
@@ -152,10 +156,8 @@ void init_data_model() {
 
     kbd_system.spin_lock = spin_lock;
 
-    SET_MY_IP4_ADDR(&kbd_system.core1.tcp_server->gw);
-
     kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t), spin_lock);
-    write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.core0.state);
+    write_shared_buffer(kbd_system.sb_state, kbd_system.core0.state_ts, &kbd_system.core0.state);
 
 #ifdef KBD_NODE_AP
     kbd_system.sb_left_key_press = new_shared_buffer(hw_row_count, spin_lock);  // 1 byte per row

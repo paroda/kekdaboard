@@ -132,7 +132,7 @@ void init_hw_core1() {
     kbd_hw.ledB.wl_led = true;
     kbd_hw.ledB.gpio = CYW43_WL_GPIO_LED_PIN;
     kbd_hw.ledB.on = true;
-    cyw43_arch_gpio_put(hbd_hw.ledB.gpio, true);
+    cyw43_arch_gpio_put(kbd_hw.ledB.gpio, true);
 
 #ifdef KBD_NODE_AP
     kbd_hw.led_left.wl_led = false;
@@ -143,7 +143,7 @@ void init_hw_core1() {
     gpio_put(kbd_hw.led_left.gpio, true);
 
     kbd_hw.led_right.wl_led = false;
-    kbd_hw.led_right.gpio = hw_gpio_LED_RIGHT:
+    kbd_hw.led_right.gpio = hw_gpio_LED_RIGHT;
     kbd_hw.led_right.on = true;
     gpio_init(kbd_hw.led_right.gpio);
     gpio_set_dir(kbd_hw.led_right.gpio, GPIO_OUT);

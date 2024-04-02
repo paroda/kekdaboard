@@ -33,7 +33,8 @@ void handle_screen_event_scan(kbd_event_t event) {
 
 uint8_t key_press[hw_row_count][hw_col_count*2];
 
-static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_key_press) {
+static void key_layout_read(bool init,
+                            uint8_t* left_key_press, uint8_t* right_key_press) {
     int row,col;
     uint8_t v, ov;
 

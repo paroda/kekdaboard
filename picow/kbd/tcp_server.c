@@ -101,9 +101,13 @@ static err_t tcp_server_accept(void* arg, struct tcp_pcb* client_pcb, err_t err)
 bool tcp_server_open(tcp_server_t* server, const char *server_name) {
     struct tcp_pcb *pcb = tcp_new_ip_type(IPADDR_TYPE_ANY);
     err_t err = tcp_bind(pcb, IP_ANY_TYPE, hw_tcp_port);
-    server->pcb = tcp_listen_with_backlog(pcb, 1);
-    tcp_arg(server->pcb, server);
-    tcp_accept(server->pcb, tcp_server_accept);
+    if(err==ERR_OK) {
+        server->pcb = tcp_listen_with_backlog(pcb, 1);
+        tcp_arg(server->pcb, server);
+        tcp_accept(server->pcb, tcp_server_accept);
+        return true;
+    }
+    return false;
 }
 
 void tcp_server_close(tcp_server_t* server) {

@@ -8,8 +8,12 @@
 #define CONFIG_VERSION 0x01
 
 #ifdef KBD_NODE_AP
-
 static flash_dataset_t* fd;
+#else
+static uint8_t* fd_pos;
+#endif
+
+#ifdef KBD_NODE_AP
 
 void handle_screen_event_power(kbd_event_t event) {
     kbd_system_core0_t* c = &kbd_system.core0;
@@ -152,13 +156,11 @@ static void draw_idle_minutes(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool sel
 }
 
 static void init_screen() {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
 
     char txt[16];
-    sprintf(txt, "Power-%04d", fd->pos);
+    sprintf(txt, "Power-%04d", *fd_pos);
     lcd_canvas_text(cv, 65, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
     lcd_canvas_text(cv, 20, 60, "Backlight", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
@@ -169,8 +171,6 @@ static void init_screen() {
 }
 
 static void update_screen(uint8_t field, uint8_t sel_field) {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 85, 24, LCD_BODY_BG);
 
     if(field!=sel_field || sel_field==0) {
@@ -260,7 +260,10 @@ void apply_config_screen_data_power() {
 
 #else // left/right
 
-void init_config_screen_data_power() {} // no action
+void init_config_screen_data_power() {
+    uint8_t si = get_screen_index(THIS_SCREEN);
+    fd_pos = kbd_system.core0.flash_data_pos+si;
+}
 void apply_config_screen_data_power() {} // no action
 
 #endif

@@ -4,6 +4,8 @@
 #include "../hw_model.h"
 #include "../data_model.h"
 
+#include "../util/tb_pmw3389.h"
+
 #define THIS_SCREEN kbd_config_screen_tb
 #define CONFIG_VERSION 0x01
 
@@ -34,6 +36,7 @@ static tb_motion_config_t tb_motion_config;
 static flash_dataset_t* fd;
 #else
 static uint8_t* fd_data;
+static uint8_t* fd_pos;
 #endif
 
 #ifdef KBD_NODE_AP
@@ -93,7 +96,7 @@ void work_screen_task_tb() {
     switch(req[2]) {
     case 1: // save flash
         memcpy(&tb_motion_config, req+4, req[3]);
-        memcpy(fd->data, &tb_motion_config, sizeof(tb_motion_config_t));
+        memcpy(data, &tb_motion_config, sizeof(tb_motion_config_t));
         flash_store_save(fd);
         break;
     default: break;
@@ -217,13 +220,11 @@ static void draw_delta_quad_weight(lcd_canvas_t* cv, uint16_t x, uint16_t y, boo
 }
 
 static void init_screen() {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv = kbd_hw.lcd_body;
     lcd_canvas_clear(cv);
 
     char txt[16];
-    sprintf(txt, "Trackball-%04d", fd->pos);
+    sprintf(txt, "Trackball-%04d", *fd_pos);
     lcd_canvas_text(cv, 43, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
     lcd_canvas_text(cv, 10, 60, "CPI", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
@@ -269,8 +270,6 @@ static void draw_field(lcd_canvas_t* cv1, lcd_canvas_t* cv2, uint8_t field, bool
 }
 
 static void update_screen(uint8_t field, uint8_t sel_field) {
-    if(kbd_system.side != kbd_side_LEFT) return;
-
     lcd_canvas_t* cv1 = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 51, 24, LCD_BODY_BG);
     lcd_canvas_t* cv2 = lcd_new_shared_canvas(kbd_hw.lcd_body->buf, 102, 24, LCD_BODY_BG);
 
@@ -345,7 +344,7 @@ void work_screen_task_tb() {
 #endif
 
 #ifdef KBD_NODE_RIGHT
-void work_screen_task_power() {} // no action
+void work_screen_task_tb() {} // no action
 #endif
 
 void init_config_screen_data_tb() {
@@ -354,7 +353,8 @@ void init_config_screen_data_tb() {
     fd = kbd_system.core0.flash_datasets[si];
     uint8_t* data = fd->data;
 #else
-    fd_data = kbd_syste.core0.flash_data[si];
+    fd_data = kbd_system.core0.flash_data[si];
+    fd_pos = kbd_system.core0.flash_data_pos+si;
     uint8_t* data = fd_data;
 #endif
 
@@ -362,11 +362,11 @@ void init_config_screen_data_tb() {
 
     kbd_tb_config_t* tbc = &kbd_system.core0.tb_config;
     tb_motion_config.version = CONFIG_VERSION;
-    tb_motion_config.cpi_multiplier = c->cpi / CPI_BASE;
-    tb_motion_config.scroll_scale = c->scroll_scale;
-    tb_motion_config.scroll_quad_weight = c->scroll_quad_weight;
-    tb_motion_config.delta_scale = c->delta_scale;
-    tb_motion_config.delta_quad_weight = c->delta_quad_weight;
+    tb_motion_config.cpi_multiplier = tbc->cpi / CPI_BASE;
+    tb_motion_config.scroll_scale = tbc->scroll_scale;
+    tb_motion_config.scroll_quad_weight = tbc->scroll_quad_weight;
+    tb_motion_config.delta_scale = tbc->delta_scale;
+    tb_motion_config.delta_quad_weight = tbc->delta_quad_weight;
     memcpy(data, &tb_motion_config, sizeof(tb_motion_config_t));
 }
 
@@ -392,6 +392,6 @@ void apply_config_screen_data_tb() {
     int16_t dx,dy;
     bool on_surface;
     tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy); // make a dummy call to clear motions
-    tb_set_cpi(kbd_hw.tb, kbd_system.tb_cpi);
+    tb_set_cpi(kbd_hw.tb, tbc->cpi);
 #endif
 }

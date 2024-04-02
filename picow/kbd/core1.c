@@ -18,6 +18,28 @@ static void toggle_led(void* param) {
         gpio_put(led->gpio, led->on);
 }
 
+static int32_t led_millis_to_toggle(kbd_led_t* led, kbd_led_state_t state) {
+    // return milliseconds after which to toggle the led
+    // return -1 to indicate skip toggle
+    switch(state) {
+    case kbd_led_state_OFF:
+        return led->on ? 0 : -1;
+    case kbd_led_state_ON:
+        return led->on ? -1 : 0;
+    case kbd_led_state_BLINK_LOW:    // 100(on), 900(off)
+        return led->on ? 100 : 900;
+    case kbd_led_state_BLINK_HIGH:   // 900, 100
+        return led->on ? 900 : 100;
+    case kbd_led_state_BLINK_SLOW:   // 1000, 1000
+        return led->on ? 2000 : 2000;
+    case kbd_led_state_BLINK_NORMAL: // 500, 500
+        return led->on ? 500 : 500;
+    case kbd_led_state_BLINK_FAST:   // 100, 100
+        return led->on ? 50 : 50;
+    }
+    return -1;
+}
+
 static void led_task() {
 #ifdef KBD_NODE_AP
     static uint32_t led_left_last_ms = 0;
@@ -38,7 +60,7 @@ static void led_task() {
     if(ledB_ms>=0) do_if_elapsed(&ledB_last_ms, ledB_ms, &kbd_hw.ledB, toggle_led);
 }
 
-static bool update_comm_state(kbd_comm_state_t* comm_state,
+static void update_comm_state(volatile kbd_comm_state_t* comm_state,
                               uint8_t* recv_buf, uint8_t* recv_size,
                               uint8_t* send_buf, uint8_t* send_size) {
     // in the absence of peer data, just continue as is
@@ -66,7 +88,7 @@ static bool update_comm_state(kbd_comm_state_t* comm_state,
         }
     }
     if(*comm_state != kbd_comm_state_reset) {
-        send_size = 1;
+        *send_size = 1;
         send_buf[0] = *comm_state;
     }
 }
@@ -84,7 +106,8 @@ typedef enum {
 static void comm_task(void* param) {
     (void) param;
     for(uint8_t index=0; index<2; index++) {
-        kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
+        volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
+        udp_server_t* server = &kbd_system.core1.udp_server;
         uint8_t* recv_buf = server->recv_buf[index];
         uint8_t* recv_size = server->recv_size+index;
         uint8_t* send_buf = server->send_buf[index];
@@ -93,13 +116,13 @@ static void comm_task(void* param) {
             update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
             if(*comm_state==kbd_comm_state_data) {
                 // recv: + key_press, tb_motion(right only), task_response
-                int bytes_left = recv_size-1;
+                int bytes_left = *recv_size - 1;
                 uint8_t* buf = recv_buf+1;
                 while(bytes_left>0) {
                     shared_buffer_t* sb = NULL;
                     switch(buf[0]) {
                     case comm_data_type_key_press:
-                        sb = index==0 ? kbd_sytem.sb_left_key_press kbd_system.sb_right_key_press;
+                        sb = index==0 ? kbd_system.sb_left_key_press : kbd_system.sb_right_key_press;
                         break;
                     case comm_data_type_tb_motion:
                         sb = kbd_system.sb_tb_motion;
@@ -122,7 +145,7 @@ static void comm_task(void* param) {
                 comm_data_type_t types[2] = { comm_data_type_system_state, comm_data_type_task_reqeust };
                 shared_buffer_t* sbs[2] = {
                     kbd_system.sb_state,
-                    index==0 ? kbd_system.sb_left_task_request kbd_system.sb_right_task_request
+                    index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request
                 };
                 static uint64_t task_ts[2] = {0,0}; // left,right
                 uint64_t ts[2] = {
@@ -156,14 +179,13 @@ static void key_scan_task(void* param) {
 
 static void comm_task(void* param) {
     (void) param;
-
 #ifdef KBD_NODE_LEFT
     uint8_t index = 0;
 #else
     uint8_t index = 1;
 #endif
-
-    kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
+    volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
+    udp_server_t* server = &kbd_system.core1.udp_server;
     uint8_t* recv_buf = server->recv_buf[index];
     uint8_t* recv_size = server->recv_size+index;
     uint8_t* send_buf = server->send_buf[index];
@@ -171,11 +193,11 @@ static void comm_task(void* param) {
     update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
     if(*comm_state==kbd_comm_state_data) {
         // recv: + system_state, task_request
-        int bytes_left = recv_size-1;
+        int bytes_left = *recv_size - 1;
         uint8_t* buf = recv_buf+1;
-        while(byes_left>0) {
+        while(bytes_left>0) {
             shared_buffer_t* sb = NULL;
-            switch(buff[0]) {
+            switch(buf[0]) {
             case comm_data_type_system_state:
                 sb = kbd_system.sb_state;
                 break;
@@ -221,7 +243,6 @@ static void comm_task(void* param) {
     }
 
     // send
-    udp_server_t* server = &kbd_system.core1.udp_server;
     udp_server_send(server, index, NULL, NULL, 0);
 }
 
@@ -233,7 +254,7 @@ void core1_main() {
 
     ip4_addr_t mask;
     IP4_ADDR(ip_2_ip4(&mask), 255, 255, 255, 0);
-    dhcp_server_init(&kbd_system.core1.dhcp_server, &kbd_system.core1.tcp_server->gw, &mask);
+    dhcp_server_init(&kbd_system.core1.dhcp_server, &kbd_system.core1.tcp_server.gw, &mask);
 #else
     while(cyw43_arch_wifi_connect_timeout_ms(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
         // keep trying to connect
@@ -248,8 +269,9 @@ void core1_main() {
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     uint32_t ks_last_ms = board_millis();
-    uint32_t comm_last_ms = board_millis();
 #endif
+
+    uint32_t comm_last_ms = board_millis();
 
     while(true) {
         led_task();

@@ -7,15 +7,12 @@
 #include "tcp_server.h"
 #include "udp_server.h"
 #include "util/shared_buffer.h"
+#include "util/pixel_anim.h"
 
 #ifdef KBD_NODE_AP
 #include "dhcp_server.h"
 #include "key_layout.h"
 #include "util/flash_store.h"
-#endif
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-#include "util/pixel_anim.h"
 #endif
 
 #ifdef KBD_NODE_LEFT

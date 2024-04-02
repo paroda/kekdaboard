@@ -25,7 +25,7 @@ void udp_server_send(udp_server_t* server, u8_t index,
 static void udp_server_recv(void* arg, struct udp_pcb* pcb, struct pbuf* p,
                             const ip_addr_t* addr, u16_t port) {
     udp_server_t* server = (udp_server_t*) arg;
-    u8_t* index;
+    u8_t index;
     if(!p) return;
     if(p->tot_len > 0) {
         index = ((u8_t*)p->payload)[0];
@@ -42,8 +42,9 @@ void udp_server_open(udp_server_t* server) {
 #ifdef KBD_NODE_AP
     udp_bind(server->pcb, IP_ADDR_ANY, hw_udp_port);
 #else
-    ip_addr_t addr;
-    ip4_addr_aton(ACCESS_POINT_IP, &addr);
+    ip_addr_t addr = {
+        .addr = KBD_AP_IP,
+    };
     udp_connect(server->pcb, &addr, hw_udp_port);
 #endif
 

@@ -173,10 +173,10 @@ static bool parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm)
     kbd_tb_motion_t* tb_motion = &kbd_system.core0.tb_motion;
     if(tb_motion->has_motion) {
         kbd_tb_config_t* tb_config = &kbd_system.core0.tb_config;
-        uint8_t scale = moon ? tb_config->tb_scroll_scale : tb_config->tb_delta_scale;
-        uint8_t quad_weight = moon ? tb_config->tb_scroll_quad_weight : tb_config->tb_delta_quad_weight;
+        uint8_t scale = moon ? tb_config->scroll_scale : tb_config->delta_scale;
+        uint8_t quad_weight = moon ? tb_config->scroll_quad_weight : tb_config->delta_quad_weight;
         int32_t x,y,q,x_abs,y_abs;
-        uint16_t m = tb_config->tb_cpi / scale;
+        uint16_t m = tb_config->cpi / scale;
         x = tb_motion->dx/scale;
         q = (x<0 ? -x*x : x*x) / m;
         x = (x + quad_weight * q) / (1 + quad_weight);
@@ -283,7 +283,7 @@ kbd_event_t execute_input_processor() {
 
     hid_report_out_t* hid_report_out = &kbd_system.core0.hid_report_out;
 
-    bool config_mode = kbd_system.screen & KBD_CONFIG_SCREEN_MASK;
+    bool config_mode = is_config_screen(kbd_system.screen);
     if(config_mode) {
         // no hid report in config mode
         memset(hid_report_out, 0, sizeof(hid_report_out_t));
