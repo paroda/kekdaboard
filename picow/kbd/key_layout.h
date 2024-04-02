@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-#define KEY_ROW_COUNT 6
-#define KEY_COL_COUNT 7
+#include "hw_config.h"
+
 #define KEY_CODE_MAX 6 // same as in TinyUSB
 
 // special keys
@@ -19,8 +19,8 @@
 #define KBD_KEY_BACKLIGHT      0xF9
 #define KBD_KEY_PIXELS         0xFA
 
-#define KEY_LAYOUT_ROW_COUNT KEY_ROW_COUNT // 6
-#define KEY_LAYOUT_COL_COUNT (KEY_COL_COUNT * 2) // 14 (7*2)
+#define KEY_LAYOUT_ROW_COUNT hw_row_count // 6
+#define KEY_LAYOUT_COL_COUNT (hw_col_count * 2) // 14 (7*2)
 
 extern const uint8_t key_layout[KEY_LAYOUT_ROW_COUNT][KEY_LAYOUT_COL_COUNT][3];
 

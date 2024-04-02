@@ -11,19 +11,19 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
     int row,col,k=0;
     uint8_t v;
 
-    for(row=0
-            ; k<KEY_PRESS_MAX && row<KEY_ROW_COUNT
-            ; row++) {
-        for(col=KEY_COL_COUNT-1, v=kbd_system.core0.left_key_press[row]
-                ; v>0 && k<KEY_PRESS_MAX && col>=0
-                ; col--, v>>=1) {
+    for(row=0;
+        k<KEY_PRESS_MAX && row<hw_row_count;
+        row++) {
+        for(col=hw_col_count-1, v=kbd_system.core0.left_key_press[row];
+            v>0 && k<KEY_PRESS_MAX && col>=0;
+            col--, v>>=1) {
             if(v & 1) key_press[k++] = key_layout[row][col];
         }
 
-        for(col=KEY_COL_COUNT-1, v=kbd_system.core0.right_key_press[row]
-                ; v>0 && k<KEY_PRESS_MAX && col>=0
-                ; col--, v>>=1) {
-            if(v & 1) key_press[k++] = key_layout[row][KEY_COL_COUNT+col];
+        for(col=hw_col_count-1, v=kbd_system.core0.right_key_press[row];
+            v>0 && k<KEY_PRESS_MAX && col>=0;
+            col--, v>>=1) {
+            if(v & 1) key_press[k++] = key_layout[row][hw_col_count+col];
         }
     }
     return k;

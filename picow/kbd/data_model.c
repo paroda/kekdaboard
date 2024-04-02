@@ -158,8 +158,8 @@ void init_data_model() {
     write_shared_buffer(kbd_system.sb_state, kbd_system.state_ts, &kbd_system.core0.state);
 
 #ifdef KBD_NODE_AP
-    kbd_system.sb_left_key_press = new_shared_buffer(KEY_ROW_COUNT, spin_lock);  // 1 byte per row
-    kbd_system.sb_right_key_press = new_shared_buffer(KEY_ROW_COUNT, spin_lock); // 1 byte per row
+    kbd_system.sb_left_key_press = new_shared_buffer(hw_row_count, spin_lock);  // 1 byte per row
+    kbd_system.sb_right_key_press = new_shared_buffer(hw_row_count, spin_lock); // 1 byte per row
 #endif
 
 #ifdef KBD_NODE_AP

@@ -151,7 +151,7 @@ static void key_scan_task(void* param) {
     (void)param;
     // scan key presses with kbd_hw.ks and save to core1.key_press
     key_scan_update(kbd_hw.ks);
-    memcpy(kbd_system.core1.key_press, kbd_hw.ks->keys, KEY_ROW_COUNT);
+    memcpy(kbd_system.core1.key_press, kbd_hw.ks->keys, hw_row_count);
 }
 
 static void comm_task(void* param) {
@@ -196,9 +196,9 @@ static void comm_task(void* param) {
         // send: + key_press, tb_motion(right only), task_response
         buf = send_buf + *send_size;
         buf[0] = comm_data_type_key_press;
-        memcpy(buf+1, kbd_system.core1.key_press, KEY_ROW_COUNT);
-        *send_size += (1 + KEY_ROW_COUNT);
-        buf += (1 + KEY_ROW_COUNT);
+        memcpy(buf+1, kbd_system.core1.key_press, hw_row_count);
+        *send_size += (1 + hw_row_count);
+        buf += (1 + hw_row_count);
         comm_data_type_t types[2] = { comm_data_type_tb_motion, comm_data_type_task_response };
         shared_buffer_t* sbs[2] = {
 #ifdef KBD_NODE_RIGHT

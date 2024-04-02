@@ -16,14 +16,14 @@ void handle_screen_event_scan(kbd_event_t event) {
     init_task_request(req, &c->left_task_request_ts, THIS_SCREEN);
 
     req[2] = (event == kbd_screen_event_INIT) ? 1 : 2;
-    req[3] = KEY_ROW_COUNT*2 + sizeof(kbd_tb_motion_t);
+    req[3] = hw_row_count*2 + sizeof(kbd_tb_motion_t);
 
     // add scan data
     uint8_t pos=4;
-    memcpy(req+pos, c->left_key_press, KEY_ROW_COUNT);
-    pos += KEY_ROW_COUNT;
-    memcpy(req+pos, c->right_key_press, KEY_ROW_COUNT);
-    pos += KEY_ROW_COUNT;
+    memcpy(req+pos, c->left_key_press, hw_row_count);
+    pos += hw_row_count;
+    memcpy(req+pos, c->right_key_press, hw_row_count);
+    pos += hw_row_count;
     memcpy(req+pos, &c->tb_motion, sizeof(kbd_tb_motion_t));
 }
 
@@ -31,14 +31,14 @@ void handle_screen_event_scan(kbd_event_t event) {
 
 #ifdef KBD_NODE_LEFT
 
-uint8_t key_press[KEY_ROW_COUNT][KEY_COL_COUNT*2];
+uint8_t key_press[hw_row_count][hw_col_count*2];
 
 static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_key_press) {
     int row,col;
     uint8_t v, ov;
 
-    for(row=0 ; row<KEY_ROW_COUNT ; row++) {
-        for(col=KEY_COL_COUNT-1, v=left_key_press[row] ; col>=0 ; col--, v>>=1) {
+    for(row=0 ; row<hw_row_count ; row++) {
+        for(col=hw_col_count-1, v=left_key_press[row] ; col>=0 ; col--, v>>=1) {
             if(init) {
                 key_press[row][col] = (v&1) ? 1 : 0;
             } else {
@@ -49,8 +49,8 @@ static void key_layout_read(bool init, uint8_t* left_key_press, uint8_t* right_k
                     key_press[row][col] = ov ? 0 : 1;
             }
         }
-        for(col=KEY_COL_COUNT-1, v=right_key_press[row] ; col>=0 ; col--, v>>=1) {
-            uint8_t col2 = KEY_COL_COUNT+col;
+        for(col=hw_col_count-1, v=right_key_press[row] ; col>=0 ; col--, v>>=1) {
+            uint8_t col2 = hw_col_count+col;
             if(init) {
                 key_press[row][col2] = (v&1) ? 1 : 0;
             } else {
@@ -74,7 +74,7 @@ static void init_screen() {
     lcd_canvas_clear(cv);
 
     uint8_t* req = kbd_system.core0.task_request;
-    key_layout_read(true, req+4, req+4+KEY_ROW_COUNT);
+    key_layout_read(true, req+4, req+4+hw_row_count);
 
     // x: 5 (10+5)x7=105 5 10 5 (5+10)x7=105 5
     // y: 15 (10+15)x3=75 5 10 5 (15+10)x3=75 15
@@ -98,7 +98,7 @@ static void init_screen() {
     lcd_canvas_rect(cv, 25, 95, 190, 10, DARK_GRAY, 1, true);
 
     kbd_tb_motion_t tbm;
-    memcpy(&tbm, req+4+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+    memcpy(&tbm, req+4+hw_row_count+hw_row_count, sizeof(kbd_tb_motion_t));
     if(!tbm.on_surface) lcd_canvas_rect(cv, 115, 95, 10, 10, RED, 1, true);
 
     if(tbm.has_motion) {
@@ -125,7 +125,7 @@ static void update_screen() {
     lcd_canvas_t* cv;
 
     uint8_t* req = kbd_system.core0.task_request;
-    key_layout_read(false, req+3, req+3+KEY_ROW_COUNT);
+    key_layout_read(false, req+3, req+3+hw_row_count);
 
     uint8_t i,j,k,r,c,v;
     uint16_t x, y, xs[4]={5, 135, 5, 135}, ys[4]={55, 55, 165, 165};
@@ -144,7 +144,7 @@ static void update_screen() {
     }
 
     kbd_tb_motion_t tbm;
-    memcpy(&tbm, req+3+KEY_ROW_COUNT+KEY_ROW_COUNT, sizeof(kbd_tb_motion_t));
+    memcpy(&tbm, req+3+hw_row_count+hw_row_count, sizeof(kbd_tb_motion_t));
 
     cv = canvas;
     lcd_canvas_clear(cv);

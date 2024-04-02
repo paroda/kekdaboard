@@ -48,6 +48,8 @@
 #define hw_gpio_lcd_RST 0xFF // use software RESET
 
 // key scan layout
+#define hw_row_count 6
+#define hw_col_count 7
 #define hw_gpio_rows  {10, 11, 12, 13, 14, 15} // 6 rows
 #define hw_gpio_cols {16, 17, 18, 19, 20, 21, 22} // 7 cols
 

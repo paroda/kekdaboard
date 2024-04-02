@@ -5,5 +5,5 @@
 /picow/build/
 
 a.out
-/pico/kbd/generated/
-/picow/kbd/generated/
+/pico/*/generated/
+/picow/*/generated/

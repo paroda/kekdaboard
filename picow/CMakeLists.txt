@@ -35,3 +35,5 @@ add_subdirectory(hello_blink)
 add_subdirectory(hello_wifi)
 
 add_subdirectory(hello_ws2812)
+
+add_subdirectory(kbd)

@@ -160,9 +160,9 @@ void init_hw_core1() {
     gpio_put(kbd_hw.led.gpio, true);
 
     // init key scanner
-    uint8_t gpio_rows[KEY_ROW_COUNT] = hw_gpio_rows;
-    uint8_t gpio_cols[KEY_COL_COUNT] = hw_gpio_cols;
-    kbd_hw.ks = key_scan_create(KEY_ROW_COUNT, KEY_COL_COUNT, gpio_rows, gpio_cols);
+    uint8_t gpio_rows[hw_row_count] = hw_gpio_rows;
+    uint8_t gpio_cols[hw_col_count] = hw_gpio_cols;
+    kbd_hw.ks = key_scan_create(hw_row_count, hw_col_count, gpio_rows, gpio_cols);
 #endif
 
 }

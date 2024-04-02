@@ -15,7 +15,7 @@
 #endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-#include "pixel_anim.h"
+#include "util/pixel_anim.h"
 #endif
 
 #ifdef KBD_NODE_LEFT
@@ -209,8 +209,8 @@ typedef struct {
 
 typedef struct {
 #ifdef KBD_NODE_AP
-    uint8_t left_key_press[KEY_ROW_COUNT];
-    uint8_t right_key_press[KEY_ROW_COUNT];
+    uint8_t left_key_press[hw_row_count];
+    uint8_t right_key_press[hw_row_count];
 #endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
@@ -284,7 +284,7 @@ typedef struct {
 #endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    uint8_t key_press[KEY_ROW_COUNT];
+    uint8_t key_press[hw_row_count];
 #endif
 } kbd_system_core1_t;
 
