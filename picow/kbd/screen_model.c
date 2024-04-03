@@ -137,23 +137,35 @@ void handle_screen_event(kbd_event_t event) {
     uint8_t* rreq = kbd_system.core0.right_task_request;
     uint8_t* rres = kbd_system.core0.right_task_response;
 
-    kbd_screen_t screen = kbd_system.screen;
-
-    if(req[1]!=screen) req[0] = res[0] = 0; // discard req/res if not for current screen
-    if(lreq[1]!=screen) lreq[0] = lres[0] = 0;
-    if(rreq[1]!=screen) rreq[0] = rres[0] = 0;
-
-    if(res[0]!=req[0] || lres[0]!=lreq[0] || rres[0]!=rreq[0]) {
+    if((req[0] && req[0]!=res[0])  // check req[0] for comm reset scenario
+       || (lreq[0] && lreq[0]!=lres[0])
+       || (rreq[0] && rreq[0]!=rres[0])) {
         return; // pending tasks
     }
 
+    kbd_screen_t screen = kbd_system.screen;
     bool config = is_config_screen(screen);
     uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
     uint8_t si = get_screen_index(screen);
 
-    if(res[0] || lres[0] || rres[0]) { // process response command for this screen
-        event = kbd_screen_event_RESPONSE;
-    } else if(is_nav_event(event)) { // switch to screen init event if nav event
+    static uint8_t res_last_id = 0;
+    static uint8_t lres_last_id = 0;
+    static uint8_t rres_last_id = 0;
+
+    if((res[0] && res[0]!=res_last_id)  // check res[0] for comm reset scenario
+       || (lres[0] && lres[0]!=lres_last_id)
+       || (rres[0] && rres[0]!=rres_last_id)) {
+        // process response command for this screen
+        if((res[0] && res[1]==screen)
+           || (lres[0] && lres[1]==screen)
+           || (rres[0] && rres[1]==screen))
+            event = kbd_screen_event_RESPONSE;
+        res_last_id = res[0];
+        lres_last_id = lres[0];
+        rres_last_id = rres[0];
+    }
+
+    if(is_nav_event(event)) { // switch to screen init event if nav event
         if(event == kbd_screen_event_CONFIG && !config) {
             config = true;
             si = 0;
@@ -173,9 +185,7 @@ void handle_screen_event(kbd_event_t event) {
         event = kbd_screen_event_INIT;
     }
 
-    req[0] = lreq[0] = rreq[0] = 0; // clear the requests, so that new requests can be made
     (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);
-    res[0] = lres[0] = rres[0] = 0; // clear the responses, so that new responses can be received
 }
 
 #endif
@@ -185,7 +195,7 @@ void work_screen_task() {
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
-    if(res[0]==req[0]) return;
+    if(!req[0] || res[0]==req[0]) return;
 
     kbd_screen_t screen = req[1];
     bool config = is_config_screen(screen);

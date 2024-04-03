@@ -296,12 +296,9 @@ typedef struct {
     volatile bool pixels_on;
     volatile kbd_screen_t screen;
     volatile kbd_usb_hid_state_t usb_hid_state;
+    volatile uint8_t backlight; // 0-100 %
 
     volatile kbd_comm_state_t comm_state[2]; // 0-left, 1-right
-
-#if defined(KBD_NODE_AP) || defined(KBD_NODE_LEFT)
-    volatile uint8_t backlight; // 0-100 %
-#endif
 
 #ifdef KBD_NODE_AP
     volatile kbd_led_state_t led_left; // left node indicator

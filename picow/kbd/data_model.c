@@ -82,9 +82,7 @@ kbd_system_t kbd_system = {
 
     .core1 = { /// CORE 1 ///
         .tcp_server = {
-            .gw = {
-                .addr = KBD_NODE_IP,
-            },
+            .gw = {.addr = KBD_NODE_IP},
         },
         .udp_server = {
             .recv_size = {0},
@@ -103,11 +101,8 @@ kbd_system_t kbd_system = {
     .pixels_on = true,
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
-    .comm_state = {kbd_comm_state_init, kbd_comm_state_init},
-
-#if defined(KBD_NODE_AP) || defined(KBD_NODE_LEFT)
     .backlight = 30, // 30%
-#endif
+    .comm_state = {kbd_comm_state_init, kbd_comm_state_init},
 
 #ifdef KBD_NODE_AP
     .led_left = kbd_led_state_ON,

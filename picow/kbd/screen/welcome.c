@@ -50,11 +50,11 @@ void handle_screen_event_welcome(kbd_event_t event) {
         lreq[2] = 1;
         break;
     case kbd_screen_event_RESPONSE:
-        if(lres[0] && lres[2]==1) {
+        if(lres[0] && lres[1]==THIS_SCREEN && lres[2]==1) {
             si = get_screen_index(lres[4]);
             left_fd_pos[si] = lres[5];
         }
-        if(rres[0] && rres[2]==1) {
+        if(rres[0] && rres[1]==THIS_SCREEN && rres[2]==1) {
             si = get_screen_index(rres[4]);
             right_fd_pos[si] = rres[5];
         }

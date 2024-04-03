@@ -97,8 +97,9 @@ typedef enum {
     comm_data_type_system_state = 0,
     comm_data_type_key_press,
     comm_data_type_tb_motion,
-    comm_data_type_task_reqeust,
+    comm_data_type_task_request,
     comm_data_type_task_response,
+    comm_data_type_task_id,
 } comm_data_type_t;
 
 #ifdef KBD_NODE_AP
@@ -114,6 +115,8 @@ static void comm_task(void* param) {
         uint8_t* send_size = server->send_size+index;
         if(*recv_size>0) {
             update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
+            static uint8_t ack_req_id[2] = {0,0}; // last request acknowledged
+            static uint8_t rcv_res_id[2] = {0,0}; // last response received
             if(*comm_state==kbd_comm_state_data) {
                 // recv: + key_press, tb_motion(right only), task_response
                 int bytes_left = *recv_size - 1;
@@ -129,40 +132,48 @@ static void comm_task(void* param) {
                         break;
                     case comm_data_type_task_response:
                         sb = index==0 ? kbd_system.sb_left_task_response : kbd_system.sb_right_task_response;
+                        rcv_res_id[index] = buf[1];
                         break;
+                    case comm_data_type_task_id:
+                        ack_req_id[index] = buf[1];
                     default: break;
                     }
                     if(sb) {
                         write_shared_buffer(sb, time_us_64(), buf+1);
                         bytes_left -= (1 + sb->size);
                         buf += (1 + sb->size);
+                    } else if(buf[0]==comm_data_type_task_id) {
+                        bytes_left -= 2;
+                        buf += 2;
                     } else {
                         bytes_left = 0; // stop if encountered invalid
                     }
                 }
-                *recv_size = 0;
-                // send: + system_state, task_request
-                comm_data_type_t types[2] = { comm_data_type_system_state, comm_data_type_task_reqeust };
-                shared_buffer_t* sbs[2] = {
-                    kbd_system.sb_state,
-                    index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request
-                };
-                static uint64_t task_ts[2] = {0,0}; // left,right
-                uint64_t ts[2] = {
-                    0,
-                    task_ts[index]
-                };
+                *recv_size = 0; // mark recv done
+                // package data to send
                 buf = send_buf + *send_size;
-                for(uint8_t i=0; i<2; i++) {
-                    shared_buffer_t* sb = sbs[i];
-                    if(sb->ts > ts[i]) {
-                        buf[0] = types[i];
-                        read_shared_buffer(sb, ts+i, buf+1);
-                        *send_size += (1 + sb->size);
-                        buf += (1 + sb->size);
-                    }
+                // add system state
+                static uint64_t state_ts = 0;
+                if(kbd_system.sb_state->ts > state_ts) {
+                    buf[0] = comm_data_type_system_state;
+                    read_shared_buffer(kbd_system.sb_state, &state_ts, buf+1);
+                    *send_size += (1 + kbd_system.sb_state->size);
+                    buf += (1 + kbd_system.sb_state->size);
                 }
-                task_ts[index] = ts[1];
+                // add request
+                static uint64_t req_ts[2] = {0,0};
+                shared_buffer_t* sb = index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request;
+                read_shared_buffer(sb, req_ts+index, buf+1);
+                if(buf[1] != ack_req_id[index]) {
+                    buf[0] = comm_data_type_task_request;
+                    *send_size += (1 + sb->size);
+                    buf += (1 + sb->size);
+                }
+                // acknowledge resposne received
+                buf[0] = comm_data_type_task_id;
+                buf[1] = rcv_res_id[index];
+                *send_size += 2;
+                buf += 2;
             }
         }
     }
@@ -191,6 +202,8 @@ static void comm_task(void* param) {
     uint8_t* send_buf = server->send_buf[index];
     uint8_t* send_size = server->send_size+index;
     update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
+    static uint8_t rcv_req_id = 0; // last request received
+    static uint8_t ack_res_id = 0; // last response acknowledged
     if(*comm_state==kbd_comm_state_data) {
         // recv: + system_state, task_request
         int bytes_left = *recv_size - 1;
@@ -201,47 +214,57 @@ static void comm_task(void* param) {
             case comm_data_type_system_state:
                 sb = kbd_system.sb_state;
                 break;
-            case comm_data_type_task_reqeust:
+            case comm_data_type_task_request:
                 sb = kbd_system.sb_task_request;
+                rcv_req_id = buf[1];
                 break;
+            case comm_data_type_task_id:
+                ack_res_id = buf[1];
             default: break;
             }
             if(sb) {
                 write_shared_buffer(sb, time_us_64(), buf+1);
                 bytes_left -= (1 + sb->size);
                 buf += (1 + sb->size);
+            } else if(buf[0]==comm_data_type_task_id) {
+                bytes_left -= 2;
+                buf += 2;
             } else {
                 bytes_left = 0; // stop if encountered invalid
             }
         }
-        *recv_size = 0;
-        // send: + key_press, tb_motion(right only), task_response
+        *recv_size = 0; // mark recv done
+        // package data to send
         buf = send_buf + *send_size;
+        // add key_press
         buf[0] = comm_data_type_key_press;
         memcpy(buf+1, kbd_system.core1.key_press, hw_row_count);
         *send_size += (1 + hw_row_count);
         buf += (1 + hw_row_count);
-        comm_data_type_t types[2] = { comm_data_type_tb_motion, comm_data_type_task_response };
-        shared_buffer_t* sbs[2] = {
 #ifdef KBD_NODE_RIGHT
-            kbd_system.sb_tb_motion,
-#else
-            NULL,
-#endif
-            kbd_system.sb_task_response
-        };
-        static uint64_t ts[2] = {0,0}; // tb_motion, task_response
-        for(uint8_t i=0; i<2; i++) {
-            shared_buffer_t* sb = sbs[i];
-            if(sb && sb->ts > ts[i]) {
-                buf[0] = types[i];
-                read_shared_buffer(sb, ts+i, buf+1);
-                *send_size += (1 + sb->size);
-                buf += (1 + sb->size);
-            }
+        // add tb_motion
+        static uint64_t tbm_t = 0;
+        if(kbd_system.sb_tb_motion->ts > tbm_t) {
+            buf[0] = comm_data_type_tb_motion;
+            read_shared_buffer(kbd_system.sb_tb_motion, &tbm_t, buf+1);
+            *send_size += (1 + kbd_system.sb_tb_motion->size);
+            buf += (1 + kbd_system.sb_tb_motion->size);
         }
+#endif
+        // add response
+        static uint64_t res_ts = 0;
+        read_shared_buffer(kbd_system.sb_task_response, &res_ts, buf+1);
+        if(buf[1] != ack_res_id) {
+            buf[0] = comm_data_type_task_response;
+            *send_size += (1 + kbd_system.sb_task_response->size);
+            buf += (1 + kbd_system.sb_task_response->size);
+        }
+        // acknowledge request received
+        buf[0] = comm_data_type_task_id;
+        buf[1] = rcv_req_id;
+        *send_size += 2;
+        buf += 2;
     }
-
     // send
     udp_server_send(server, index, NULL, NULL, 0);
 }
@@ -252,8 +275,7 @@ void core1_main() {
 #ifdef KBD_NODE_AP
     cyw43_arch_enable_ap_mode(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK);
 
-    ip4_addr_t mask;
-    IP4_ADDR(ip_2_ip4(&mask), 255, 255, 255, 0);
+    ip4_addr_t mask = {.addr = LWIP_MAKEU32(255, 255, 255, 0)};
     dhcp_server_init(&kbd_system.core1.dhcp_server, &kbd_system.core1.tcp_server.gw, &mask);
 #else
     while(cyw43_arch_wifi_connect_timeout_ms(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
