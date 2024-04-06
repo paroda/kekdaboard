@@ -8,13 +8,10 @@
 
 #ifdef KBD_NODE_AP
 
-static uint8_t left_fd_pos[KBD_CONFIG_SCREEN_COUNT] = {0};
-static uint8_t right_fd_pos[KBD_CONFIG_SCREEN_COUNT] = {0};
-
 static uint8_t next_si = 0;
 
 void handle_screen_event_welcome(kbd_event_t event) {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* lreq = c->left_task_request;
     uint8_t* rreq = c->right_task_request;
     uint8_t* lres = c->left_task_response;
@@ -25,6 +22,8 @@ void handle_screen_event_welcome(kbd_event_t event) {
     uint8_t si;
     kbd_screen_t screen;
     flash_dataset_t* fd;
+    uint8_t* left_fd_pos = c->left_flash_data_pos;
+    uint8_t* right_fd_pos = c->right_flash_data_pos;
 
     switch(event) {
     case kbd_event_NONE: // when idle, sync config to left/right, one screen at a time
@@ -68,7 +67,7 @@ void work_screen_task_welcome() {}
 #else // LEFT/RIGHT
 
 void work_screen_task_welcome() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 

@@ -45,6 +45,14 @@ target_link_libraries(picow_client
   pico_stdlib
 )
 
+target_link_options(picow_ap PRIVATE
+  "-L${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common"
+)
+
+pico_set_linker_script(picow_ap
+  ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
+)
+
 pico_enable_stdio_usb(picow_client 1)
 pico_enable_stdio_uart(picow_client 0)
 

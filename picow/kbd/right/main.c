@@ -11,20 +11,28 @@ void core1_main();
 
 void core0_main();
 
-void launch_core1() {
+void proc_core1() {
+
     init_hw_core1();
 
     core1_main();
 }
 
-int main() {
-    // stdio_init_all();
-
-    init_data_model();
+void proc_core0() {
 
     init_hw_core0();
 
-    multicore_launch_core1(launch_core1);
-
     core0_main();
+}
+
+int main() {
+    stdio_init_all();
+    sleep_ms(1000);
+    printf("booting up right node\n");
+
+    init_data_model();
+
+    multicore_launch_core1(proc_core1);
+
+    proc_core0();
 }

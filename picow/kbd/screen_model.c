@@ -130,12 +130,12 @@ void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint
 #ifdef KBD_NODE_AP
 
 void handle_screen_event(kbd_event_t event) {
-    uint8_t* req = kbd_system.core0.task_request;
-    uint8_t* res = kbd_system.core0.task_response;
-    uint8_t* lreq = kbd_system.core0.left_task_request;
-    uint8_t* lres = kbd_system.core0.left_task_response;
-    uint8_t* rreq = kbd_system.core0.right_task_request;
-    uint8_t* rres = kbd_system.core0.right_task_response;
+    uint8_t* req = kbd_system.core1.task_request;
+    uint8_t* res = kbd_system.core1.task_response;
+    uint8_t* lreq = kbd_system.core1.left_task_request;
+    uint8_t* lres = kbd_system.core1.left_task_response;
+    uint8_t* rreq = kbd_system.core1.right_task_request;
+    uint8_t* rres = kbd_system.core1.right_task_response;
 
     if((req[0] && req[0]!=res[0])  // check req[0] for comm reset scenario
        || (lreq[0] && lreq[0]!=lres[0])
@@ -191,7 +191,7 @@ void handle_screen_event(kbd_event_t event) {
 #endif
 
 void work_screen_task() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
@@ -212,7 +212,7 @@ void init_config_screen_data() {
 }
 
 void apply_config_screen_data() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     static uint8_t applied[KBD_CONFIG_SCREEN_COUNT] = {0};
     for(uint8_t si=0; si<KBD_CONFIG_SCREEN_COUNT; si++) {
 #ifdef KBD_NODE_AP

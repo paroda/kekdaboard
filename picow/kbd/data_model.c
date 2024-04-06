@@ -6,7 +6,7 @@
 
 
 kbd_system_t kbd_system = {
-    .core0 = { /// CORE 0 ///
+    .core1 = { /// CORE 1 ///
 #ifdef KBD_NODE_AP
         .left_key_press = {0},  // default to 0
         .right_key_press = {0}, // default to 0
@@ -66,6 +66,8 @@ kbd_system_t kbd_system = {
 
 #ifdef KBD_NODE_AP
         .flash_datasets = {0}, // default to NULL
+        .left_flash_data_pos = {}, // default to 0
+        .right_flash_data_pos = {}, // default to 0
 #else
         .flash_data = {}, // default to 0
         .flash_data_pos = {}, // default to 0
@@ -80,7 +82,7 @@ kbd_system_t kbd_system = {
         }
     },
 
-    .core1 = { /// CORE 1 ///
+    .core0 = { /// CORE 0 ///
         .tcp_server = {
             .gw = {.addr = KBD_NODE_IP},
         },
@@ -88,15 +90,13 @@ kbd_system_t kbd_system = {
             .recv_size = {0},
             .send_size = {0},
         },
-        .reboot = true,
-#ifdef KBD_NODE_AP
-        .dhcp_server = {},
-#endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
         .key_press = {0},    // default to 0
 #endif
     },
+
+    .firmware_downloading = false,
 
     .pixels_on = true,
     .screen = kbd_info_screen_welcome,
@@ -152,7 +152,7 @@ void init_data_model() {
     kbd_system.spin_lock = spin_lock;
 
     kbd_system.sb_state = new_shared_buffer(sizeof(kbd_state_t), spin_lock);
-    write_shared_buffer(kbd_system.sb_state, kbd_system.core0.state_ts, &kbd_system.core0.state);
+    write_shared_buffer(kbd_system.sb_state, kbd_system.core1.state_ts, &kbd_system.core1.state);
 
 #ifdef KBD_NODE_AP
     kbd_system.sb_left_key_press = new_shared_buffer(hw_row_count, spin_lock);  // 1 byte per row

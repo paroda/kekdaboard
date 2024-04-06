@@ -178,7 +178,7 @@ static bool tcp_server_open(void *arg, const char *ap_name) {
 void udp_recv_callback(void *arg, struct udp_pcb* pcb, struct pbuf* p,
                        const ip_addr_t* addr, u16_t port) {
     (void)arg;
-    DEBUG_printf("\n\n\nReceived UDP len: %ld\n", p->tot_len);
+    DEBUG_printf("\n\n\nReceived UDP len: %ld, %s\n", p->tot_len, p->payload);
     // udp_send(pcb, p);
     udp_sendto(pcb, p, addr, port);
     pbuf_free(p);
@@ -187,7 +187,7 @@ void udp_recv_callback(void *arg, struct udp_pcb* pcb, struct pbuf* p,
 void udp_server_open() {
     struct udp_pcb* pcb = udp_new();
     udp_bind(pcb, IP_ADDR_ANY, UDP_PORT);
-    udp_recv(pcb, udp_recv_callback, NULL);
+    udp_recv(pcb, udp_recv_callback, pcb);
 }
 
 static void on_firmware_update() {

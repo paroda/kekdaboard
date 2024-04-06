@@ -9,7 +9,7 @@
 #ifdef KBD_NODE_AP
 
 void handle_screen_event_date(kbd_event_t event) {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->left_task_request;
 
     if(is_nav_event(event)) return;
@@ -80,7 +80,7 @@ static uint16_t set_field(uint8_t field, uint8_t value) {
 
 static void save() {
     rtc_set_time(kbd_hw.rtc, &date);
-    kbd_system.core0.date = date;
+    kbd_system.core1.date = date;
 }
 
 static void draw_field(lcd_canvas_t* cv, uint16_t x, uint16_t y, uint8_t field, bool selected) {
@@ -129,7 +129,7 @@ static void update_screen(uint8_t old_field, uint8_t field) {
 }
 
 void work_screen_task_date() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t old_field;
 

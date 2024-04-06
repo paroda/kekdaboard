@@ -14,13 +14,13 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
     for(row=0;
         k<KEY_PRESS_MAX && row<hw_row_count;
         row++) {
-        for(col=hw_col_count-1, v=kbd_system.core0.left_key_press[row];
+        for(col=hw_col_count-1, v=kbd_system.core1.left_key_press[row];
             v>0 && k<KEY_PRESS_MAX && col>=0;
             col--, v>>=1) {
             if(v & 1) key_press[k++] = key_layout[row][col];
         }
 
-        for(col=hw_col_count-1, v=kbd_system.core0.right_key_press[row];
+        for(col=hw_col_count-1, v=kbd_system.core1.right_key_press[row];
             v>0 && k<KEY_PRESS_MAX && col>=0;
             col--, v>>=1) {
             if(v & 1) key_press[k++] = key_layout[row][hw_col_count+col];
@@ -168,11 +168,11 @@ static inline int16_t add_cap16_value(int16_t v1, int16_t v2) {
 
 static bool parse_tb_motion(bool moon, bool shift, hid_report_out_mouse_t* outm) {
     // only parse the motion, no need to reset it to zero
-    // the reset is taken care of by core0 processor, where it is read
+    // the reset is taken care of by core1 processor, where it is read
     // and checked each time before calling input processor
-    kbd_tb_motion_t* tb_motion = &kbd_system.core0.tb_motion;
+    kbd_tb_motion_t* tb_motion = &kbd_system.core1.tb_motion;
     if(tb_motion->has_motion) {
-        kbd_tb_config_t* tb_config = &kbd_system.core0.tb_config;
+        kbd_tb_config_t* tb_config = &kbd_system.core1.tb_config;
         uint8_t scale = moon ? tb_config->scroll_scale : tb_config->delta_scale;
         uint8_t quad_weight = moon ? tb_config->scroll_quad_weight : tb_config->delta_quad_weight;
         int32_t x,y,q,x_abs,y_abs;
@@ -281,7 +281,7 @@ kbd_event_t execute_input_processor() {
     // note key press events for screen
     update_track_key_press();
 
-    hid_report_out_t* hid_report_out = &kbd_system.core0.hid_report_out;
+    hid_report_out_t* hid_report_out = &kbd_system.core1.hid_report_out;
 
     bool config_mode = is_config_screen(kbd_system.screen);
     if(config_mode) {

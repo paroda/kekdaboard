@@ -84,8 +84,7 @@ void lcd_show_welcome() {
 #endif
 
 
-void init_hw_core0() {
-
+void init_hw_core1() {
     spi_inst_t* spi = hw_inst_SPI == 0 ? spi0 : spi1;
     kbd_hw.m_spi = master_spi_create(spi, 3, hw_gpio_MOSI, hw_gpio_MISO, hw_gpio_CLK);
 
@@ -126,7 +125,7 @@ void init_hw_core0() {
 
 }
 
-void init_hw_core1() {
+void init_hw_core0() {
     cyw43_arch_init(); // wifi chip init
 
     kbd_hw.ledB.wl_led = true;

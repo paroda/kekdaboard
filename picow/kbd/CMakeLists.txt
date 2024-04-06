@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.5)
-
 ############################################################
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
@@ -10,7 +8,6 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
 
 add_executable(kbd_ap
   ap/main.c
-  ap/dhcp_server.c
 
   core0.c
   core1.c
@@ -137,7 +134,7 @@ target_compile_definitions(kbd_left PRIVATE
   CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
-pico_enable_stdio_usb(kbd_left 0)
+pico_enable_stdio_usb(kbd_left 1)
 pico_enable_stdio_uart(kbd_left 0)
 
 pico_add_extra_outputs(kbd_left)
@@ -205,7 +202,7 @@ target_compile_definitions(kbd_right PRIVATE
   CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
-pico_enable_stdio_usb(kbd_right 0)
+pico_enable_stdio_usb(kbd_right 1)
 pico_enable_stdio_uart(kbd_right 0)
 
 pico_add_extra_outputs(kbd_right)

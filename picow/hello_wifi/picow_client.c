@@ -192,7 +192,7 @@ void udp_recv_callback(void *arg, struct udp_pcb* pcb, struct pbuf* p,
                        const ip_addr_t* addr, u16_t port) {
     UDP_STATE_T* state = (UDP_STATE_T*) arg;
     uint64_t dt = time_us_64() - state->start;
-    DEBUG_printf("Received UDP len: %d, time: %llu\n", p->tot_len, dt);
+    DEBUG_printf("Received UDP len: %d, time: %llu, %s\n", p->tot_len, dt, p->payload);
     state->start = 0;
     pbuf_free(p);
 }
@@ -216,7 +216,8 @@ void test_send_udp(UDP_STATE_T* state) {
             static int counter = 0;
             struct pbuf* p = pbuf_alloc(PBUF_TRANSPORT, BEACON_MSG_LEN_MAX, PBUF_RAM);
             char *req = (char*)p->payload;
-            memset(req, 1, BEACON_MSG_LEN_MAX);
+            /* memset(req, 1, BEACON_MSG_LEN_MAX); */
+            sprintf(req, "hello %d", counter);
             state->start = time_us_64();
             err_t err = udp_send(state->pcb, p);
             pbuf_free(p);
@@ -227,7 +228,7 @@ void test_send_udp(UDP_STATE_T* state) {
                 counter++;
             }
         } else {
-            DEBUG_printf("Skipped UDB send since busy!\n");
+            DEBUG_printf("Skipped UDP send since busy!\n");
         }
     }
 }
@@ -235,10 +236,11 @@ void test_send_udp(UDP_STATE_T* state) {
 UDP_STATE_T* init_udp_test() {
     UDP_STATE_T* state = udp_state_init();
     state->pcb = udp_new();
-    ip_addr_t addr;
-    ip4addr_aton(TCP_SERVER_IP, &addr);
+    ip_addr_t addr = {.addr= LWIP_MAKEU32(1, 4, 168, 192)};
+    /* ip4addr_aton(TCP_SERVER_IP, &addr); */
     udp_connect(state->pcb, &addr, UDP_PORT);
     udp_recv(state->pcb, udp_recv_callback, state);
+    printf("Connected to UDP server at: %x\n", addr.addr);
     return state;
 }
 

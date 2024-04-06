@@ -18,6 +18,6 @@ typedef struct {
 void udp_server_send(udp_server_t* server, u8_t index,
                      struct udp_pcb* pcb, const ip_addr_t* addr, u16_t port);
 
-void udp_server_open(udp_server_t* server);
+bool udp_server_open(udp_server_t* server);
 
 #endif

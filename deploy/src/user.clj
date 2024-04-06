@@ -3,27 +3,31 @@
   (:import [java.io FileInputStream StringWriter]
            java.net.Socket))
 
-(def server-ip "192.168.4.1")
-(def server-port 80)
 (def hsize 4) ;; header size
 (def dsize 1024) ;; data size, 4*256
 (def psize (+ hsize dsize)) ;; packet size
 
-(defn deploy [bin-file]
+(defn deploy [server-ip server-port bin-file]
   (let [f (io/file bin-file)
         ba (byte-array psize)]
     (when-not (.exists f)
       (throw (ex-info "File not found!" {})))
     (println "Deploying file length:" (.length f))
+    (flush)
     (with-open [sock (Socket. server-ip server-port)
                 sos (.getOutputStream sock)
                 sis (.getInputStream sock)
                 fis (FileInputStream. f)]
+      (println "connected..")
+      (flush)
       ;; init flash
       (aset-byte ba 0 1)
       (.write sos ba 0 1)
       (.flush sos)
+      (Thread/sleep 2)
       (.read sis)
+      (println "sent init command")
+      (flush)
       ;; flash data
       (aset-byte ba 0 2)
       (loop [offset 0] ;; offset by count of dsize blocks
@@ -32,24 +36,40 @@
         (when (pos? (.read fis ba hsize dsize))
           (.write sos ba 0 psize)
           (.flush sos)
+          (Thread/sleep 2)
           (.read sis)
+          (println "sent data packet" offset)
+          (flush)
           (recur (inc offset))))
+      (println "sent all data packets")
+      (flush)
       ;; end flash
       (aset-byte ba 0 3)
       (.write sos ba 0 1)
       (.flush sos)
+      (Thread/sleep 2)
       (.read sis)
-      (println "Finished deploy"))))
+      (println "Finished deploy")
+      (flush))))
 
 (comment
 
-  (aset-byte (byte-array 3) 0 (unchecked-byte 0xff))
+  (deploy "192.168.4.1" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_ap.bin")
+
+  (deploy "192.168.4.2" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_left.bin")
+
+  (deploy "192.168.4.3" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_right.bin")
 
 
-  (deploy "/home/dipu/my/pico/kbd/picow/build/hello_wifi/picow_ap.bin")
+  )
 
-  (let [n 334336]
-    [(quot n 1024) (mod n 1024)])
+(comment
+
+  (deploy "192.168.4.1" 80 "/home/dipu/my/pico/kbd/picow/build/hello_wifi/picow_ap.bin")
+
+  (deploy "192.168.4.3" 82 "/home/dipu/my/pico/kbd/picow/build/hello_wifi/picow_client.bin")
+
+
 
   )
 

@@ -17,7 +17,7 @@
  *   declare and add to screens, handlers, workers lists in screen_model.c
  *   implement them in screen/xxx.c
  *
- * Each config screen gets a flash storage of 32 bytes (kbd_system.core0.flash_datasets)
+ * Each config screen gets a flash storage of 32 bytes (kbd_system.core1.flash_datasets)
  */
 
 #define KBD_INFO_SCREEN_COUNT 2

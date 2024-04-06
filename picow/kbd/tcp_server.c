@@ -3,10 +3,13 @@
 #include <string.h>
 
 #include "lwip/pbuf.h"
+#include "pico/stdlib.h"
 
 #include "pico_fota_bootloader.h"
 
 #include "data_model.h"
+
+static bool reboot = false;
 
 static err_t tcp_close_client_connection(tcp_client_t* client, struct tcp_pcb* client_pcb, err_t close_err) {
     if (client_pcb) {
@@ -32,6 +35,7 @@ static err_t tcp_server_sent(void* arg, struct tcp_pcb* pcb, u16_t len) {
     (void) arg;
     (void) pcb;
     (void) len;
+    if(reboot) pfb_perform_update();
     return ERR_OK;
 }
 
@@ -43,21 +47,18 @@ static err_t tcp_server_recv(void* arg, struct tcp_pcb* pcb, struct pbuf* p, err
     }
     assert(client && client->pcb == pcb);
     if (p->tot_len > 0) {
-        /* DEBUG_printf("tcp_server_recv %d err %d\n", p->tot_len, err); */
         u8_t* b = (u8_t*)p->payload;
         if(b[0]==0x01) { // initialize flash
-            /* DEBUG_printf("Initiating flash\n"); */
+            kbd_system.firmware_downloading = true;
             pfb_initialize_download_slot();
         } else if(b[0]==0x02) { // flash
             u32_t offset = 1024 * (b[1]*0x100 + b[2]);
             u8_t buf[1024];
             pbuf_copy_partial(p, buf, 1024, 4);
             pfb_write_to_flash_aligned_256_bytes(buf, offset, 1024);
-            /* DEBUG_printf("Flashed offset %u\n", offset); */
         } else if(b[0]==0x03) { // finalize flash
-            /* DEBUG_printf("Flash finished\n"); */
             pfb_mark_download_slot_as_valid();
-            kbd_system.core1.reboot = true;
+            reboot = true;
         }
         tcp_recved(pcb, p->tot_len);
         u8_t res[1] = {0x00};
@@ -84,7 +85,7 @@ static err_t tcp_server_accept(void* arg, struct tcp_pcb* client_pcb, err_t err)
     if(err!=ERR_OK || client_pcb==NULL) return ERR_VAL;
 
     tcp_server_t* server = (tcp_server_t*) arg;
-    tcp_client_t* client = (tcp_client_t*) malloc(sizeof(tcp_server_t));
+    tcp_client_t* client = (tcp_client_t*) malloc(sizeof(tcp_client_t));
     client->pcb = client_pcb;
     client->gw = &server->gw;
 

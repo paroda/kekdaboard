@@ -16,7 +16,7 @@ static uint8_t* fd_pos;
 #ifdef KBD_NODE_AP
 
 void handle_screen_event_power(kbd_event_t event) {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* lreq = c->left_task_request;
     uint8_t* lres = c->left_task_response;
@@ -67,7 +67,7 @@ void handle_screen_event_power(kbd_event_t event) {
 }
 
 void work_screen_task_power() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
 
     uint8_t* data = fd->data;
@@ -194,7 +194,7 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
 }
 
 void work_screen_task_power() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
@@ -242,27 +242,27 @@ void work_screen_task_power() {} // no action
 
 void init_config_screen_data_power() {
     uint8_t si = get_screen_index(THIS_SCREEN);
-    fd = kbd_system.core0.flash_datasets[si];
+    fd = kbd_system.core1.flash_datasets[si];
     uint8_t* data = fd->data;
 
     memset(data, 0xFF, FLASH_DATASET_SIZE); // use 0xFF = erased state in flash
     data[0] = CONFIG_VERSION;
     data[1] = kbd_system.backlight;
-    data[2] = kbd_system.core0.idle_minutes;
+    data[2] = kbd_system.core1.idle_minutes;
 }
 
 void apply_config_screen_data_power() {
     uint8_t* data = fd->data;
     if(data[0]!=CONFIG_VERSION) return;
     kbd_system.backlight = data[1];
-    kbd_system.core0.idle_minutes = data[2];
+    kbd_system.core1.idle_minutes = data[2];
 }
 
 #else // left/right
 
 void init_config_screen_data_power() {
     uint8_t si = get_screen_index(THIS_SCREEN);
-    fd_pos = kbd_system.core0.flash_data_pos+si;
+    fd_pos = kbd_system.core1.flash_data_pos+si;
 }
 void apply_config_screen_data_power() {} // no action
 

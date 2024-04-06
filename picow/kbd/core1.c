@@ -2,315 +2,486 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pico/cyw43_arch.h"
-
 #include "pico_fota_bootloader.h"
 
 #include "hw_model.h"
 #include "data_model.h"
 
-static void toggle_led(void* param) {
-    kbd_led_t* led = (kbd_led_t*) param;
-    led->on = !led->on;
-    if(led->wl_led)
-        cyw43_arch_gpio_put(led->gpio, led->on);
-    else
-        gpio_put(led->gpio, led->on);
-}
-
-static int32_t led_millis_to_toggle(kbd_led_t* led, kbd_led_state_t state) {
-    // return milliseconds after which to toggle the led
-    // return -1 to indicate skip toggle
-    switch(state) {
-    case kbd_led_state_OFF:
-        return led->on ? 0 : -1;
-    case kbd_led_state_ON:
-        return led->on ? -1 : 0;
-    case kbd_led_state_BLINK_LOW:    // 100(on), 900(off)
-        return led->on ? 100 : 900;
-    case kbd_led_state_BLINK_HIGH:   // 900, 100
-        return led->on ? 900 : 100;
-    case kbd_led_state_BLINK_SLOW:   // 1000, 1000
-        return led->on ? 2000 : 2000;
-    case kbd_led_state_BLINK_NORMAL: // 500, 500
-        return led->on ? 500 : 500;
-    case kbd_led_state_BLINK_FAST:   // 100, 100
-        return led->on ? 50 : 50;
-    }
-    return -1;
-}
-
-static void led_task() {
 #ifdef KBD_NODE_AP
-    static uint32_t led_left_last_ms = 0;
-    int32_t led_left_ms = led_millis_to_toggle(&kbd_hw.led_left, kbd_system.led_left);
-    if(led_left_ms>=0) do_if_elapsed(&led_left_last_ms, led_left_ms, &kbd_hw.led_left, toggle_led);
-
-    static uint32_t led_right_last_ms = 0;
-    int32_t led_right_ms = led_millis_to_toggle(&kbd_hw.led_right, kbd_system.led_right);
-    if(led_right_ms>=0) do_if_elapsed(&led_right_last_ms, led_right_ms, &kbd_hw.led_right, toggle_led);
-#else
-    static uint32_t led_last_ms = 0;
-    int32_t led_ms = led_millis_to_toggle(&kbd_hw.led, kbd_system.led);
-    if(led_ms>=0) do_if_elapsed(&led_last_ms, led_ms, &kbd_hw.led, toggle_led);
+#include "input_processor.h"
+#include "usb_hid.h"
 #endif
 
-    static uint32_t ledB_last_ms = 0;
-    int32_t ledB_ms = led_millis_to_toggle(&kbd_hw.ledB, kbd_system.ledB);
-    if(ledB_ms>=0) do_if_elapsed(&ledB_last_ms, ledB_ms, &kbd_hw.ledB, toggle_led);
-}
-
-static void update_comm_state(volatile kbd_comm_state_t* comm_state,
-                              uint8_t* recv_buf, uint8_t* recv_size,
-                              uint8_t* send_buf, uint8_t* send_size) {
-    // in the absence of peer data, just continue as is
-    if(*recv_size>0) {
-        kbd_comm_state_t peer_state = (kbd_comm_state_t) recv_buf[0];
-        switch(*comm_state) {
-        case kbd_comm_state_init:
-            if(peer_state==kbd_comm_state_init || peer_state==kbd_comm_state_ready) {
-                *comm_state = kbd_comm_state_ready;
-            }
-            break;
-        case kbd_comm_state_ready:
-            if(peer_state!=kbd_comm_state_init) {
-                *comm_state = kbd_comm_state_data;
-            }
-            break;
-        case kbd_comm_state_data:
-            if(peer_state==kbd_comm_state_init) {
-                *comm_state = kbd_comm_state_reset;
-            }
-            break;
-        default: // kbd_comm_state_reset
-            // wait for core0 to update it to init
-            break;
-        }
-    }
-    if(*comm_state != kbd_comm_state_reset) {
-        *send_size = 1;
-        send_buf[0] = *comm_state;
-    }
-}
-
-typedef enum {
-    comm_data_type_system_state = 0,
-    comm_data_type_key_press,
-    comm_data_type_tb_motion,
-    comm_data_type_task_request,
-    comm_data_type_task_response,
-    comm_data_type_task_id,
-} comm_data_type_t;
-
-#ifdef KBD_NODE_AP
-
-static void comm_task(void* param) {
-    (void) param;
-    for(uint8_t index=0; index<2; index++) {
-        volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
-        udp_server_t* server = &kbd_system.core1.udp_server;
-        uint8_t* recv_buf = server->recv_buf[index];
-        uint8_t* recv_size = server->recv_size+index;
-        uint8_t* send_buf = server->send_buf[index];
-        uint8_t* send_size = server->send_size+index;
-        if(*recv_size>0) {
-            update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
-            static uint8_t ack_req_id[2] = {0,0}; // last request acknowledged
-            static uint8_t rcv_res_id[2] = {0,0}; // last response received
-            if(*comm_state==kbd_comm_state_data) {
-                // recv: + key_press, tb_motion(right only), task_response
-                int bytes_left = *recv_size - 1;
-                uint8_t* buf = recv_buf+1;
-                while(bytes_left>0) {
-                    shared_buffer_t* sb = NULL;
-                    switch(buf[0]) {
-                    case comm_data_type_key_press:
-                        sb = index==0 ? kbd_system.sb_left_key_press : kbd_system.sb_right_key_press;
-                        break;
-                    case comm_data_type_tb_motion:
-                        sb = kbd_system.sb_tb_motion;
-                        break;
-                    case comm_data_type_task_response:
-                        sb = index==0 ? kbd_system.sb_left_task_response : kbd_system.sb_right_task_response;
-                        rcv_res_id[index] = buf[1];
-                        break;
-                    case comm_data_type_task_id:
-                        ack_req_id[index] = buf[1];
-                    default: break;
-                    }
-                    if(sb) {
-                        write_shared_buffer(sb, time_us_64(), buf+1);
-                        bytes_left -= (1 + sb->size);
-                        buf += (1 + sb->size);
-                    } else if(buf[0]==comm_data_type_task_id) {
-                        bytes_left -= 2;
-                        buf += 2;
-                    } else {
-                        bytes_left = 0; // stop if encountered invalid
-                    }
-                }
-                *recv_size = 0; // mark recv done
-                // package data to send
-                buf = send_buf + *send_size;
-                // add system state
-                static uint64_t state_ts = 0;
-                if(kbd_system.sb_state->ts > state_ts) {
-                    buf[0] = comm_data_type_system_state;
-                    read_shared_buffer(kbd_system.sb_state, &state_ts, buf+1);
-                    *send_size += (1 + kbd_system.sb_state->size);
-                    buf += (1 + kbd_system.sb_state->size);
-                }
-                // add request
-                static uint64_t req_ts[2] = {0,0};
-                shared_buffer_t* sb = index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request;
-                read_shared_buffer(sb, req_ts+index, buf+1);
-                if(buf[1] != ack_req_id[index]) {
-                    buf[0] = comm_data_type_task_request;
-                    *send_size += (1 + sb->size);
-                    buf += (1 + sb->size);
-                }
-                // acknowledge resposne received
-                buf[0] = comm_data_type_task_id;
-                buf[1] = rcv_res_id[index];
-                *send_size += 2;
-                buf += 2;
-            }
-        }
-    }
-}
-
-#else
-
-static void key_scan_task(void* param) {
-    (void)param;
-    // scan key presses with kbd_hw.ks and save to core1.key_press
-    key_scan_update(kbd_hw.ks);
-    memcpy(kbd_system.core1.key_press, kbd_hw.ks->keys, hw_row_count);
-}
-
-static void comm_task(void* param) {
-    (void) param;
 #ifdef KBD_NODE_LEFT
-    uint8_t index = 0;
-#else
-    uint8_t index = 1;
-#endif
-    volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
-    udp_server_t* server = &kbd_system.core1.udp_server;
-    uint8_t* recv_buf = server->recv_buf[index];
-    uint8_t* recv_size = server->recv_size+index;
-    uint8_t* send_buf = server->send_buf[index];
-    uint8_t* send_size = server->send_size+index;
-    update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
-    static uint8_t rcv_req_id = 0; // last request received
-    static uint8_t ack_res_id = 0; // last response acknowledged
-    if(*comm_state==kbd_comm_state_data) {
-        // recv: + system_state, task_request
-        int bytes_left = *recv_size - 1;
-        uint8_t* buf = recv_buf+1;
-        while(bytes_left>0) {
-            shared_buffer_t* sb = NULL;
-            switch(buf[0]) {
-            case comm_data_type_system_state:
-                sb = kbd_system.sb_state;
-                break;
-            case comm_data_type_task_request:
-                sb = kbd_system.sb_task_request;
-                rcv_req_id = buf[1];
-                break;
-            case comm_data_type_task_id:
-                ack_res_id = buf[1];
-            default: break;
-            }
-            if(sb) {
-                write_shared_buffer(sb, time_us_64(), buf+1);
-                bytes_left -= (1 + sb->size);
-                buf += (1 + sb->size);
-            } else if(buf[0]==comm_data_type_task_id) {
-                bytes_left -= 2;
-                buf += 2;
-            } else {
-                bytes_left = 0; // stop if encountered invalid
-            }
-        }
-        *recv_size = 0; // mark recv done
-        // package data to send
-        buf = send_buf + *send_size;
-        // add key_press
-        buf[0] = comm_data_type_key_press;
-        memcpy(buf+1, kbd_system.core1.key_press, hw_row_count);
-        *send_size += (1 + hw_row_count);
-        buf += (1 + hw_row_count);
-#ifdef KBD_NODE_RIGHT
-        // add tb_motion
-        static uint64_t tbm_t = 0;
-        if(kbd_system.sb_tb_motion->ts > tbm_t) {
-            buf[0] = comm_data_type_tb_motion;
-            read_shared_buffer(kbd_system.sb_tb_motion, &tbm_t, buf+1);
-            *send_size += (1 + kbd_system.sb_tb_motion->size);
-            buf += (1 + kbd_system.sb_tb_motion->size);
-        }
-#endif
-        // add response
-        static uint64_t res_ts = 0;
-        read_shared_buffer(kbd_system.sb_task_response, &res_ts, buf+1);
-        if(buf[1] != ack_res_id) {
-            buf[0] = comm_data_type_task_response;
-            *send_size += (1 + kbd_system.sb_task_response->size);
-            buf += (1 + kbd_system.sb_task_response->size);
-        }
-        // acknowledge request received
-        buf[0] = comm_data_type_task_id;
-        buf[1] = rcv_req_id;
-        *send_size += 2;
-        buf += 2;
-    }
-    // send
-    udp_server_send(server, index, NULL, NULL, 0);
+
+void rtc_task(void* param) {
+    (void)param;
+    rtc_read_time(kbd_hw.rtc, &kbd_system.core1.date);
+    kbd_system.core1.temperature = rtc_get_temperature(kbd_hw.rtc);
+}
+
+void lcd_display_head_task(void* param) {
+    (void)param;
+
+    lcd_update_backlight(kbd_system.backlight);
+
+    kbd_system_core1_t* c = &kbd_system.core1;
+    static uint8_t old_state[10];
+    uint8_t state[10] = {
+        is_config_screen(kbd_system.screen),                            // 0
+        c->temperature,                                         // 1
+        c->date.hour,                                     // 2
+        c->date.minute,                                   // 3
+        c->date.weekday%8,                                // 4
+        c->date.month,                                    // 5
+        c->date.date,                                     // 6
+        c->state.flags & KBD_FLAG_CAPS_LOCK ? 1 : 0,      // 7
+        c->state.flags & KBD_FLAG_NUM_LOCK ? 1 : 0,       // 8
+        c->state.flags & KBD_FLAG_SCROLL_LOCK ? 1 : 0,    // 9
+    };
+
+    if(memcmp(old_state, state, 10)==0) return; // no change
+    memcpy(old_state, state, 10);
+
+    char txt[8];
+    uint16_t bg = state[0] ? GRAY : BLACK;
+    // uint16_t fgm = RED;
+    uint16_t fg = WHITE;
+    uint16_t fg1 = YELLOW;
+    uint16_t bg2 = DARK_GRAY;
+    uint16_t fgcl = 0xF800;
+    uint16_t fgnl = 0x07E0;
+    uint16_t fgsl = 0x001F;
+
+    // 2 rows 240x(20+20)
+    static lcd_canvas_t* cv = NULL;
+    if(!cv) cv = lcd_new_canvas(240, 40, bg);
+    lcd_canvas_rect(cv, 0, 0, 240, 40, bg, 1, true);
+
+    // row1: temperature, time, weekday
+    // version : w:11x2=22 h:16, x:5-27
+    // temperature: w:11x2=22 h:16, x:40-62
+    sprintf(txt, "%02d", state[1]);
+    lcd_canvas_text(cv, 40, 4, txt, &lcd_font16, fg, bg);
+    // time (2 rows) : w:17x5=85 h:24, x:77-162, y:8
+    sprintf(txt, "%02d:%02d", state[2], state[3]);
+    lcd_canvas_text(cv, 80, 9, txt, &lcd_font24, fg1, bg);
+    // weekday: w:11x3=33 h:16, x:197-230
+    char* wd = rtc_week[state[4]];
+    lcd_canvas_text(cv, 197, 4, wd, &lcd_font16, fg, bg);
+
+    // MM/dd: w:11x5=55 h:16, x:180-235
+    sprintf(txt, "%02d/%02d", state[5], state[6]);
+    lcd_canvas_text(cv, 180, 22, txt, &lcd_font16, fg, bg);
+
+    // row2: locksx3, MM/dd
+    // locksx3: w:20x3=60 h:16, x:5-65
+    lcd_canvas_rect(cv, 5, 22, 60, 16, bg2, 1, true);
+    if(state[7]) // caps lock
+        lcd_canvas_circle(cv, 15, 30, 5, fgcl, 1, true);
+    if(state[8]) // num lock
+        lcd_canvas_circle(cv, 35, 30, 5, fgnl, 1, true);
+    if(state[9]) // scroll lock
+        lcd_canvas_circle(cv, 55, 30, 5, fgsl, 1, true);
+
+    lcd_display_canvas(kbd_hw.lcd, 0, 0, cv);
 }
 
 #endif
+
+#ifdef KBD_NODE_RIGHT
+
+void tb_scan_task_capture(void* param) {
+    kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
+
+    // scan tb scroll and write to sb_right_tb_motion
+    bool has_motion = false;
+    bool on_surface = false;
+    int16_t dx = 0;
+    int16_t dy = 0;
+
+    has_motion = tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy);
+
+    ds->has_motion = ds->has_motion || has_motion;
+    ds->on_surface = ds->on_surface || on_surface;
+    ds->dx = ds->dx + dx;
+    ds->dy = ds->dy + dy;
+}
+
+void tb_scan_task_publish(void* param) {
+    kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
+
+    write_shared_buffer(kbd_system.sb_tb_motion, time_us_64(), ds);
+
+    ds->has_motion = false;
+    ds->on_surface = false;
+    ds->dx = 0;
+    ds->dy = 0;
+}
+
+#endif
+
+#ifdef KBD_NODE_AP
+
+void process_idle() {
+    static bool idle_prev = false;
+    static uint8_t backlight_prev = 0;
+    kbd_system_core1_t* c = &kbd_system.core1;
+    // 0xFF means never idle
+    uint8_t mins = c->idle_minutes==0xFF ? 0 : (time_us_64()-c->active_ts)/60000000u;
+    bool idle = mins >= c->idle_minutes;
+    if(idle & !idle_prev) { // turned idle
+        backlight_prev = kbd_system.backlight;
+        kbd_system.backlight = 0;
+    } else if(idle_prev & !idle) { // turned active
+        kbd_system.backlight = backlight_prev;
+    }
+    idle_prev = idle;
+}
+
+kbd_event_t process_basic_event(kbd_event_t event) {
+    switch(event) {
+    case kbd_backlight_event_HIGH:
+        kbd_system.backlight = kbd_system.backlight <= 90 ? kbd_system.backlight+10 : 100;
+        return kbd_event_NONE;
+    case kbd_backlight_event_LOW:
+        kbd_system.backlight = kbd_system.backlight >= 10 ? kbd_system.backlight-10 : 0;
+        return kbd_event_NONE;
+    case kbd_led_pixels_TOGGLE:
+        kbd_system.pixels_on = !kbd_system.pixels_on;
+        return kbd_event_NONE;
+    default:
+        return event;
+    }
+}
+
+/*
+ * Processing:
+ * sb_left_key_press      -->  sb_state
+ * sb_right_key_press          sb_left_task_request
+ * sb_tb_motion                sb_right_task_request
+ * sb_left_task_response       task_request
+ * sb_right_task_response      hid_report_out
+ * task_response
+ * hid_report_in
+ */
+
+void process_inputs(void* param) {
+    (void)param;
+
+    kbd_system_core1_t* c = &kbd_system.core1;
+
+    kbd_state_t* state = &c->state;
+    kbd_state_t old_state = *state; // to check if changed
+
+    // read the usb hid report received
+    hid_report_in_t* hid_in = &c->hid_report_in;
+    state->flags = (state->flags
+                    & (~KBD_FLAG_CAPS_LOCK)
+                    & (~KBD_FLAG_NUM_LOCK)
+                    & (~KBD_FLAG_SCROLL_LOCK))
+        | (hid_in->keyboard.CapsLock ? KBD_FLAG_CAPS_LOCK : 0)
+        | (hid_in->keyboard.NumLock ? KBD_FLAG_NUM_LOCK : 0)
+        | (hid_in->keyboard.ScrollLock ? KBD_FLAG_SCROLL_LOCK : 0);
+
+    // read the left/right task responses
+    shared_buffer_t* sb = kbd_system.sb_left_task_response;
+    if(sb->ts > c->left_task_response_ts)
+        read_shared_buffer(sb, &c->left_task_response_ts, c->left_task_response);
+    sb = kbd_system.sb_right_task_response;
+    if(sb->ts > c->right_task_response_ts)
+        read_shared_buffer(sb, &c->right_task_response_ts, c->right_task_response);
+
+    // read the key_press
+    uint64_t ts;
+    read_shared_buffer(kbd_system.sb_left_key_press, &ts, c->left_key_press);
+    read_shared_buffer(kbd_system.sb_right_key_press, &ts, c->right_key_press);
+
+    // read tb_motion
+    sb = kbd_system.sb_tb_motion;
+    if(sb->ts > c->tb_motion_ts) {
+        read_shared_buffer(sb, &c->tb_motion_ts, &c->tb_motion);
+    } else {
+        // discard the delta if already used
+        c->tb_motion.dx = 0;
+        c->tb_motion.dy = 0;
+    }
+
+    // process inputs to update the hid_report_out and generate event
+    kbd_event_t event = execute_input_processor();
+
+    // track activity
+    hid_report_out_t* hid_out = &c->hid_report_out;
+    if(event!=kbd_event_NONE || hid_out->has_events) c->active_ts = time_us_64();
+
+    // handle basic event
+    event = process_basic_event(event);
+
+    // send event to screens processor to process the responses and raise requests if any
+    handle_screen_event(event);
+
+    // write the left/right task requests
+    sb = kbd_system.sb_left_task_request;
+    if(c->left_task_request_ts > sb->ts)
+        write_shared_buffer(sb, c->left_task_request_ts, c->left_task_request);
+    sb = kbd_system.sb_right_task_request;
+    if(c->right_task_request_ts > sb->ts)
+        write_shared_buffer(sb, c->right_task_request_ts, c->right_task_request);
+
+    // note other state changes
+    state->screen = kbd_system.screen;
+    state->usb_hid_state = kbd_system.usb_hid_state;
+    state->backlight = kbd_system.backlight;
+    if(kbd_system.pixels_on)
+        state->flags |= KBD_FLAG_PIXELS_ON;
+    else
+        state->flags &= (~KBD_FLAG_PIXELS_ON);
+
+    // update the state if changed
+    sb = kbd_system.sb_state;
+    if(memcmp(&old_state, state, sizeof(kbd_state_t)) != 0) {
+        c->state_ts = time_us_64();
+        write_shared_buffer(sb, c->state_ts, state);
+    }
+
+    // transfer hid reports via usb
+    usb_hid_task();
+}
+
+void process_requests() {
+    // respond to request
+    work_screen_task();
+}
+
+#else // LEFT/RIGHT
+
+void pixel_task(void* param) {
+    (void)param;
+
+    if(!kbd_system.pixels_on) {
+        led_pixel_set_off(kbd_hw.led_pixel);
+        return;
+    }
+
+    kbd_pixel_config_t* pc = &kbd_system.core1.pixel_config;
+    uint32_t* colors = kbd_system.core1.pixel_colors;
+    pixel_anim_update(colors, hw_led_pixel_count, pc->color, pc->anim_style, pc->anim_cycles);
+    led_pixel_set(kbd_hw.led_pixel, colors);
+}
+
+void process_sync() {
+    kbd_system_core1_t* c = &kbd_system.core1;
+    if(kbd_system.sb_state->ts > c->state_ts)
+        read_shared_buffer(kbd_system.sb_state, &c->state_ts, &c->state);
+
+    kbd_system.backlight = c->state.backlight;
+    kbd_system.pixels_on = c->state.flags & KBD_FLAG_PIXELS_ON;
+    kbd_system.usb_hid_state = c->state.usb_hid_state;
+    kbd_system.screen = c->state.screen;
+}
+
+
+void process_requests() {
+    // get the request
+    shared_buffer_t* sb = kbd_system.sb_task_request;
+    if(sb->ts > kbd_system.core1.task_request_ts)
+        read_shared_buffer(sb, &kbd_system.core1.task_request_ts, kbd_system.core1.task_request);
+    // respond to request
+    work_screen_task();
+    // put the response
+    sb = kbd_system.sb_task_response;
+    if(kbd_system.core1.task_response_ts > sb->ts)
+        write_shared_buffer(sb, kbd_system.core1.task_response_ts, kbd_system.core1.task_response);
+}
+
+
+#endif
+
+void validate_comm_state(uint8_t index) {
+    if(kbd_system.comm_state[index] == kbd_comm_state_reset) {
+        // reset task
+        kbd_system.screen = kbd_info_screen_welcome;
+
+        kbd_system_core1_t* c = &kbd_system.core1;
+        uint8_t buf[KBD_TASK_SIZE] = {0};
+
+#ifdef KBD_NODE_AP
+        c->left_task_request_ts = 0;
+        c->left_task_request[0] = 0;
+        c->left_task_response_ts = 0;
+        c->left_task_response[0] = 0;
+
+        c->right_task_request_ts = 0;
+        c->right_task_request[0] = 0;
+        c->right_task_response_ts = 0;
+        c->right_task_response[0] = 0;
+
+        memset(c->left_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
+        memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
+
+        write_shared_buffer(kbd_system.sb_left_task_request, 0, buf);
+        write_shared_buffer(kbd_system.sb_left_task_response, 0, buf);
+        write_shared_buffer(kbd_system.sb_right_task_request, 0, buf);
+        write_shared_buffer(kbd_system.sb_right_task_response, 0, buf);
+#else
+        write_shared_buffer(kbd_system.sb_task_request, 0, buf);
+        write_shared_buffer(kbd_system.sb_task_response, 0, buf);
+#endif
+        c->task_request_ts = 0;
+        c->task_request[0] = 0;
+        c->task_response_ts = 0;
+        c->task_response[0] = 0;
+
+        // restore comm
+        kbd_system.comm_state[index] = kbd_comm_state_init;
+    }
+}
+
+////// MAIN
 
 void core1_main() {
 #ifdef KBD_NODE_AP
-    cyw43_arch_enable_ap_mode(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK);
-
-    ip4_addr_t mask = {.addr = LWIP_MAKEU32(255, 255, 255, 0)};
-    dhcp_server_init(&kbd_system.core1.dhcp_server, &kbd_system.core1.tcp_server.gw, &mask);
+    kbd_system.led_left = kbd_led_state_BLINK_FAST;
+    kbd_system.led_right = kbd_led_state_BLINK_FAST;
 #else
-    while(cyw43_arch_wifi_connect_timeout_ms(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-        // keep trying to connect
-    }
+    kbd_system.led = kbd_led_state_BLINK_FAST;
 #endif
 
-    tcp_server_open(&kbd_system.core1.tcp_server, KBD_NODE_NAME);
+    uint32_t ts = board_millis();
+    uint32_t proc_last_ms = ts;
+#ifdef KBD_NODE_LEFT
+    uint32_t lcd_last_ms = ts;
+    uint32_t rtc_last_ms = ts;
+#endif
+#ifdef KBD_NODE_RIGHT
+    uint32_t tb_capture_last_ms = ts;
+    uint32_t tb_publish_last_ms = ts+2;
+#endif
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+    uint32_t pixel_last_ms = ts;
+#endif
 
-    udp_server_open(&kbd_system.core1.udp_server);
 
-    kbd_system.ledB = kbd_led_state_BLINK_FAST;
+#ifdef KBD_NODE_RIGHT
+
+    kbd_tb_motion_t tbm = {
+        .has_motion = false,
+        .on_surface = false,
+        .dx = 0,
+        .dy = 0
+    };
+
+#endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    uint32_t ks_last_ms = board_millis();
+    kbd_system_core1_t* c = &kbd_system.core1;
 #endif
-
-    uint32_t comm_last_ms = board_millis();
 
     while(true) {
-        led_task();
 
-        if(kbd_system.core1.reboot) {
-            pfb_perform_update();
-        }
+        if(kbd_system.firmware_downloading) return; // shutdown core1 on upgrade
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-        // scan key presses, @ 5 ms
-        do_if_elapsed(&ks_last_ms, 5, NULL, key_scan_task);
+        // apply any new configs
+        apply_config_screen_data();
+
+#ifdef KBD_NODE_LEFT
+
+        // reset comm if needed
+        validate_comm_state(0);
+
+        // get date & and temperature, once a second
+        do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
+
+        // update lcd display head, @ 100 ms
+        do_if_elapsed(&lcd_last_ms, 100, NULL, lcd_display_head_task);
+
+        // set the num lock led
+        kbd_system.led = kbd_system.ap_connected ?
+            (kbd_system.usb_hid_state==kbd_usb_hid_state_MOUNTED ?
+             (c->state.flags & KBD_FLAG_NUM_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
+             (kbd_system.usb_hid_state==kbd_usb_hid_state_UNMOUNTED ?
+              kbd_led_state_BLINK_HIGH :
+              kbd_led_state_BLINK_LOW)) :
+            kbd_led_state_BLINK_FAST;
+
 #endif
 
-        // publish UDP, @ 5 ms
-        do_if_elapsed(&comm_last_ms, 5, NULL, comm_task);
+#ifdef KBD_NODE_RIGHT
 
-        cyw43_arch_poll(); // 1 ms loop for poll
-        cyw43_arch_wait_for_work_until(make_timeout_time_ms(1));
+        // reset comm if needed
+        validate_comm_state(1);
+
+        // scan track ball scroll (capture), @ 5 ms
+        // scan at a high rate to eliminate trackball register overflow
+        do_if_elapsed(&tb_capture_last_ms, 5, &tbm, tb_scan_task_capture);
+
+        // publish track ball scroll (publish), @ 25 ms
+        // publish at a lower rate than master process, to eliminate loss
+        do_if_elapsed(&tb_publish_last_ms, 25, &tbm, tb_scan_task_publish);
+
+        // set the caps lock led
+        kbd_system.led = kbd_system.ap_connected ?
+            (c->state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
+            kbd_led_state_BLINK_FAST;
+
+#endif
+
+
+#ifdef KBD_NODE_AP
+
+        // reset comm if needed
+        validate_comm_state(0); // left comm
+        validate_comm_state(1); // right comm
+
+        // keep the tiny usb ready
+        usb_hid_idle_task();
+
+        // set board led to indicate USB
+        switch(kbd_system.usb_hid_state) {
+        case kbd_usb_hid_state_UNMOUNTED:
+            kbd_system.ledB = kbd_led_state_BLINK_FAST;
+            break;
+        case kbd_usb_hid_state_MOUNTED:
+            kbd_system.ledB = kbd_led_state_BLINK_NORMAL;
+            break;
+        case kbd_usb_hid_state_SUSPENDED:
+            kbd_system.ledB = kbd_led_state_BLINK_SLOW;
+            break;
+        }
+
+        // process input to output/usb, @ 20 ms
+        do_if_elapsed(&proc_last_ms, 20, NULL, process_inputs);
+
+        // handle idelness
+        process_idle();
+
+        // check connection status
+        kbd_system.left_active = board_millis() < (kbd_system.sb_left_key_press->ts/1000)+20;
+        kbd_system.right_active = board_millis() < (kbd_system.sb_right_key_press->ts/1000)+20;
+
+        // set left/right connection status led
+        kbd_system.led_left = kbd_system.left_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
+        kbd_system.led_right = kbd_system.right_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
+
+#else // LEFT/RIGHT
+
+        // set key switch leds, @ 50 ms
+        do_if_elapsed(&pixel_last_ms, 50, NULL, pixel_task);
+
+        // sync the state from master
+        do_if_elapsed(&proc_last_ms, 20, NULL, process_sync);
+
+        // check connection
+        kbd_system.ap_connected = board_millis() < (c->state_ts/1000)+20;
+
+        // use board led for ap connection status
+        kbd_system.ledB = kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
+
+#endif
+
+        // execute on-demand tasks
+        process_requests();
+
+        sleep_ms(1);
     }
 }

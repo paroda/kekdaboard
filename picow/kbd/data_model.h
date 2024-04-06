@@ -10,7 +10,6 @@
 #include "util/pixel_anim.h"
 
 #ifdef KBD_NODE_AP
-#include "dhcp_server.h"
 #include "key_layout.h"
 #include "util/flash_store.h"
 #endif
@@ -20,15 +19,15 @@
 #endif
 
 /*
- * Tasks (10 ms process cycle)
+ * Tasks (20 ms process cycle)
  *
- * core-1: scan key_press (left/right)            @ 5 ms
+ * core-0: scan key_press (left/right)            @ 5 ms
  *         UDP send/recv (all)                    @ 5 ms
  *         led blinking (left/right)              @ no-delay
  *
- * core-0: scan tb_motion (right)                 @ 5 ms
- *         publish tb_motion (right)              @ 20 ms
- *         primary process                        @ 10 ms
+ * core-1: scan tb_motion (right)                 @ 5 ms
+ *         publish tb_motion (right)              @ 25 ms
+ *         primary process                        @ 20 ms
  *         - update state using inputs (ap)
  *         - set task requests (ap)
  *         - make usb hid report and send (ap)
@@ -36,7 +35,7 @@
  *         process state->led (left/right)        @ no-delay
  *         process state->lcd (left)              @ 100 ms
  *         apply configs (all)                    @ on demand
- *         led pixels (left/right)                @ 30 ms
+ *         led pixels (left/right)                @ 50 ms
  *         read date-time & temperature (left)    @ 1 second
  *
  * It is critical to time the scan and processing for track ball
@@ -46,7 +45,7 @@
  *
  * Flow
  *
- * core-1
+ * core-0
  * scan : left:key_scan  ==> left:key_press
  *        right:key_scan ==> right:key_press
  * UDP  : left:key_press  ==> ap:left_key_press
@@ -59,7 +58,7 @@
  *        left:task_response    ==> ap:left_task_response
  *        right:task_response   ==> ap:right_task_response
  *
- * core-0
+ * core-1
  * scan   : right:tb_scan ==> right:tb_motion
  * Process: ap:left_key_press   ==>  ap:system_state
  *          ap:right_key_press       ap:hid_report_out
@@ -201,7 +200,7 @@ typedef struct {
 
 
 /*
- * KBD System core0 data
+ * KBD System core1 data
  */
 
 typedef struct {
@@ -255,8 +254,10 @@ typedef struct {
 
 #ifdef KBD_NODE_AP
     // flash loaded and saved on AP
-    // the update is done via config screens (core0)
+    // the update is done via config screens (core1)
     flash_dataset_t* flash_datasets[KBD_CONFIG_SCREEN_COUNT];
+    uint8_t left_flash_data_pos[KBD_CONFIG_SCREEN_COUNT];
+    uint8_t right_flash_data_pos[KBD_CONFIG_SCREEN_COUNT];
 #else
     // flash data as received from AP
     uint8_t flash_data[KBD_CONFIG_SCREEN_COUNT][KBD_TASK_DATA_SIZE];
@@ -265,31 +266,28 @@ typedef struct {
 
     uint64_t state_ts;
     kbd_state_t state;
-} kbd_system_core0_t;
+} kbd_system_core1_t;
 
 /*
- * KBD System core1 data
+ * KBD System core0 data
  */
 
 typedef struct {
     tcp_server_t tcp_server;
     udp_server_t udp_server;
-    bool reboot;
-
-#ifdef KBD_NODE_AP
-    dhcp_server_t dhcp_server;
-#endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
     uint8_t key_press[hw_row_count];
 #endif
-} kbd_system_core1_t;
+} kbd_system_core0_t;
 
 /*
  * KBD System
  */
 
 typedef struct {
+    volatile bool firmware_downloading;
+
     kbd_system_core0_t core0;
     kbd_system_core1_t core1;
 

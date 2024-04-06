@@ -28,7 +28,7 @@ static uint8_t* fd_pos;
 #ifdef KBD_NODE_AP
 
 void handle_screen_event_pixel(kbd_event_t event) {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* lreq = c->left_task_request;
     uint8_t* lres = c->left_task_response;
@@ -75,7 +75,7 @@ void handle_screen_event_pixel(kbd_event_t event) {
 }
 
 void work_screen_task_pixel() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
 
     uint8_t* data = fd->data;
@@ -316,7 +316,7 @@ static void update_screen(uint8_t field, uint8_t sel_field) {
 }
 
 void work_screen_task_pixel() {
-    kbd_system_core0_t* c = &kbd_system.core0;
+    kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* req = c->task_request;
     uint8_t* res = c->task_response;
 
@@ -373,16 +373,16 @@ void work_screen_task_pixel() {} // no action
 void init_config_screen_data_pixel() {
     uint8_t si = get_screen_index(THIS_SCREEN);
 #ifdef KBD_NODE_AP
-    fd = kbd_system.core0.flash_datasets[si];
+    fd = kbd_system.core1.flash_datasets[si];
     uint8_t* data = fd->data;
 #else
-    fd_data = kbd_system.core0.flash_data[si];
-    fd_pos = kbd_system.core0.flash_data_pos+si;
+    fd_data = kbd_system.core1.flash_data[si];
+    fd_pos = kbd_system.core1.flash_data_pos+si;
     uint8_t* data = fd_data;
 #endif
 
     memset(data, 0xFF, KBD_TASK_DATA_SIZE); // use 0xFF = erased state in flash
-    kbd_pixel_config_t* pc = &kbd_system.core0.pixel_config;
+    kbd_pixel_config_t* pc = &kbd_system.core1.pixel_config;
     pixel_config.version = CONFIG_VERSION;
     pixel_config.color_red = (uint8_t) ((pc->color & 0xff0000) >> 16);
     pixel_config.color_green = (uint8_t) ((pc->color & 0x00ff00) >> 8);
@@ -402,7 +402,7 @@ void apply_config_screen_data_pixel() {
 
     memcpy(&pixel_config, data, sizeof(pixel_config_t));
 
-    kbd_pixel_config_t* pc = &kbd_system.core0.pixel_config;
+    kbd_pixel_config_t* pc = &kbd_system.core1.pixel_config;
     pc->color = (((uint32_t) pixel_config.color_red) << 16)
         | (((uint32_t) pixel_config.color_green) << 8)
         | ((uint32_t) pixel_config.color_blue);

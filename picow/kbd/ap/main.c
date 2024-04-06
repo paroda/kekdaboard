@@ -11,33 +11,35 @@ void core1_main();
 
 void core0_main();
 
-void launch_core1() {
+void proc_core1() {
+
     init_hw_core1();
+
+    // load FLASH DATASETS
+    init_flash_datasets(kbd_system.core1.flash_datasets);
+    init_config_screen_data();
+    load_flash_datasets(kbd_system.core1.flash_datasets);
+
+    usb_hid_init();
 
     core1_main();
 }
 
-void load_flash() {
-    // load FLASH DATASETS
-    init_flash_datasets(kbd_system.core0.flash_datasets);
+void proc_core0() {
 
-    init_config_screen_data();
+    init_hw_core0();
 
-    load_flash_datasets(kbd_system.core0.flash_datasets);
+    core0_main();
 }
 
 int main() {
     // stdio_init_all();
+    // sleep_ms(1000);
+    // printf("booting up access point node\n");
 
     init_data_model();
 
-    init_hw_core0();
+    multicore_launch_core1(proc_core1);
 
-    multicore_launch_core1(launch_core1);
-
-    load_flash();
-
-    usb_hid_init();
-
-    core0_main();
+    proc_core0();
 }
