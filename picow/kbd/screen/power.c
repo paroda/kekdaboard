@@ -14,6 +14,7 @@ static flash_dataset_t* fd;
 void handle_screen_event_power(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
     uint8_t* lreq = c->left_task_request;
+    uint8_t* rreq = c->right_task_request;
     uint8_t* lres = c->left_task_response;
     uint8_t* data = fd->data;
 
@@ -22,7 +23,8 @@ void handle_screen_event_power(kbd_event_t event) {
     switch(event) {
     case kbd_screen_event_INIT:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
-        lreq[2] = 1;
+        init_task_request(rreq, &c->right_task_request_ts, THIS_SCREEN);
+        lreq[2] = rreq[2] = 1;
         lreq[3] = fd->pos;
         lreq[4] = kbd_system.backlight;
         lreq[5] = c->idle_minutes;

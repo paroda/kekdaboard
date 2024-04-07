@@ -10,32 +10,38 @@
 
 void handle_screen_event_date(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->left_task_request;
+    uint8_t* lreq = c->left_task_request;
+    uint8_t* rreq = c->right_task_request;
 
     if(is_nav_event(event)) return;
 
-    init_task_request(req, &c->left_task_request_ts, THIS_SCREEN);
-
     switch(event) {
     case kbd_screen_event_INIT:
-        req[2] = 1;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        init_task_request(rreq, &c->right_task_request_ts, THIS_SCREEN);
+        lreq[2] = rreq[2] = 1;
         break;
     case kbd_screen_event_SAVE:
-        req[2] = 2;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 2;
         break;
     case kbd_screen_event_LEFT:
     case kbd_screen_event_UP:
-        req[2] = 3;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 3;
         break;
     case kbd_screen_event_RIGHT:
     case kbd_screen_event_DOWN:
-        req[2] = 4;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 4;
         break;
     case kbd_screen_event_SEL_PREV:
-        req[2] = 5;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 5;
         break;
     case kbd_screen_event_SEL_NEXT:
-        req[2] = 6;
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        lreq[2] = 6;
         break;
     default: break;
     }

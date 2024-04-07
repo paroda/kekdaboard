@@ -9,22 +9,29 @@
 
 void handle_screen_event_scan(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->left_task_request;
+    uint8_t* lreq = c->left_task_request;
+    uint8_t* rreq = c->right_task_request;
 
     if(is_nav_event(event)) return;
 
-    init_task_request(req, &c->left_task_request_ts, THIS_SCREEN);
+    init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
 
-    req[2] = (event == kbd_screen_event_INIT) ? 1 : 2;
-    req[3] = hw_row_count*2 + sizeof(kbd_tb_motion_t);
+    lreq[2] = (event == kbd_screen_event_INIT) ? 1 : 2;
+    lreq[3] = hw_row_count*2 + sizeof(kbd_tb_motion_t);
 
     // add scan data
     uint8_t pos=4;
-    memcpy(req+pos, c->left_key_press, hw_row_count);
+    memcpy(lreq+pos, c->left_key_press, hw_row_count);
     pos += hw_row_count;
-    memcpy(req+pos, c->right_key_press, hw_row_count);
+    memcpy(lreq+pos, c->right_key_press, hw_row_count);
     pos += hw_row_count;
-    memcpy(req+pos, &c->tb_motion, sizeof(kbd_tb_motion_t));
+    memcpy(lreq+pos, &c->tb_motion, sizeof(kbd_tb_motion_t));
+
+    // init right
+    if(event==kbd_screen_event_INIT) {
+        init_task_request(rreq, &c->right_task_request_ts, THIS_SCREEN);
+        rreq[2] = 1;
+    }
 }
 
 #endif

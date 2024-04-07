@@ -163,7 +163,8 @@ void handle_screen_event(kbd_event_t event) {
         uint8_t* rreq = kbd_system.core1.right_task_request;
         uint8_t* rres = kbd_system.core1.right_task_response;
 
-        if((lreq[0] && lreq[0]!=lres[0]) || (rreq[0] && rreq[0]!=rres[0])) {
+        if((lreq[0] && lreq[1]==screen && lreq[0]!=lres[0])
+           || (rreq[0] && rreq[1]==screen && rreq[0]!=rres[0])) {
             return; // pending tasks
         }
 

@@ -26,6 +26,11 @@ void handle_screen_event_welcome(kbd_event_t event) {
     uint8_t* right_fd_pos = c->right_flash_data_pos;
 
     switch(event) {
+    case kbd_screen_event_INIT:
+        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+        init_task_request(rreq, &c->right_task_request_ts, THIS_SCREEN);
+        lreq[2] = rreq[2] = 1;
+        break;
     case kbd_event_NONE: // when idle, sync config to left/right, one screen at a time
         si = next_si;
         screen = kbd_config_screens[si];
@@ -43,10 +48,6 @@ void handle_screen_event_welcome(kbd_event_t event) {
             memcpy(rreq+4, fd->data, FLASH_DATASET_SIZE);
         }
         next_si = si+1<KBD_CONFIG_SCREEN_COUNT ? si+1 : 0;
-        break;
-    case kbd_screen_event_INIT:
-        init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
-        lreq[2] = 1;
         break;
     case kbd_screen_event_RESPONSE:
         if(lres[0] && lres[1]==THIS_SCREEN && lres[2]==1) {
