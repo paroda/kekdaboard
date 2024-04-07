@@ -132,43 +132,15 @@ void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint
 #ifdef KBD_NODE_AP
 
 void handle_screen_event(kbd_event_t event) {
-    /* static kbd_event_t pending_event = kbd_event_NONE; */
-    /* if(event==kbd_event_NONE) { */
-        /* event = pending_event; */
-        /* pending_event = kbd_event_NONE; */
-    /* } */
-
-    uint8_t* lreq = kbd_system.core1.left_task_request;
-    uint8_t* lres = kbd_system.core1.left_task_response;
-    uint8_t* rreq = kbd_system.core1.right_task_request;
-    uint8_t* rres = kbd_system.core1.right_task_response;
-
-    // check req[0] for comm reset scenario
-    if((lreq[0] && lreq[0]!=lres[0]) || (rreq[0] && rreq[0]!=rres[0])) {
-        /* pending_event = event; */
-        return; // pending tasks
-    }
-
     kbd_screen_t screen = kbd_system.screen;
     bool config = is_config_screen(screen);
-    uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
     uint8_t si = get_screen_index(screen);
 
-    static uint8_t lres_last_id = 0;
-    static uint8_t rres_last_id = 0;
+    // switch to screen init event if nav event
+    // and ignore any current tasks
+    if(is_nav_event(event)) {
+        uint8_t n = config ? KBD_CONFIG_SCREEN_COUNT : KBD_INFO_SCREEN_COUNT;
 
-    // check res[0] for comm reset scenario
-    if((lres[0] && lres[0]!=lres_last_id) || (rres[0] && rres[0]!=rres_last_id)) {
-        lres_last_id = lres[0];
-        rres_last_id = rres[0];
-        // process response command for this screen if any
-        if((lres[0] && lres[1]==screen && lres[2]) || (rres[0] && rres[1]==screen && rres[2])) {
-            /* pending_event = event; */
-            event = kbd_screen_event_RESPONSE;
-        }
-    }
-
-    if(is_nav_event(event)) { // switch to screen init event if nav event
         if(event == kbd_screen_event_CONFIG && !config) {
             config = true;
             si = 0;
@@ -185,6 +157,33 @@ void handle_screen_event(kbd_event_t event) {
 
         kbd_system.screen = screen;
         event = kbd_screen_event_INIT;
+    } else {
+        uint8_t* lreq = kbd_system.core1.left_task_request;
+        uint8_t* lres = kbd_system.core1.left_task_response;
+        uint8_t* rreq = kbd_system.core1.right_task_request;
+        uint8_t* rres = kbd_system.core1.right_task_response;
+
+        if((lreq[0] && lreq[0]!=lres[0]) || (rreq[0] && rreq[0]!=rres[0])) {
+            return; // pending tasks
+        }
+
+        bool new_response = false;
+
+        static uint8_t lres_last_id = 0;
+        if(lres[0] && lres[2] && lres[1]==screen && lres[0]!=lres_last_id) {
+            lres_last_id = lres[0];
+            new_response = true;
+        }
+
+        static uint8_t rres_last_id = 0;
+        if(rres[0] && rres[2] && rres[1]==screen && rres[0]!=rres_last_id) {
+            rres_last_id = rres[0];
+            new_response = true;
+        }
+
+        if(new_response) {
+            event = kbd_screen_event_RESPONSE;
+        }
     }
 
     (config ? config_screen_event_handlers[si] : info_screen_event_handlers[si])(event);

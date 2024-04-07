@@ -123,6 +123,8 @@ void tb_scan_task_publish(void* param) {
 
 #ifdef KBD_NODE_AP
 
+static bool reset_screen = true;
+
 void process_idle() {
     static bool idle_prev = false;
     static uint8_t backlight_prev = 0;
@@ -207,12 +209,20 @@ void process_inputs(void* param) {
         c->tb_motion.dy = 0;
     }
 
-    // process inputs to update the hid_report_out and generate event
-    kbd_event_t event = execute_input_processor();
+    kbd_event_t event = kbd_event_NONE;
+    if(reset_screen) {
+        // switch to welcome screen after reset
+        reset_screen = false;
+        event = kbd_screen_event_INIT;
+        c->active_ts = time_us_64();
+    } else {
+        // process inputs to update the hid_report_out and generate event
+        event = execute_input_processor();
 
-    // track activity
-    hid_report_out_t* hid_out = &c->hid_report_out;
-    if(event!=kbd_event_NONE || hid_out->has_events) c->active_ts = time_us_64();
+        // track activity
+        hid_report_out_t* hid_out = &c->hid_report_out;
+        if(event!=kbd_event_NONE || hid_out->has_events) c->active_ts = time_us_64();
+    }
 
     // handle basic event
     event = process_basic_event(event);
@@ -292,13 +302,14 @@ void process_requests() {
 
 void validate_comm_state(uint8_t index) {
     if(kbd_system.comm_state[index] == kbd_comm_state_reset) {
-        // reset task
-        kbd_system.screen = kbd_info_screen_welcome;
-
         kbd_system_core1_t* c = &kbd_system.core1;
         uint8_t buf[KBD_TASK_SIZE] = {0};
 
 #ifdef KBD_NODE_AP
+        // switch to welcome screen
+        kbd_system.screen = kbd_info_screen_welcome;
+        reset_screen = true;
+
         c->left_task_request_ts = 0;
         c->left_task_request[0] = 0;
         c->left_task_response_ts = 0;
@@ -306,6 +317,8 @@ void validate_comm_state(uint8_t index) {
 
         write_shared_buffer(kbd_system.sb_left_task_request, 0, buf);
         write_shared_buffer(kbd_system.sb_left_task_response, 0, buf);
+
+        if(index==0) memset(c->left_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
 
         c->right_task_request_ts = 0;
         c->right_task_request[0] = 0;
@@ -315,8 +328,7 @@ void validate_comm_state(uint8_t index) {
         write_shared_buffer(kbd_system.sb_right_task_request, 0, buf);
         write_shared_buffer(kbd_system.sb_right_task_response, 0, buf);
 
-        memset(c->left_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
-        memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
+        if(index==1) memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
 #else
         c->task_request_ts = 0;
         c->task_request[0] = 0;

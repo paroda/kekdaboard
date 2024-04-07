@@ -203,14 +203,14 @@ void work_screen_task_power() {
     case 3: // prev field
     case 4: // next field
         old_field = field;
-        field = (req[2]==2)
+        field = (req[2]==3)
             ? (field>0 ? field-1 : FIELD_COUNT-1)
             : (field==FIELD_COUNT-1 ? 0 : field+1);
         update_screen(old_field, field);
         break;
     case 5: // prev value
     case 6: // next value
-        set_field(field, req[2]==4 ? select_prev_value(field) : select_next_value(field));
+        set_field(field, req[2]==5 ? select_prev_value(field) : select_next_value(field));
         dirty = true;
         update_screen(field, field);
         break;
