@@ -14,6 +14,7 @@
       (throw (ex-info "File not found!" {})))
     (println "Deploying file length:" (.length f))
     (flush)
+    (Thread/sleep 1000)
     (with-open [sock (Socket. server-ip server-port)
                 sos (.getOutputStream sock)
                 sis (.getInputStream sock)

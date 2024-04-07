@@ -319,8 +319,5 @@ void core0_main() {
         }
 
         cyw43_arch_poll();
-        cyw43_arch_wait_for_work_until(make_timeout_time_ms(1));
-
-        sleep_ms(1);
-    }
+     }
 }

@@ -39,7 +39,7 @@ kbd_system_t kbd_system = {
 
 #ifdef KBD_NODE_AP
         .active_ts = 0,
-        .idle_minutes = 0,
+        .idle_minutes = 5,
 #endif
 
 #ifdef KBD_NODE_LEFT
@@ -56,7 +56,7 @@ kbd_system_t kbd_system = {
         },
         .pixel_config = {
             .color = 0x0f000f, // magenta
-            .anim_style = pixel_anim_style_FADE, // fade
+            .anim_style = pixel_anim_style_FIXED, // fade
             .anim_cycles = 30 // not applicable when fixed
         },
 
@@ -98,7 +98,7 @@ kbd_system_t kbd_system = {
 
     .firmware_downloading = false,
 
-    .pixels_on = true,
+    .pixels_on = false,
     .screen = kbd_info_screen_welcome,
     .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
     .backlight = 30, // 30%

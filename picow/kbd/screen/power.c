@@ -9,17 +9,15 @@
 
 #ifdef KBD_NODE_AP
 static flash_dataset_t* fd;
-#else
-static uint8_t* fd_pos;
 #endif
 
 #ifdef KBD_NODE_AP
 
 void handle_screen_event_power(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->task_request;
     uint8_t* lreq = c->left_task_request;
     uint8_t* lres = c->left_task_response;
+    uint8_t* data = fd->data;
 
     if(is_nav_event(event)) return;
 
@@ -27,9 +25,10 @@ void handle_screen_event_power(kbd_event_t event) {
     case kbd_screen_event_INIT:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
-        lreq[3] = 2;
-        lreq[4] = kbd_system.backlight;
-        lreq[5] = c->idle_minutes;
+        lreq[3] = 3;
+        lreq[4] = fd->pos;
+        lreq[5] = kbd_system.backlight;
+        lreq[6] = c->idle_minutes;
         break;
     case kbd_screen_event_SAVE:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
@@ -55,32 +54,25 @@ void handle_screen_event_power(kbd_event_t event) {
         break;
     case kbd_screen_event_RESPONSE:
         if(lres[0] && lres[1]==THIS_SCREEN && lres[2]==1) {
-            init_task_request(req, &c->task_request_ts, THIS_SCREEN);
-            req[2] = 1;
-            req[3] = 2;
-            req[4] = kbd_system.backlight = lres[4];
-            req[5] = c->idle_minutes = lres[5];
+            // save to flash
+            data[0] = CONFIG_VERSION;
+            data[1] = lres[4]; // backlight
+            data[2] = lres[5]; // idle_minutes
+            flash_store_save(fd);
+            // show on lcd
+            init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+            lreq[2] = 1;
+            lreq[3] = 3;
+            lreq[4] = fd->pos;
+            lreq[5] = data[1];
+            lreq[6] = data[2];
         }
         break;
     default: break;
     }
 }
 
-void work_screen_task_power() {
-    kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->task_request;
-
-    uint8_t* data = fd->data;
-    switch(req[2]) {
-    case 1: // save flash
-        data[0] = CONFIG_VERSION;
-        data[1] = req[4]; // backlight
-        data[2] = req[5]; // idle_minutes
-        flash_store_save(fd);
-        break;
-    default: break;
-    }
-}
+void work_screen_task_power() {}
 
 #endif
 
@@ -88,6 +80,7 @@ void work_screen_task_power() {
 
 #define FIELD_COUNT 2
 
+static uint8_t fd_pos;
 static uint8_t backlight;
 static uint8_t idle_minutes; // 0xFF means never
 static uint8_t field;
@@ -160,7 +153,7 @@ static void init_screen() {
     lcd_canvas_clear(cv);
 
     char txt[16];
-    sprintf(txt, "Power-%04d", *fd_pos);
+    sprintf(txt, "Power-%04d", fd_pos);
     lcd_canvas_text(cv, 65, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
     lcd_canvas_text(cv, 20, 60, "Backlight", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
@@ -201,18 +194,17 @@ void work_screen_task_power() {
     uint8_t old_field;
     switch(req[2]) {
     case 1: // init
-    case 2: // save
-        if(req[2]==1) {
-            backlight = req[4];
-            idle_minutes = req[5];
-        } else {
-            res[2] = 1;
-            res[3] = 2;
-            res[4] = backlight;
-            res[5] = idle_minutes;
-        }
+        fd_pos = req[4];
+        backlight = req[5];
+        idle_minutes = req[6];
         field = 0; dirty = false;
         init_screen();
+        break;
+    case 2: // save
+        res[2] = 1;
+        res[3] = 2;
+        res[4] = backlight;
+        res[5] = idle_minutes;
         break;
     case 3: // prev field
     case 4: // next field
@@ -260,10 +252,7 @@ void apply_config_screen_data_power() {
 
 #else // left/right
 
-void init_config_screen_data_power() {
-    uint8_t si = get_screen_index(THIS_SCREEN);
-    fd_pos = kbd_system.core1.flash_data_pos+si;
-}
+void init_config_screen_data_power() {} // no action
 void apply_config_screen_data_power() {} // no action
 
 #endif

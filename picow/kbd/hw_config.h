@@ -14,14 +14,14 @@
 
 #define hw_led_pixel_count 42 // each side
 
-#define hw_inst_SPI 0
-#define hw_gpio_CLK 2
-#define hw_gpio_MOSI 3
-#define hw_gpio_MISO 4
-
 //////////////////////////////////////////////////////////// ACCESS POINT
 
 #ifdef KBD_NODE_AP
+
+#define hw_inst_SPI 0
+#define hw_gpio_CLK 6
+#define hw_gpio_MOSI 7
+#define hw_gpio_MISO 4
 
 #define hw_gpio_CS_flash 5
 #define hw_gpio_LED_LEFT 10
@@ -35,6 +35,11 @@
 //////////////////////////////////////////////////////////// LEFT NODE
 
 #ifdef KBD_NODE_LEFT
+
+#define hw_inst_SPI 0
+#define hw_gpio_CLK 2
+#define hw_gpio_MOSI 3
+#define hw_gpio_MISO 4
 
 #define hw_inst_I2C 1
 #define hw_gpio_SCL 27
@@ -74,6 +79,11 @@
 //////////////////////////////////////////////////////////// RIGHT NODE
 
 #ifdef KBD_NODE_RIGHT
+
+#define hw_inst_SPI 0
+#define hw_gpio_CLK 2
+#define hw_gpio_MOSI 3
+#define hw_gpio_MISO 4
 
 #define hw_gpio_LED 28
 

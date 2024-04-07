@@ -28,8 +28,8 @@ void lcd_display_head_task(void* param) {
     kbd_system_core1_t* c = &kbd_system.core1;
     static uint8_t old_state[10];
     uint8_t state[10] = {
-        is_config_screen(kbd_system.screen),                            // 0
-        c->temperature,                                         // 1
+        is_config_screen(kbd_system.screen),              // 0
+        c->temperature,                                   // 1
         c->date.hour,                                     // 2
         c->date.minute,                                   // 3
         c->date.weekday%8,                                // 4
@@ -456,8 +456,8 @@ void core1_main() {
         process_idle();
 
         // check connection status
-        kbd_system.left_active = board_millis() < (kbd_system.sb_left_key_press->ts/1000)+20;
-        kbd_system.right_active = board_millis() < (kbd_system.sb_right_key_press->ts/1000)+20;
+        kbd_system.left_active = board_millis() < (kbd_system.sb_left_key_press->ts/1000)+1000;
+        kbd_system.right_active = board_millis() < (kbd_system.sb_right_key_press->ts/1000)+1000;
 
         // set left/right connection status led
         kbd_system.led_left = kbd_system.left_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
@@ -472,7 +472,7 @@ void core1_main() {
         do_if_elapsed(&proc_last_ms, 20, NULL, process_sync);
 
         // check connection
-        kbd_system.ap_connected = board_millis() < (c->state_ts/1000)+20;
+        kbd_system.ap_connected = board_millis() < (c->state_ts/1000)+1000;
 
         // use board led for ap connection status
         kbd_system.ledB = kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;

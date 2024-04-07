@@ -41,7 +41,9 @@ void udp_server_recv(void* arg, struct udp_pcb* pcb, struct pbuf* p,
         pbuf_copy_partial(p, server->recv_buf[index], p->tot_len-1, 1);
     }
     pbuf_free(p);
+#ifdef KBD_NODE_AP
     udp_server_send(server, index, pcb, addr, port);
+#endif
 }
 
 bool udp_server_open(udp_server_t* server) {

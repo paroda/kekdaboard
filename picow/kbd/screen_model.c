@@ -130,6 +130,12 @@ void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint
 #ifdef KBD_NODE_AP
 
 void handle_screen_event(kbd_event_t event) {
+    static kbd_event_t pending_event = kbd_event_NONE;
+    if(event==kbd_event_NONE) {
+        event = pending_event;
+        pending_event = kbd_event_NONE;
+    }
+
     uint8_t* req = kbd_system.core1.task_request;
     uint8_t* res = kbd_system.core1.task_response;
     uint8_t* lreq = kbd_system.core1.left_task_request;
@@ -140,6 +146,7 @@ void handle_screen_event(kbd_event_t event) {
     if((req[0] && req[0]!=res[0])  // check req[0] for comm reset scenario
        || (lreq[0] && lreq[0]!=lres[0])
        || (rreq[0] && rreq[0]!=rres[0])) {
+        pending_event = event;
         return; // pending tasks
     }
 
@@ -155,14 +162,16 @@ void handle_screen_event(kbd_event_t event) {
     if((res[0] && res[0]!=res_last_id)  // check res[0] for comm reset scenario
        || (lres[0] && lres[0]!=lres_last_id)
        || (rres[0] && rres[0]!=rres_last_id)) {
-        // process response command for this screen
-        if((res[0] && res[1]==screen)
-           || (lres[0] && lres[1]==screen)
-           || (rres[0] && rres[1]==screen))
-            event = kbd_screen_event_RESPONSE;
         res_last_id = res[0];
         lres_last_id = lres[0];
         rres_last_id = rres[0];
+        // process response command for this screen if any
+        if((res[0] && res[1]==screen && res[2])
+           || (lres[0] && lres[1]==screen && lres[2])
+           || (rres[0] && rres[1]==screen && rres[2])) {
+            pending_event = event;
+            event = kbd_screen_event_RESPONSE;
+        }
     }
 
     if(is_nav_event(event)) { // switch to screen init event if nav event
@@ -173,8 +182,7 @@ void handle_screen_event(kbd_event_t event) {
         else if(event == kbd_screen_event_EXIT && config) {
             config = false;
             si = 0;
-        }
-        else if(event == kbd_screen_event_NEXT) {
+        } else if(event == kbd_screen_event_NEXT) {
             si = si+1<n ? si+1 : 0;
         } else if(event == kbd_screen_event_PREV) {
             si = si>0 ? si-1 : n-1;
