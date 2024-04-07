@@ -67,10 +67,10 @@ void init_task_response(uint8_t* task_response, uint64_t* task_response_ts, uint
 #ifdef KBD_NODE_AP
 typedef void screen_event_handler_t(kbd_event_t event); // handler user raised events
 screen_event_handler_t handle_screen_event;
-#endif
-
+#else
 typedef void screen_task_worker_t(); // work on the screen tasks
 screen_task_worker_t work_screen_task;
+#endif
 
 typedef void config_screen_data_initiator_t();
 config_screen_data_initiator_t init_config_screen_data; // system data -> screen data -> flash data

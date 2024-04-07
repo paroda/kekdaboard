@@ -33,17 +33,11 @@ typedef struct {
 static tb_motion_config_t tb_motion_config;
 
 #ifdef KBD_NODE_AP
-static flash_dataset_t* fd;
-#else
-static uint8_t* fd_data;
-static uint8_t* fd_pos;
-#endif
 
-#ifdef KBD_NODE_AP
+static flash_dataset_t* fd;
 
 void handle_screen_event_tb(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->task_request;
     uint8_t* lreq = c->left_task_request;
     uint8_t* lres = c->left_task_response;
 
@@ -53,8 +47,8 @@ void handle_screen_event_tb(kbd_event_t event) {
     case kbd_screen_event_INIT:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
-        lreq[3] = sizeof(tb_motion_config_t);
-        memcpy(lreq+4, &tb_motion_config, lreq[3]);
+        lreq[3] = fd->pos;
+        memcpy(lreq+4, &tb_motion_config, sizeof(tb_motion_config_t));
         break;
     case kbd_screen_event_SAVE:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
@@ -78,26 +72,16 @@ void handle_screen_event_tb(kbd_event_t event) {
         break;
     case kbd_screen_event_RESPONSE:
         if(lres[0] && lres[1]==THIS_SCREEN && lres[2]==1) {
-            init_task_request(req, &c->task_request_ts, THIS_SCREEN);
-            req[2] = 1;
-            req[3] = lres[3];
-            memcpy(req+4, lres+4, lres[3]);
+            // save to flash
+            memcpy(&tb_motion_config, lres+4, sizeof(tb_motion_config_t));
+            memcpy(fd->data, &tb_motion_config, sizeof(tb_motion_config_t));
+            flash_store_save(fd);
+            // show on lcd
+            init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
+            lreq[2] = 1;
+            lreq[3] = fd->pos;
+            memcpy(lreq+4, fd->data, sizeof(tb_motion_config_t));
         }
-        break;
-    default: break;
-    }
-}
-
-void work_screen_task_tb() {
-    kbd_system_core1_t* c = &kbd_system.core1;
-    uint8_t* req = c->task_request;
-
-    uint8_t* data = fd->data;
-    switch(req[2]) {
-    case 1: // save flash
-        memcpy(&tb_motion_config, req+4, req[3]);
-        memcpy(data, &tb_motion_config, sizeof(tb_motion_config_t));
-        flash_store_save(fd);
         break;
     default: break;
     }
@@ -109,6 +93,7 @@ void work_screen_task_tb() {
 
 #define FIELD_COUNT 5
 
+static uint8_t fd_pos;
 static uint8_t field;
 static bool dirty;
 
@@ -224,7 +209,7 @@ static void init_screen() {
     lcd_canvas_clear(cv);
 
     char txt[16];
-    sprintf(txt, "Trackball-%04d", *fd_pos);
+    sprintf(txt, "Trackball-%04d", fd_pos);
     lcd_canvas_text(cv, 43, 10, txt, &lcd_font16, BLUE, LCD_BODY_BG);
 
     lcd_canvas_text(cv, 10, 60, "CPI", &lcd_font24, DARK_GRAY, LCD_BODY_BG);
@@ -300,16 +285,15 @@ void work_screen_task_tb() {
     uint8_t old_field;
     switch(req[2]) {
     case 1: // init
-    case 2: // save
-        if(req[2]==1) {
-            memcpy(&tb_motion_config, req+4, req[3]);
-        } else {
-            res[2] = 1;
-            res[3] = sizeof(tb_motion_config_t);
-            memcpy(res+4, &tb_motion_config, res[3]);
-        }
+        fd_pos = req[3];
+        memcpy(&tb_motion_config, req+4, sizeof(tb_motion_config_t));
         field = 0; dirty = false;
         init_screen();
+        break;
+    case 2: // save
+        res[2] = 1;
+        res[3] = fd_pos;
+        memcpy(res+4, &tb_motion_config, sizeof(tb_motion_config_t));
         break;
     case 3: // select field
         old_field = field;
@@ -344,7 +328,9 @@ void work_screen_task_tb() {
 #endif
 
 #ifdef KBD_NODE_RIGHT
+
 void work_screen_task_tb() {} // no action
+
 #endif
 
 void init_config_screen_data_tb() {
@@ -353,9 +339,7 @@ void init_config_screen_data_tb() {
     fd = kbd_system.core1.flash_datasets[si];
     uint8_t* data = fd->data;
 #else
-    fd_data = kbd_system.core1.flash_data[si];
-    fd_pos = kbd_system.core1.flash_data_pos+si;
-    uint8_t* data = fd_data;
+    uint8_t* data = kbd_system.core1.flash_data[si];
 #endif
 
     memset(data, 0xFF, KBD_TASK_DATA_SIZE); // use 0xFF = erased state in flash
@@ -374,7 +358,8 @@ void apply_config_screen_data_tb() {
 #ifdef KBD_NODE_AP
     uint8_t* data = fd->data;
 #else
-    uint8_t* data = fd_data;
+    uint8_t si = get_screen_index(THIS_SCREEN);
+    uint8_t* data = kbd_system.core1.flash_data[si];
 #endif
     if(data[0]!=CONFIG_VERSION) return;
 

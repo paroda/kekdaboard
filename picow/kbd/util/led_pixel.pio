@@ -6,9 +6,9 @@
 
 .program led_pixel
 
-.define public T1 4
-.define public T2 3
-.define public T3 3
+.define public T1 3
+.define public T2 2
+.define public T3 5
 
 .wrap_target
     set pins, 0 [T1-1]  ; set low

@@ -41,13 +41,15 @@ void udp_server_recv(void* arg, struct udp_pcb* pcb, struct pbuf* p,
         pbuf_copy_partial(p, server->recv_buf[index], p->tot_len-1, 1);
     }
     pbuf_free(p);
-#ifdef KBD_NODE_AP
-    udp_server_send(server, index, pcb, addr, port);
-#endif
+    if(server->comm_task) {
+        server->comm_task(&index);
+        udp_server_send(server, index, pcb, addr, port);
+    }
 }
 
-bool udp_server_open(udp_server_t* server) {
+bool udp_server_open(udp_server_t* server, void (*comm_task)(void*)) {
     server->pcb = udp_new();
+    server->comm_task = comm_task;
 
 #ifdef KBD_NODE_AP
     if(udp_bind(server->pcb, IP_ADDR_ANY, hw_udp_port) != ERR_OK) {

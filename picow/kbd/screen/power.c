@@ -8,10 +8,8 @@
 #define CONFIG_VERSION 0x01
 
 #ifdef KBD_NODE_AP
-static flash_dataset_t* fd;
-#endif
 
-#ifdef KBD_NODE_AP
+static flash_dataset_t* fd;
 
 void handle_screen_event_power(kbd_event_t event) {
     kbd_system_core1_t* c = &kbd_system.core1;
@@ -25,10 +23,9 @@ void handle_screen_event_power(kbd_event_t event) {
     case kbd_screen_event_INIT:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
         lreq[2] = 1;
-        lreq[3] = 3;
-        lreq[4] = fd->pos;
-        lreq[5] = kbd_system.backlight;
-        lreq[6] = c->idle_minutes;
+        lreq[3] = fd->pos;
+        lreq[4] = kbd_system.backlight;
+        lreq[5] = c->idle_minutes;
         break;
     case kbd_screen_event_SAVE:
         init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
@@ -62,17 +59,14 @@ void handle_screen_event_power(kbd_event_t event) {
             // show on lcd
             init_task_request(lreq, &c->left_task_request_ts, THIS_SCREEN);
             lreq[2] = 1;
-            lreq[3] = 3;
-            lreq[4] = fd->pos;
-            lreq[5] = data[1];
-            lreq[6] = data[2];
+            lreq[3] = fd->pos;
+            lreq[4] = data[1];
+            lreq[5] = data[2];
         }
         break;
     default: break;
     }
 }
-
-void work_screen_task_power() {}
 
 #endif
 
@@ -194,15 +188,15 @@ void work_screen_task_power() {
     uint8_t old_field;
     switch(req[2]) {
     case 1: // init
-        fd_pos = req[4];
-        backlight = req[5];
-        idle_minutes = req[6];
+        fd_pos = req[3];
+        backlight = req[4];
+        idle_minutes = req[5];
         field = 0; dirty = false;
         init_screen();
         break;
     case 2: // save
         res[2] = 1;
-        res[3] = 2;
+        res[3] = fd_pos;
         res[4] = backlight;
         res[5] = idle_minutes;
         break;
@@ -227,7 +221,9 @@ void work_screen_task_power() {
 #endif
 
 #ifdef KBD_NODE_RIGHT
+
 void work_screen_task_power() {} // no action
+
 #endif
 
 #ifdef KBD_NODE_AP

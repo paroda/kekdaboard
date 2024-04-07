@@ -62,8 +62,6 @@ void handle_screen_event_welcome(kbd_event_t event) {
     }
 }
 
-void work_screen_task_welcome() {}
-
 #else // LEFT/RIGHT
 
 void work_screen_task_welcome() {

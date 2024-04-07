@@ -106,77 +106,75 @@ typedef enum {
 #ifdef KBD_NODE_AP
 
 static void comm_task(void* param) {
-    (void) param;
-    for(uint8_t index=0; index<2; index++) {
-        volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
-        udp_server_t* server = &kbd_system.core0.udp_server;
-        uint8_t* recv_buf = server->recv_buf[index];
-        uint8_t* recv_size = server->recv_size+index;
-        uint8_t* send_buf = server->send_buf[index];
-        uint8_t* send_size = server->send_size+index;
-        if(*recv_size>0) {
-            printf("Received UDP: size: %d, state: %d\n", *recv_size, recv_buf[0]);
-            update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
-            static uint8_t ack_req_id[2] = {0,0}; // last request acknowledged
-            static uint8_t rcv_res_id[2] = {0,0}; // last response received
-            if(*comm_state==kbd_comm_state_data) {
-                // recv: + key_press, tb_motion(right only), task_response
-                int bytes_left = *recv_size - 1;
-                uint8_t* buf = recv_buf+1;
-                while(bytes_left>0) {
-                    shared_buffer_t* sb = NULL;
-                    switch(buf[0]) {
-                    case comm_data_type_key_press:
-                        sb = index==0 ? kbd_system.sb_left_key_press : kbd_system.sb_right_key_press;
-                        break;
-                    case comm_data_type_tb_motion:
-                        sb = kbd_system.sb_tb_motion;
-                        break;
-                    case comm_data_type_task_response:
-                        sb = index==0 ? kbd_system.sb_left_task_response : kbd_system.sb_right_task_response;
-                        rcv_res_id[index] = buf[1];
-                        break;
-                    case comm_data_type_task_id:
-                        ack_req_id[index] = buf[1];
-                    default: break;
-                    }
-                    if(sb) {
-                        write_shared_buffer(sb, time_us_64(), buf+1);
-                        bytes_left -= (1 + sb->size);
-                        buf += (1 + sb->size);
-                    } else if(buf[0]==comm_data_type_task_id) {
-                        bytes_left -= 2;
-                        buf += 2;
-                    } else {
-                        bytes_left = 0; // stop if encountered invalid
-                    }
+    uint8_t index = *((uint8_t*) param);
+    volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
+    udp_server_t* server = &kbd_system.core0.udp_server;
+    uint8_t* recv_buf = server->recv_buf[index];
+    uint8_t* recv_size = server->recv_size+index;
+    uint8_t* send_buf = server->send_buf[index];
+    uint8_t* send_size = server->send_size+index;
+    if(*recv_size>0) {
+        printf("Received UDP: size: %d, state: %d\n", *recv_size, recv_buf[0]);
+        update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
+        static uint8_t ack_req_id[2] = {0,0}; // last request acknowledged
+        static uint8_t rcv_res_id[2] = {0,0}; // last response received
+        if(*comm_state==kbd_comm_state_data) {
+            // recv: + key_press, tb_motion(right only), task_response
+            int bytes_left = *recv_size - 1;
+            uint8_t* buf = recv_buf+1;
+            while(bytes_left>0) {
+                shared_buffer_t* sb = NULL;
+                switch(buf[0]) {
+                case comm_data_type_key_press:
+                    sb = index==0 ? kbd_system.sb_left_key_press : kbd_system.sb_right_key_press;
+                    break;
+                case comm_data_type_tb_motion:
+                    sb = kbd_system.sb_tb_motion;
+                    break;
+                case comm_data_type_task_response:
+                    sb = index==0 ? kbd_system.sb_left_task_response : kbd_system.sb_right_task_response;
+                    rcv_res_id[index] = buf[1];
+                    break;
+                case comm_data_type_task_id:
+                    ack_req_id[index] = buf[1];
+                default: break;
                 }
-                *recv_size = 0; // mark recv done
-                // package data to send
-                buf = send_buf + *send_size;
-                // add system state
-                static uint64_t state_ts = 0;
-                buf[0] = comm_data_type_system_state;
-                read_shared_buffer(kbd_system.sb_state, &state_ts, buf+1);
-                *send_size += (1 + kbd_system.sb_state->size);
-                buf += (1 + kbd_system.sb_state->size);
-                // add request
-                static uint64_t req_ts[2] = {0,0};
-                shared_buffer_t* sb = index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request;
-                read_shared_buffer(sb, req_ts+index, buf+1);
-                if(buf[1] != ack_req_id[index]) {
-                    buf[0] = comm_data_type_task_request;
-                    *send_size += (1 + sb->size);
+                if(sb) {
+                    write_shared_buffer(sb, time_us_64(), buf+1);
+                    bytes_left -= (1 + sb->size);
                     buf += (1 + sb->size);
+                } else if(buf[0]==comm_data_type_task_id) {
+                    bytes_left -= 2;
+                    buf += 2;
+                } else {
+                    bytes_left = 0; // stop if encountered invalid
                 }
-                // acknowledge resposne received
-                buf[0] = comm_data_type_task_id;
-                buf[1] = rcv_res_id[index];
-                *send_size += 2;
-                buf += 2;
-            } else {
-                *recv_size = 0;
             }
+            *recv_size = 0; // mark recv done
+            // package data to send
+            buf = send_buf + *send_size;
+            // add system state
+            static uint64_t state_ts = 0;
+            buf[0] = comm_data_type_system_state;
+            read_shared_buffer(kbd_system.sb_state, &state_ts, buf+1);
+            *send_size += (1 + kbd_system.sb_state->size);
+            buf += (1 + kbd_system.sb_state->size);
+            // add request
+            static uint64_t req_ts[2] = {0,0};
+            shared_buffer_t* sb = index==0 ? kbd_system.sb_left_task_request : kbd_system.sb_right_task_request;
+            read_shared_buffer(sb, req_ts+index, buf+1);
+            if(buf[1] != ack_req_id[index]) {
+                buf[0] = comm_data_type_task_request;
+                *send_size += (1 + sb->size);
+                buf += (1 + sb->size);
+            }
+            // acknowledge resposne received
+            buf[0] = comm_data_type_task_id;
+            buf[1] = rcv_res_id[index];
+            *send_size += 2;
+            buf += 2;
+        } else {
+            *recv_size = 0;
         }
     }
 }
@@ -294,13 +292,14 @@ void core0_main() {
 
     tcp_server_open(&kbd_system.core0.tcp_server, KBD_NODE_NAME);
 
-    udp_server_open(&kbd_system.core0.udp_server);
-
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
-    uint32_t ks_last_ms = board_millis();
+#ifdef KBD_NODE_AP
+    udp_server_open(&kbd_system.core0.udp_server, comm_task);
+#else
+    udp_server_open(&kbd_system.core0.udp_server, NULL);
+    uint32_t ts = board_millis();
+    uint32_t ks_last_ms = ts;
+    uint32_t comm_last_ms = ts+2;
 #endif
-
-    uint32_t comm_last_ms = board_millis();
 
     while(true) {
         if(!kbd_system.firmware_downloading)
@@ -312,12 +311,12 @@ void core0_main() {
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
             // scan key presses, @ 5 ms
             do_if_elapsed(&ks_last_ms, 5, NULL, key_scan_task);
-#endif
 
             // publish UDP, @ 5 ms
-            do_if_elapsed(&comm_last_ms, 5, NULL, comm_task);
+            do_if_elapsed(&comm_last_ms, 10, NULL, comm_task);
+#endif
         }
 
         cyw43_arch_poll();
-     }
+    }
 }

@@ -30,12 +30,12 @@ kbd_system_t kbd_system = {
         .right_task_request = {0},   // default to 0
         .right_task_response_ts = 0,
         .right_task_response = {0},  // default to 0
-#endif
-
+#else
         .task_request_ts = 0,
         .task_request = {0},   // default to 0
         .task_response_ts = 0,
         .task_response = {0},  // default to 0
+#endif
 
 #ifdef KBD_NODE_AP
         .active_ts = 0,

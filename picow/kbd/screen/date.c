@@ -159,7 +159,9 @@ void work_screen_task_date() {
     }
 }
 
-#else
+#endif
+
+#ifdef KBD_NODE_RIGHT
 
 void work_screen_task_date() {} // no action
 

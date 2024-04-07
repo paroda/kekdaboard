@@ -227,12 +227,12 @@ typedef struct {
     uint8_t right_task_request[KBD_TASK_SIZE];
     uint64_t right_task_response_ts;
     uint8_t right_task_response[KBD_TASK_SIZE];
-#endif
-
+#else
     uint64_t task_request_ts;
     uint8_t task_request[KBD_TASK_SIZE];
     uint64_t task_response_ts;
     uint8_t task_response[KBD_TASK_SIZE];
+#endif
 
 #ifdef KBD_NODE_AP
     uint64_t active_ts; // timestamp of last activity (input_processor)

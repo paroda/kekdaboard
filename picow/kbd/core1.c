@@ -248,11 +248,6 @@ void process_inputs(void* param) {
     usb_hid_task();
 }
 
-void process_requests() {
-    // respond to request
-    work_screen_task();
-}
-
 #else // LEFT/RIGHT
 
 void pixel_task(void* param) {
@@ -269,19 +264,17 @@ void pixel_task(void* param) {
     led_pixel_set(kbd_hw.led_pixel, colors);
 }
 
-void process_sync() {
+void process_requests() {
     kbd_system_core1_t* c = &kbd_system.core1;
-    if(kbd_system.sb_state->ts > c->state_ts)
+    if(kbd_system.sb_state->ts > c->state_ts) {
         read_shared_buffer(kbd_system.sb_state, &c->state_ts, &c->state);
 
-    kbd_system.backlight = c->state.backlight;
-    kbd_system.pixels_on = c->state.flags & KBD_FLAG_PIXELS_ON;
-    kbd_system.usb_hid_state = c->state.usb_hid_state;
-    kbd_system.screen = c->state.screen;
-}
+        kbd_system.backlight = c->state.backlight;
+        kbd_system.pixels_on = c->state.flags & KBD_FLAG_PIXELS_ON;
+        kbd_system.usb_hid_state = c->state.usb_hid_state;
+        kbd_system.screen = c->state.screen;
+    }
 
-
-void process_requests() {
     // get the request
     shared_buffer_t* sb = kbd_system.sb_task_request;
     if(sb->ts > kbd_system.core1.task_request_ts)
@@ -311,26 +304,28 @@ void validate_comm_state(uint8_t index) {
         c->left_task_response_ts = 0;
         c->left_task_response[0] = 0;
 
+        write_shared_buffer(kbd_system.sb_left_task_request, 0, buf);
+        write_shared_buffer(kbd_system.sb_left_task_response, 0, buf);
+
         c->right_task_request_ts = 0;
         c->right_task_request[0] = 0;
         c->right_task_response_ts = 0;
         c->right_task_response[0] = 0;
 
-        memset(c->left_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
-        memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
-
-        write_shared_buffer(kbd_system.sb_left_task_request, 0, buf);
-        write_shared_buffer(kbd_system.sb_left_task_response, 0, buf);
         write_shared_buffer(kbd_system.sb_right_task_request, 0, buf);
         write_shared_buffer(kbd_system.sb_right_task_response, 0, buf);
+
+        memset(c->left_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
+        memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
 #else
-        write_shared_buffer(kbd_system.sb_task_request, 0, buf);
-        write_shared_buffer(kbd_system.sb_task_response, 0, buf);
-#endif
         c->task_request_ts = 0;
         c->task_request[0] = 0;
         c->task_response_ts = 0;
         c->task_response[0] = 0;
+
+        write_shared_buffer(kbd_system.sb_task_request, 0, buf);
+        write_shared_buffer(kbd_system.sb_task_response, 0, buf);
+#endif
 
         // restore comm
         kbd_system.comm_state[index] = kbd_comm_state_init;
@@ -348,7 +343,9 @@ void core1_main() {
 #endif
 
     uint32_t ts = board_millis();
+#ifdef KBD_NODE_AP
     uint32_t proc_last_ms = ts;
+#endif
 #ifdef KBD_NODE_LEFT
     uint32_t lcd_last_ms = ts;
     uint32_t rtc_last_ms = ts;
@@ -468,8 +465,8 @@ void core1_main() {
         // set key switch leds, @ 50 ms
         do_if_elapsed(&pixel_last_ms, 50, NULL, pixel_task);
 
-        // sync the state from master
-        do_if_elapsed(&proc_last_ms, 20, NULL, process_sync);
+        // sync state and execute on-demand tasks
+        process_requests();
 
         // check connection
         kbd_system.ap_connected = board_millis() < (c->state_ts/1000)+1000;
@@ -478,9 +475,6 @@ void core1_main() {
         kbd_system.ledB = kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
 
 #endif
-
-        // execute on-demand tasks
-        process_requests();
 
         sleep_ms(1);
     }

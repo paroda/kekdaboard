@@ -193,7 +193,9 @@ void work_screen_task_scan() {
     }
 }
 
-#else
+#endif
+
+#ifdef KBD_NODE_RIGHT
 
 void work_screen_task_scan() {} // no action
 
