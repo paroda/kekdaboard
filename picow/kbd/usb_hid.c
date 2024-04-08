@@ -19,6 +19,16 @@ static struct {
     uint32_t ms;
 } tud_fail_counter;
 
+static struct {
+    volatile uint32_t values[8];
+    // 0 - max loop counter
+    // 1 - max_poll_ms
+} core0_debug;
+
+void set_core0_debug(uint8_t index, uint32_t loop_max_count) {
+    core0_debug.values[index] = loop_max_count;
+}
+
 static bool send_hid_gamepad_report() {
     // Not Used
     return true;
@@ -250,7 +260,8 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
             keyboard->Kana = kbd_leds & KEYBOARD_LED_KANA;
         } else if (instance == ITF_NUM_HID2) {
             // Process Generic In/Out
-            tud_hid_n_report(instance, 0, &tud_fail_counter, sizeof(tud_fail_counter));
+            /* tud_hid_n_report(instance, 0, &tud_fail_counter, sizeof(tud_fail_counter)); */
+            tud_hid_n_report(instance, 0, &core0_debug, sizeof(core0_debug));
         }
     }
 }

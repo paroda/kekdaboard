@@ -7,6 +7,10 @@
 #include "hw_model.h"
 #include "data_model.h"
 
+#ifdef KBD_NODE_AP
+#include "usb_hid.h"
+#endif
+
 static void toggle_led(void* param) {
     kbd_led_t* led = (kbd_led_t*) param;
     led->on = !led->on;
@@ -38,8 +42,30 @@ static int32_t led_millis_to_toggle(kbd_led_t* led, kbd_led_state_t state) {
     return -1;
 }
 
-static void led_task() {
 #ifdef KBD_NODE_AP
+static void update_loop_counter(void* param) {
+    static uint32_t loop_counter = 0;
+    static uint32_t max_loop_counter = 0;
+    static uint32_t loop_time = 0;
+    uint32_t s = board_millis()/10000;
+    if(loop_time==s) {
+        loop_counter++;
+    }
+    else {
+        max_loop_counter = loop_counter;
+        loop_counter = 0;
+        loop_time = s;
+        set_core0_debug(0, max_loop_counter/10);
+    }
+}
+#endif
+
+static void led_task() {
+
+#ifdef KBD_NODE_AP
+    static uint32_t ms=0;
+    do_if_elapsed(&ms, 50, NULL, update_loop_counter);
+
     static uint32_t led_left_last_ms = 0;
     int32_t led_left_ms = led_millis_to_toggle(&kbd_hw.led_left, kbd_system.led_left);
     if(led_left_ms>=0) do_if_elapsed(&led_left_last_ms, led_left_ms, &kbd_hw.led_left, toggle_led);
@@ -179,6 +205,25 @@ static void comm_task(void* param) {
     }
 }
 
+void wifi_poll(void* param) {
+    static uint32_t max_poll_ms = 0;
+    static uint32_t poll_ms = 0;
+    static uint32_t poll_time = 0;
+    uint32_t t0 = board_millis();
+    cyw43_arch_poll();
+    uint32_t t1 = board_millis();
+    uint32_t dt = t1 - t0;
+    uint32_t s = t1/10000;
+    if(poll_time == s) {
+        if(dt>poll_ms) poll_ms=dt;
+    } else {
+        max_poll_ms = poll_ms;
+        poll_ms = 0;
+        poll_time = s;
+        set_core0_debug(1, max_poll_ms);
+    }
+}
+
 #else
 
 static void key_scan_task(void* param) {
@@ -273,6 +318,10 @@ static void comm_task(void* param) {
     udp_server_send(server, index, NULL, NULL, 0);
 }
 
+void wifi_poll(void* param) {
+    cyw43_arch_poll();
+}
+
 #endif
 
 void core0_main() {
@@ -292,11 +341,13 @@ void core0_main() {
 
     tcp_server_open(&kbd_system.core0.tcp_server, KBD_NODE_NAME);
 
+    uint32_t ts = board_millis();
+
 #ifdef KBD_NODE_AP
     udp_server_open(&kbd_system.core0.udp_server, comm_task);
 #else
     udp_server_open(&kbd_system.core0.udp_server, NULL);
-    uint32_t ts = board_millis();
+
     uint32_t ks_last_ms = ts;
     uint32_t comm_last_ms = ts+2;
 #endif
@@ -317,6 +368,6 @@ void core0_main() {
 #endif
         }
 
-        cyw43_arch_poll();
+        do_if_elapsed(&ts, 1, NULL, wifi_poll);
     }
 }
