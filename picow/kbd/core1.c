@@ -346,6 +346,10 @@ void validate_comm_state(uint8_t index) {
 
 ////// MAIN
 
+static void set_led(volatile kbd_led_state_t* led, kbd_led_state_t value) {
+    if(*led != value) *led = value;
+}
+
 void core1_main() {
 #ifdef KBD_NODE_AP
     kbd_system.led_left = kbd_led_state_BLINK_FAST;
@@ -405,13 +409,14 @@ void core1_main() {
         do_if_elapsed(&lcd_last_ms, 100, NULL, lcd_display_head_task);
 
         // set the num lock led
-        kbd_system.led = kbd_system.ap_connected ?
-            (kbd_system.usb_hid_state==kbd_usb_hid_state_MOUNTED ?
-             (c->state.flags & KBD_FLAG_NUM_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
-             (kbd_system.usb_hid_state==kbd_usb_hid_state_UNMOUNTED ?
-              kbd_led_state_BLINK_HIGH :
-              kbd_led_state_BLINK_LOW)) :
-            kbd_led_state_BLINK_FAST;
+        set_led(&kbd_system.led,
+                kbd_system.ap_connected ?
+                (kbd_system.usb_hid_state==kbd_usb_hid_state_MOUNTED ?
+                 (c->state.flags & KBD_FLAG_NUM_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
+                 (kbd_system.usb_hid_state==kbd_usb_hid_state_UNMOUNTED ?
+                  kbd_led_state_BLINK_HIGH :
+                  kbd_led_state_BLINK_LOW)) :
+                kbd_led_state_BLINK_FAST);
 
 #endif
 
@@ -429,9 +434,10 @@ void core1_main() {
         do_if_elapsed(&tb_publish_last_ms, 25, &tbm, tb_scan_task_publish);
 
         // set the caps lock led
-        kbd_system.led = kbd_system.ap_connected ?
-            (c->state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
-            kbd_led_state_BLINK_FAST;
+        set_led(&kbd_system.led,
+                kbd_system.ap_connected ?
+                (c->state.flags & KBD_FLAG_CAPS_LOCK ? kbd_led_state_ON : kbd_led_state_OFF) :
+                kbd_led_state_BLINK_FAST);
 
 #endif
 
@@ -448,13 +454,13 @@ void core1_main() {
         // set board led to indicate USB
         switch(kbd_system.usb_hid_state) {
         case kbd_usb_hid_state_UNMOUNTED:
-            kbd_system.ledB = kbd_led_state_BLINK_FAST;
+            set_led(&kbd_system.ledB, kbd_led_state_BLINK_FAST);
             break;
         case kbd_usb_hid_state_MOUNTED:
-            kbd_system.ledB = kbd_led_state_BLINK_NORMAL;
+            set_led(&kbd_system.ledB, kbd_led_state_BLINK_NORMAL);
             break;
         case kbd_usb_hid_state_SUSPENDED:
-            kbd_system.ledB = kbd_led_state_BLINK_SLOW;
+            set_led(&kbd_system.ledB, kbd_led_state_BLINK_SLOW);
             break;
         }
 
@@ -469,8 +475,10 @@ void core1_main() {
         kbd_system.right_active = board_millis() < (kbd_system.sb_right_key_press->ts/1000)+1000;
 
         // set left/right connection status led
-        kbd_system.led_left = kbd_system.left_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
-        kbd_system.led_right = kbd_system.right_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
+        set_led(&kbd_system.led_left,
+                kbd_system.left_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW);
+        set_led(&kbd_system.led_right,
+                kbd_system.right_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW);
 
 #else // LEFT/RIGHT
 
@@ -484,7 +492,8 @@ void core1_main() {
         kbd_system.ap_connected = board_millis() < (c->state_ts/1000)+1000;
 
         // use board led for ap connection status
-        kbd_system.ledB = kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW;
+        set_led(&kbd_system.ledB,
+                kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW);
 
 #endif
 
