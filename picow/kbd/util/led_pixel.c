@@ -68,12 +68,9 @@ static inline void encode_pixels(uint32_t* buff, uint32_t* rgb, uint8_t count, u
 void led_pixel_set(led_pixel_t* led, uint32_t* colors_rgb) {
     encode_pixels(led->buff, colors_rgb, led->count, led->buff_size);
     dma_channel_set_read_addr(led->chan, led->buff, true);
-    dma_channel_wait_for_finish_blocking(led->chan);
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 50ms
-    sleep_us(80);
-    pio_sm_set_pins(led->pio, led->sm, 1); // reset, 0 for > 50ms
-    sleep_us(1);
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 50ms
+    /* dma_channel_wait_for_finish_blocking(led->chan); */
+    sleep_ms(2);
+    pio_sm_set_pins(led->pio, led->sm, 0);
     led->on = true;
 }
 
@@ -82,11 +79,7 @@ void led_pixel_set2(led_pixel_t* led, uint32_t* colors_rgb) {
     for(int i=0; i<led->buff_size; i++) {
         pio_sm_put_blocking(led->pio, led->sm, led->buff[i]);
     }
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 50ms
-    sleep_us(80);
-    pio_sm_set_pins(led->pio, led->sm, 1); // reset, 0 for > 50ms
-    sleep_us(1);
-    pio_sm_set_pins(led->pio, led->sm, 0); // reset, 0 for > 50ms
+    pio_sm_set_pins(led->pio, led->sm, 0);
     led->on = true;
 }
 
