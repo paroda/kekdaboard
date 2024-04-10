@@ -117,6 +117,7 @@ kbd_system_t kbd_system = {
     .left_active = false,
     .right_active = false,
 #else
+    .wifi_rssi = 0,
     .ap_connected = false,
 #endif
 

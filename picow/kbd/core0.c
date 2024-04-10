@@ -226,6 +226,14 @@ void wifi_poll(void* param) {
 
 #else
 
+static void rssi_task(void* param) {
+    (void)param;
+    int32_t rssi;
+    // command: 254 WLC_GET_RSSI
+    cyw43_ioctl(&cyw43_state, 254, sizeof(int32_t), (uint8_t*) &rssi, CYW43_ITF_STA);
+    kbd_system.wifi_rssi = rssi;
+}
+
 static void key_scan_task(void* param) {
     (void)param;
     // scan key presses with kbd_hw.ks and save to core0.key_press
@@ -289,10 +297,10 @@ static void comm_task(void* param) {
         buf += (1 + hw_row_count);
 #ifdef KBD_NODE_RIGHT
         // add tb_motion
-        static uint64_t tbm_t = 0;
-        if(kbd_system.sb_tb_motion->ts > tbm_t) {
+        static uint64_t tbm_ts = 0;
+        if(kbd_system.sb_tb_motion->ts > tbm_ts) {
             buf[0] = comm_data_type_tb_motion;
-            read_shared_buffer(kbd_system.sb_tb_motion, &tbm_t, buf+1);
+            read_shared_buffer(kbd_system.sb_tb_motion, &tbm_ts, buf+1);
             *send_size += (1 + kbd_system.sb_tb_motion->size);
             buf += (1 + kbd_system.sb_tb_motion->size);
         }
@@ -342,12 +350,14 @@ void core0_main() {
     tcp_server_open(&kbd_system.core0.tcp_server, KBD_NODE_NAME);
 
     uint32_t ts = board_millis();
+    uint32_t poll_last_ts = ts;
 
 #ifdef KBD_NODE_AP
     udp_server_open(&kbd_system.core0.udp_server, comm_task);
 #else
     udp_server_open(&kbd_system.core0.udp_server, NULL);
 
+    uint32_t rssi_last_ts = ts;
     uint32_t ks_last_ms = ts;
     uint32_t comm_last_ms = ts+2;
 #endif
@@ -360,6 +370,9 @@ void core0_main() {
             led_task();
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+            // get current wifi strength
+            do_if_elapsed(&rssi_last_ts, 1000, NULL, rssi_task);
+
             // scan key presses, @ 5 ms
             do_if_elapsed(&ks_last_ms, 5, NULL, key_scan_task);
 
@@ -368,6 +381,6 @@ void core0_main() {
 #endif
         }
 
-        do_if_elapsed(&ts, 1, NULL, wifi_poll);
+        do_if_elapsed(&poll_last_ts, 1, NULL, wifi_poll);
     }
 }

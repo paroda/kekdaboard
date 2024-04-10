@@ -26,8 +26,8 @@ void lcd_display_head_task(void* param) {
     lcd_update_backlight(kbd_system.backlight);
 
     kbd_system_core1_t* c = &kbd_system.core1;
-    static uint8_t old_state[10];
-    uint8_t state[10] = {
+    static uint8_t old_state[14];
+    uint8_t state[14] = {
         is_config_screen(kbd_system.screen),              // 0
         c->temperature,                                   // 1
         c->date.hour,                                     // 2
@@ -39,9 +39,11 @@ void lcd_display_head_task(void* param) {
         c->state.flags & KBD_FLAG_NUM_LOCK ? 1 : 0,       // 8
         c->state.flags & KBD_FLAG_SCROLL_LOCK ? 1 : 0,    // 9
     };
+    int32_t rssi = kbd_system.wifi_rssi;
+    memcpy(state+10, &rssi, sizeof(int32_t));
 
-    if(memcmp(old_state, state, 10)==0) return; // no change
-    memcpy(old_state, state, 10);
+    if(memcmp(old_state, state, 14)==0) return; // no change
+    memcpy(old_state, state, 14);
 
     char txt[8];
     uint16_t bg = state[0] ? GRAY : BLACK;
@@ -57,6 +59,9 @@ void lcd_display_head_task(void* param) {
     static lcd_canvas_t* cv = NULL;
     if(!cv) cv = lcd_new_canvas(240, 40, bg);
     lcd_canvas_rect(cv, 0, 0, 240, 40, bg, 1, true);
+
+    sprintf(txt, "%d", rssi);
+    lcd_canvas_text(cv, 10, 8, txt, &lcd_font8, fg, bg);
 
     // row1: temperature, time, weekday
     // version : w:11x2=22 h:16, x:5-27
@@ -92,9 +97,9 @@ void lcd_display_head_task(void* param) {
 #ifdef KBD_NODE_RIGHT
 
 void tb_scan_task_capture(void* param) {
+    // sacn the track ball motion and accumulate
     kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
 
-    // scan tb scroll and write to sb_right_tb_motion
     bool has_motion = false;
     bool on_surface = false;
     int16_t dx = 0;
@@ -109,6 +114,7 @@ void tb_scan_task_capture(void* param) {
 }
 
 void tb_scan_task_publish(void* param) {
+    // push out the accumulated motion deltas to shared buffer and clear out
     kbd_tb_motion_t* ds = (kbd_tb_motion_t*) param;
 
     write_shared_buffer(kbd_system.sb_tb_motion, time_us_64(), ds);

@@ -311,6 +311,7 @@ typedef struct {
     volatile bool left_active;
     volatile bool right_active;
 #else // left/right
+    volatile int32_t wifi_rssi; // signal strength
     volatile bool ap_connected;
 #endif
 

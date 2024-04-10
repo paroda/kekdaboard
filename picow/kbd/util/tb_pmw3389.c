@@ -170,8 +170,8 @@ void tb_device_signature(tb_t* tb,
     *motion = res[3];
 }
 
-static void tb_init_device(tb_t* tb, uint8_t gpio_CS,
-                           uint8_t gpio_MT, uint8_t gpio_RST) {
+static void tb_connect_device(tb_t* tb, uint8_t gpio_CS,
+                              uint8_t gpio_MT, uint8_t gpio_RST) {
 
     // register the track-ball as a slave with master spi, MODE 3, 4 MHz
     /// Only 4 MHz works, shouldn't be any higher or lower.
@@ -194,16 +194,7 @@ static void tb_init_device(tb_t* tb, uint8_t gpio_CS,
     }
 }
 
-tb_t* tb_create(master_spi_t* m_spi,
-                uint8_t gpio_CS, uint8_t gpio_MT, uint8_t gpio_RST,
-                uint16_t cpi,
-                bool swap_XY, bool invert_X, bool invert_Y) {
-    tb_t* tb = (tb_t*) malloc(sizeof(tb_t));
-    tb->m_spi = m_spi;
-
-    // Prepare the SPI port
-    tb_init_device(tb, gpio_CS, gpio_MT, gpio_RST);
-
+void tb_reset_device(tb_t* tb, uint16_t cpi) {
     // shutdown first
     tb_write_register(tb, tb_Shutdown, 0xb6);
     sleep_ms(300);
@@ -231,11 +222,25 @@ tb_t* tb_create(master_spi_t* m_spi,
 
     // set CPI resolution
     tb_set_cpi(tb, cpi);
+}
+
+tb_t* tb_create(master_spi_t* m_spi,
+                uint8_t gpio_CS, uint8_t gpio_MT, uint8_t gpio_RST,
+                uint16_t cpi,
+                bool swap_XY, bool invert_X, bool invert_Y) {
+    tb_t* tb = (tb_t*) malloc(sizeof(tb_t));
+    tb->m_spi = m_spi;
 
     // set the X/Y axis orientation
     tb->swap_XY = swap_XY;
     tb->invert_X = invert_X;
     tb->invert_Y = invert_Y;
+
+    // Prepare the SPI port
+    tb_connect_device(tb, gpio_CS, gpio_MT, gpio_RST);
+
+    // Prepare the chip
+    tb_reset_device(tb, cpi);
 
     return tb;
 }
