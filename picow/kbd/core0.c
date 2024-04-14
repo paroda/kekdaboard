@@ -43,19 +43,16 @@ static int32_t led_millis_to_toggle(kbd_led_t* led, kbd_led_state_t state) {
 }
 
 #ifdef KBD_NODE_AP
-static void update_loop_counter(void* param) {
-    static uint32_t loop_counter = 0;
-    static uint32_t max_loop_counter = 0;
+static void update_loop_count(void* param) {
+    static uint32_t loop_count = 0;
     static uint32_t loop_time = 0;
-    uint32_t s = board_millis()/10000;
-    if(loop_time==s) {
-        loop_counter++;
-    }
-    else {
-        max_loop_counter = loop_counter;
-        loop_counter = 0;
-        loop_time = s;
-        set_core0_debug(0, max_loop_counter/10);
+    uint32_t t = board_millis()/10000;
+    if(loop_time==t) {
+        loop_count++;
+    } else {
+        set_core0_debug(0, loop_count/10);
+        loop_count = 1;
+        loop_time = t;
     }
 }
 #endif
@@ -64,7 +61,7 @@ static void led_task() {
 
 #ifdef KBD_NODE_AP
     static uint32_t ms=0;
-    do_if_elapsed(&ms, 50, NULL, update_loop_counter);
+    do_if_elapsed(&ms, 50, NULL, update_loop_count);
 
     static uint32_t led_left_last_ms = 0;
     int32_t led_left_ms = led_millis_to_toggle(&kbd_hw.led_left, kbd_system.led_left);
@@ -132,6 +129,18 @@ typedef enum {
 #ifdef KBD_NODE_AP
 
 static void comm_task(void* param) {
+    // debug counter
+    static uint32_t ct_count_time = 0;
+    static uint32_t ct_count = 0;
+    uint32_t ct_t = board_millis()/10000;
+    if(ct_count_time==ct_t) {
+        ct_count++;
+    } else {
+        set_core0_debug(1, ct_count/10);
+        ct_count = 1;
+        ct_count_time = ct_t;
+    }
+    // comm task
     uint8_t index = *((uint8_t*) param);
     volatile kbd_comm_state_t* comm_state = kbd_system.comm_state+index;
     udp_server_t* server = &kbd_system.core0.udp_server;
@@ -206,21 +215,27 @@ static void comm_task(void* param) {
 }
 
 void wifi_poll(void* param) {
-    static uint32_t max_poll_ms = 0;
+    static uint32_t poll_max_ms = 0;
     static uint32_t poll_ms = 0;
+    static uint32_t poll_count = 0;
     static uint32_t poll_time = 0;
     uint32_t t0 = board_millis();
-    cyw43_arch_poll();
+    cyw43_arch_poll(); // do the work
     uint32_t t1 = board_millis();
     uint32_t dt = t1 - t0;
-    uint32_t s = t1/10000;
-    if(poll_time == s) {
-        if(dt>poll_ms) poll_ms=dt;
+    uint32_t t = t1/10000;
+    if(poll_time == t) {
+        if(dt>poll_max_ms) poll_max_ms=dt;
+        poll_ms += dt;
+        poll_count++;
     } else {
-        max_poll_ms = poll_ms;
+        set_core0_debug(2, poll_max_ms);
+        set_core0_debug(3, poll_ms/(poll_count>0?poll_count:1));
+        set_core0_debug(4, poll_count/10);
+        poll_max_ms = 0;
         poll_ms = 0;
-        poll_time = s;
-        set_core0_debug(1, max_poll_ms);
+        poll_count = 1;
+        poll_time = t;
     }
 }
 
