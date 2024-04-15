@@ -396,6 +396,12 @@ void core0_main() {
 #endif
         }
 
+        // AP need to handle UDP packets from both left and right
+        // Give it double frequency as the left/right nodes
+#ifdef KBD_NODE_AP
         do_if_elapsed(&poll_last_ts, 1, NULL, wifi_poll);
+#else
+        do_if_elapsed(&poll_last_ts, 2, NULL, wifi_poll);
+#endif
     }
 }
