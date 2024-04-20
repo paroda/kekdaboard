@@ -271,6 +271,7 @@ void pixel_task(void* param) {
 
     if(!kbd_system.pixels_on) {
         led_pixel_set_off(kbd_hw.led_pixel);
+        pixel_anim_reset(); // this can't be done by process_basic_event which is on AP
         return;
     }
 
@@ -431,9 +432,9 @@ void core1_main() {
         // reset comm if needed
         validate_comm_state(1);
 
-        // scan track ball scroll (capture), @ 5 ms
+        // scan track ball scroll (capture), @ 10 ms
         // scan at a high rate to eliminate trackball register overflow
-        do_if_elapsed(&tb_capture_last_ms, 5, &tbm, tb_scan_task_capture);
+        do_if_elapsed(&tb_capture_last_ms, 10, &tbm, tb_scan_task_capture);
 
         // publish track ball scroll (publish), @ 25 ms
         // publish at a lower rate than master process, to eliminate loss

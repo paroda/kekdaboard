@@ -224,6 +224,9 @@ static void draw_anim_style(lcd_canvas_t* cv, uint16_t x, uint16_t y, bool selec
     case pixel_anim_style_KEY_PRESS:
         anim = "KeyPress";
         break;
+    case pixel_anim_style_ROW_WAVE:
+        anim = "RowWave";
+        break;
     default:
         anim = "Error   ";
         break;
