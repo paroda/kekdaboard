@@ -57,9 +57,13 @@
 
   (deploy "192.168.4.1" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_ap.bin")
 
-  (deploy "192.168.4.2" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_left.bin")
+  (do
 
-  (deploy "192.168.4.3" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_right.bin")
+    (deploy "192.168.4.2" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_left.bin")
+
+    (deploy "192.168.4.3" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_right.bin")
+
+    )
 
 
   )

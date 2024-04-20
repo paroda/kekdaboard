@@ -311,7 +311,7 @@ void work_screen_task_pixel() {
     switch(req[2]) {
     case 1: // init
         fd_pos = req[3];
-        memcpy(&pixel_config, req+4, req[3]);
+        memcpy(&pixel_config, req+4, sizeof(pixel_config_t));
         field = 0; dirty = false;
         init_screen();
         break;

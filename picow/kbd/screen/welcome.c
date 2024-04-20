@@ -78,7 +78,7 @@ void work_screen_task_welcome() {
     uint8_t pos = req[3];
     if(config && si<KBD_CONFIG_SCREEN_COUNT) {
         c->flash_data_pos[si] = pos;
-        memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE);
+        memcpy(c->flash_data[si], req+4, KBD_TASK_DATA_SIZE); // KBD_TASK_DATA_SIZE==FLASH_DATASET_SIZE==32
         res[2] = 1;
         res[3] = 2;
         res[4] = screen;
