@@ -432,9 +432,9 @@ void core1_main() {
         // reset comm if needed
         validate_comm_state(1);
 
-        // scan track ball scroll (capture), @ 10 ms
+        // scan track ball scroll (capture), @ 5 ms
         // scan at a high rate to eliminate trackball register overflow
-        do_if_elapsed(&tb_capture_last_ms, 10, &tbm, tb_scan_task_capture);
+        do_if_elapsed(&tb_capture_last_ms, 5, &tbm, tb_scan_task_capture);
 
         // publish track ball scroll (publish), @ 25 ms
         // publish at a lower rate than master process, to eliminate loss
