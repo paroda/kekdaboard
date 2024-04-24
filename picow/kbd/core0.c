@@ -244,8 +244,7 @@ void wifi_poll(void* param) {
 static void rssi_task(void* param) {
     (void)param;
     int32_t rssi;
-    // command: 254 WLC_GET_RSSI
-    cyw43_ioctl(&cyw43_state, 254, sizeof(int32_t), (uint8_t*) &rssi, CYW43_ITF_STA);
+    cyw43_ioctl(&cyw43_state, CYW43_IOCTL_GET_RSSI, sizeof(int32_t), (uint8_t*) &rssi, CYW43_ITF_STA);
     kbd_system.wifi_rssi = rssi;
 }
 

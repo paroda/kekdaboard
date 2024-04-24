@@ -14,13 +14,15 @@ void pixel_anim_reset() {
 
 
 static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t steps, uint8_t range) {
-    if(a>b) {
+    if(a==b) {
+        return a;
+    } else if(a>b) {
         uint8_t x = a;
         a = b;
         b = x;
         steps = range - steps;
     }
-    return a + ((uint32_t)b-a)*steps/range;
+    return a + ((uint32_t)b-a)*steps*steps/range/range; // quadratic interpolation
 }
 
 static void to_rgb(uint32_t c, uint8_t* r, uint8_t* g, uint8_t* b) {
