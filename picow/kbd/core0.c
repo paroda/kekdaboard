@@ -11,6 +11,9 @@
 #include "usb_hid.h"
 #endif
 
+// disable powersave, need high performance
+#define KBD_WIFI_PM_MODE cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1)
+
 static void toggle_led(void* param) {
     kbd_led_t* led = (kbd_led_t*) param;
     led->on = !led->on;
@@ -360,6 +363,8 @@ void core0_main() {
     }
     printf("Connected to WiFi\n");
 #endif
+
+    cyw43_wifi_pm(&cyw43_state, KBD_WIFI_PM_MODE); // set the powersave mode
 
     tcp_server_open(&kbd_system.core0.tcp_server, KBD_NODE_NAME);
 
