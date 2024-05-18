@@ -286,6 +286,10 @@ typedef struct {
  */
 
 typedef struct {
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+    volatile bool no_ap;
+#endif
+
     volatile bool firmware_downloading;
 
     kbd_system_core0_t core0;

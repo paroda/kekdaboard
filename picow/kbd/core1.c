@@ -401,6 +401,19 @@ void core1_main() {
 
         if(kbd_system.firmware_downloading) return; // shutdown core1 on upgrade
 
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+        if(kbd_system.no_ap) {
+            // typically the nodes are being just charged but no in operation
+            // whitch off lights and shutdown core1 on failed to connect to AP node
+#ifdef KBD_NODE_LEFT
+            lcd_update_backlight(0);
+#endif
+            kbd_hw.led_pixel->on = true;
+            led_pixel_set_off(kbd_hw.led_pixel);
+            return;
+        }
+#endif
+
         // apply any new configs
         apply_config_screen_data();
 

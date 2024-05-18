@@ -96,6 +96,10 @@ kbd_system_t kbd_system = {
 #endif
     },
 
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+    .no_ap = false,
+#endif
+
     .firmware_downloading = false,
 
     .pixels_on = false,

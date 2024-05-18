@@ -356,10 +356,12 @@ void core0_main() {
 #else
     cyw43_arch_enable_sta_mode();
 
-    while(cyw43_arch_wifi_connect_timeout_ms(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-        // keep trying to connect
-        sleep_ms(1000);
-        printf("Retrying to connect to WiFi from %s, %x\n", KBD_NODE_NAME, KBD_NODE_IP);
+    if(cyw43_arch_wifi_connect_timeout_ms(hw_ap_name, hw_ap_password, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
+        // missing AP, probably just chargin. just sleep until manually rebooted
+        kbd_system.no_ap = true;
+        cyw43_arch_disable_sta_mode();
+        cyw43_arch_deinit();
+        while(true) sleep_ms(60000);
     }
     printf("Connected to WiFi\n");
 #endif
