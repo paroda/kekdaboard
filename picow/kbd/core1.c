@@ -403,8 +403,8 @@ void core1_main() {
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
         if(kbd_system.no_ap) {
-            // typically the nodes are being just charged but no in operation
-            // whitch off lights and shutdown core1 on failed to connect to AP node
+            // typically the nodes are being just charged but not in operation
+            // switch off lights and shutdown core1 on failed to connect to AP node
 #ifdef KBD_NODE_LEFT
             lcd_update_backlight(0);
 #endif

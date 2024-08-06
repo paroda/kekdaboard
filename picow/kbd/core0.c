@@ -260,6 +260,8 @@ static void key_scan_task(void* param) {
 
 static void comm_task(void* param) {
     (void) param;
+    static uint32_t last_recv_ts = 0;
+    if(last_recv_ts==0) last_recv_ts = board_millis();
 #ifdef KBD_NODE_LEFT
     uint8_t index = 0;
 #else
@@ -271,7 +273,10 @@ static void comm_task(void* param) {
     uint8_t* recv_size = server->recv_size+index;
     uint8_t* send_buf = server->send_buf[index];
     uint8_t* send_size = server->send_size+index;
-    if(*recv_size>0) printf("Received UDP: size: %d, state: %d\n", *recv_size, recv_buf[0]);
+    if(*recv_size>0) {
+        // printf("Received UDP: size: %d, state: %d\n", *recv_size, recv_buf[0]);
+        last_recv_ts = board_millis();
+    }
     update_comm_state(comm_state, recv_buf, recv_size, send_buf, send_size);
     static uint8_t rcv_req_id = 0; // last request received
     static uint8_t ack_res_id = 0; // last response acknowledged
@@ -340,7 +345,13 @@ static void comm_task(void* param) {
     }
     /* printf("sending comm_state %d, send_size %d, send %d \n", *comm_state, *send_size, send_buf[0]); */
     // send
-    udp_server_send(server, index, NULL, NULL, 0);
+    // - in normal scenario, expected to receive every 10 ms.
+    // - if skipped one (>20ms), then pause for 1s. so as not to overwhelm the wireless chip buffer
+    uint32_t elapsed = board_millis() - last_recv_ts;
+    if(elapsed<15 || elapsed>1000) {
+        if(elapsed>1000) last_recv_ts = board_millis() - 15; // pause again next time, unless received
+        udp_server_send(server, index, NULL, NULL, 0);
+    }
 }
 
 void wifi_poll(void* param) {
@@ -397,7 +408,7 @@ void core0_main() {
             // scan key presses, @ 5 ms
             do_if_elapsed(&ks_last_ms, 5, NULL, key_scan_task);
 
-            // publish UDP, @ 5 ms
+            // publish UDP, @ 10 ms
             do_if_elapsed(&comm_last_ms, 10, NULL, comm_task);
 #endif
         }
