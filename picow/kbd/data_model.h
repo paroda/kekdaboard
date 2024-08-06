@@ -40,8 +40,8 @@
  *
  * It is critical to time the scan and processing for track ball
  * since it is an accumulator of dx and dy. We scan it quickly to avoid overflow of hardware registers.
- * And accumulate in memroy. Then use it at a lower frequency, i.e. 20 ms intervals. It should be
- * slower than our processing cycle which is 10 ms. So that, we can consume the readings without loss.
+ * And accumulate in memroy. Then use it at a lower frequency, i.e. 25 ms intervals. It should be
+ * slower than our processing cycle which is 20 ms. So that, we can consume the readings without loss.
  *
  * Flow
  *
