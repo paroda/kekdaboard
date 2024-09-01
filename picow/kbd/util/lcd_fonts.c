@@ -1,4 +1,4 @@
-#include <pico/platform.h>
+#include <pico.h>
 
 #include "lcd_fonts.h"
 
