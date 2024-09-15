@@ -44,7 +44,7 @@
 #endif
 
 typedef struct {
-    bool wl_led;
+    bool wl_led; // access via the wireless chip?
     uint8_t gpio;
     bool on;
 } kbd_led_t;

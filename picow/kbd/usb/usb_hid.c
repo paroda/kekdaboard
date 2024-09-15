@@ -8,7 +8,7 @@
 #include "tusb.h"
 
 #include "data_model.h"
-#include "util/usb_descriptors.h"
+#include "usb_descriptors.h"
 #include "usb_hid.h"
 
 static struct {

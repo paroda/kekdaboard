@@ -7,7 +7,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
 ## Access point
 
 add_executable(kbd_ap
-  ap/main.c
+  main.c
 
   core0.c
   core1.c
@@ -17,7 +17,9 @@ add_executable(kbd_ap
   udp_server.c
   input_processor.c
   key_layout.c
-  usb_hid.c
+
+  usb/usb_hid.c
+  usb/usb_descriptors.c
 
   screen_model.c
   screen/date.c
@@ -31,13 +33,17 @@ add_executable(kbd_ap
   util/master_spi.c
   util/flash_store.c
   util/flash_w25qxx.c
-  util/usb_descriptors.c
   util/pixel_anim.c
+)
+
+target_compile_definitions(kbd_ap PRIVATE
+  KBD_NODE_AP=1
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
 target_include_directories(kbd_ap PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
-  ${CMAKE_CURRENT_LIST_DIR}/ap
+  ${CMAKE_CURRENT_LIST_DIR}/usb
 )
 
 target_link_libraries(kbd_ap
@@ -58,10 +64,6 @@ pico_set_linker_script(kbd_ap
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
 )
 
-target_compile_definitions(kbd_ap PRIVATE
-  CYW43_CONFIG_FILE="my_cyw43_configport.h"
-)
-
 pico_enable_stdio_usb(kbd_ap 0)
 pico_enable_stdio_uart(kbd_ap 0)
 
@@ -72,7 +74,7 @@ pico_add_extra_outputs(kbd_ap)
 ## Left node
 
 add_executable(kbd_left
-  left/main.c
+  main.c
 
   core0.c
   core1.c
@@ -100,6 +102,11 @@ add_executable(kbd_left
   util/pixel_anim.c
 )
 
+target_compile_definitions(kbd_left PRIVATE
+  KBD_NODE_LEFT=1
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
+)
+
 # generate the header file into the source tree
 pico_generate_pio_header(kbd_left
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
@@ -107,7 +114,6 @@ pico_generate_pio_header(kbd_left
 
 target_include_directories(kbd_left PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
-  ${CMAKE_CURRENT_LIST_DIR}/left
 )
 
 target_link_libraries(kbd_left
@@ -130,10 +136,6 @@ pico_set_linker_script(kbd_left
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
 )
 
-target_compile_definitions(kbd_left PRIVATE
-  CYW43_CONFIG_FILE="my_cyw43_configport.h"
-)
-
 pico_enable_stdio_usb(kbd_left 1)
 pico_enable_stdio_uart(kbd_left 0)
 
@@ -144,7 +146,7 @@ pico_add_extra_outputs(kbd_left)
 ## Right node
 
 add_executable(kbd_right
-  right/main.c
+  main.c
 
   core0.c
   core1.c
@@ -170,6 +172,11 @@ add_executable(kbd_right
   util/pixel_anim.c
 )
 
+target_compile_definitions(kbd_right PRIVATE
+  KBD_NODE_RIGHT=1
+  CYW43_CONFIG_FILE="my_cyw43_configport.h"
+)
+
 # generate the header file into the source tree
 pico_generate_pio_header(kbd_right
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
@@ -177,7 +184,6 @@ pico_generate_pio_header(kbd_right
 
 target_include_directories(kbd_right PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
-  ${CMAKE_CURRENT_LIST_DIR}/right
 )
 
 target_link_libraries(kbd_right
@@ -196,10 +202,6 @@ target_link_options(kbd_right PRIVATE
 
 pico_set_linker_script(kbd_right
   ${CMAKE_CURRENT_SOURCE_DIR}/../pico_fota_bootloader/linker_common/application.ld
-)
-
-target_compile_definitions(kbd_right PRIVATE
-  CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
 pico_enable_stdio_usb(kbd_right 1)
