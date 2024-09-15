@@ -1,5 +1,6 @@
 **/.vscode/
 **/.cpcache/
+**/.cache/
 /build/
 /pico/build/
 /picow/build/
