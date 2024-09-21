@@ -23,9 +23,13 @@
 
   (def j2 (->> j
                (filter (fn [{:strs [file] :as m}]
-                         (str/starts-with? file "/home/dipu/my/pico/kbd/picow/hello_bt")))
+                         ;; (str/starts-with? file "/home/dipu/my/pico/kbd/picow/hello_bt")
+                         (str/starts-with? file "/home/dipu/my/pico/kbd/picow/kbd")
+                         ))
                (map inject-eabi)
                ))
+
+  (count j2)
 
   (with-open [os (jio/output-stream "../picow/build/compile_commands.json")]
     (json/write-value os j2))

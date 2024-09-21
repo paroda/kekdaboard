@@ -14,7 +14,8 @@ add_executable(kbd_ap
   data_model.c
   hw_model.c
   tcp_server.c
-  udp_server.c
+  ble_comm.c
+  ble_client.c
   input_processor.c
   key_layout.c
 
@@ -38,6 +39,7 @@ add_executable(kbd_ap
 
 target_compile_definitions(kbd_ap PRIVATE
   KBD_NODE_AP=1
+  RUNNING_AS_CLIENT=1
   CYW43_CONFIG_FILE="my_cyw43_configport.h"
 )
 
@@ -51,7 +53,10 @@ target_link_libraries(kbd_ap
   pico_cyw43_arch_lwip_poll
   pico_stdlib
   pico_multicore
+  pico_btstack_ble
+  pico_btstack_cyw43
   hardware_spi
+  hardware_sync
   tinyusb_device
   tinyusb_board
 )
@@ -81,7 +86,8 @@ add_executable(kbd_left
   data_model.c
   hw_model.c
   tcp_server.c
-  udp_server.c
+  ble_comm.c
+  ble_server.c
 
   screen_model.c
   screen/date.c
@@ -112,6 +118,8 @@ pico_generate_pio_header(kbd_left
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
+pico_btstack_make_gatt_header(kbd_left PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server_left.gatt")
+
 target_include_directories(kbd_left PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
 )
@@ -121,6 +129,8 @@ target_link_libraries(kbd_left
   pico_cyw43_arch_lwip_poll
   pico_stdlib
   pico_multicore
+  pico_btstack_ble
+  pico_btstack_cyw43
   hardware_spi
   hardware_i2c
   hardware_pwm
@@ -153,7 +163,8 @@ add_executable(kbd_right
   data_model.c
   hw_model.c
   tcp_server.c
-  udp_server.c
+  ble_comm.c
+  ble_server.c
 
   screen_model.c
   screen/date.c
@@ -182,6 +193,8 @@ pico_generate_pio_header(kbd_right
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
+pico_btstack_make_gatt_header(kbd_right PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server_right.gatt")
+
 target_include_directories(kbd_right PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
 )
@@ -191,6 +204,8 @@ target_link_libraries(kbd_right
   pico_cyw43_arch_lwip_poll
   pico_stdlib
   pico_multicore
+  pico_btstack_ble
+  pico_btstack_cyw43
   hardware_spi
   hardware_pio
   hardware_dma
