@@ -101,8 +101,8 @@ typedef enum {
 typedef struct {
   // be careful about the size due to packing/alignment
   // order members larger to smaller
-  int32_t dx;
-  int32_t dy;
+  int16_t dx;
+  int16_t dy;
   uint8_t has_motion; // using uint8_t instead of bool
   uint8_t on_surface; // as bool may be larger
 } kbd_tb_motion_t;

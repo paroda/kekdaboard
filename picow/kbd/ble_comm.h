@@ -9,6 +9,16 @@
 #define BLE_COMM_LEFT_ID 'L'
 #define BLE_COMM_RIGHT_ID 'R'
 
+// using 64 bytes - large enough to pack max loads
+// ap   -> 45 = 1 sync + 1+4 state           + 1+36 req + 2 ack
+// left -> 47 = 1 sync + 1+6 keys            + 1+36 res + 2 ack
+// right-> 54 = 1 sync + 1+6 keys + 1+6  tb  + 1+36 res + 2 ack
+// whereas the req/res are not always present
+// also tb is present only when the ball is moved
+// so the typical load is
+// ap    -> 8
+// left  -> 10
+// right -> 10    (17 when ball moved)
 #define BLE_DATA_SIZE 64
 #define BLE_QUEUE_SIZE 2
 

@@ -85,15 +85,24 @@ sudo pacman -Syu base-devel cmake
 sudo pacman -Sy arm-none-eabi-binutils arm-none-eabi-gcc arm-none-eabi-newlib
 ```
 
-## PICO SDK & TinyUSB
+## PICO SDK
 
-Add the PICO SDK as git submodules. And update the lib/tinyusb git submodule within it.
+Add the PICO SDK as git submodules. And update the submodules within it.
 
 ```sh
 git submodule add https://github.com/raspberrypi/pico-sdk pico-sdk
 cd pico-sdk
 git submodule update --init
 ```
+
+## PICO FOTA BOOTLOADER
+
+It uses pico_fota_bootloader to wireless update the program. Add that submodule as well.
+
+``` sh
+git submodule add https://github.com/JZimnol/pico_fota_bootloader pico_fota_bootloader
+```
+
 # TODO
 
 Need to update the wiring diagrams, which are still the old ones used for the two node wired version.

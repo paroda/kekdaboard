@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,6 +98,13 @@ void lcd_display_head_task(void *param) {
 
 #ifdef KBD_NODE_RIGHT
 
+static inline int16_t add_cap16_value(int16_t v1, int16_t v2) {
+  int32_t v = v1;
+  v += v2;
+  // cap the value to 16 bits
+  return (v > 0x7fff) ? 0x7fff : (-v > 0x7fff) ? -0x7fff : v;
+}
+
 void tb_scan_task_capture(void *param) {
   // sacn the track ball motion and accumulate
   kbd_tb_motion_t *ds = (kbd_tb_motion_t *)param;
@@ -110,8 +118,8 @@ void tb_scan_task_capture(void *param) {
 
   ds->has_motion = ds->has_motion || has_motion;
   ds->on_surface = ds->on_surface || on_surface;
-  ds->dx = ds->dx + dx;
-  ds->dy = ds->dy + dy;
+  ds->dx = add_cap16_value(ds->dx, dx);
+  ds->dy = add_cap16_value(ds->dy, dy);
 }
 
 void tb_scan_task_publish(void *param) {
