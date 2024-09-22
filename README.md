@@ -1,10 +1,16 @@
 # Custom keyboard
 
-![wifi](images/kbd_wifi_1.jpg)
+![WiFi/BLE](images/kbd_wifi_1.jpg)
 
 This is my custom keyboard, using a set of 3 Raspberry PI Pico W. One for each node and another
-serving as the usb dongle. The dongle also serves as a WiFi access point, to which the other
-two nodes connect as WiFi clients.
+serving as the usb dongle. The dongle acts as the BLE central while each node acts as BLE
+peripheral.
+
+The WiFi is enabled too, for updating the program. For that the dongle also starts a wifi
+access point for a limited time (10 minutes) at start up. However, the nodes by default
+doesn't start the wifi mode. But, keeping any key pressed at power on, will make start the
+wifi and connect to this access point. Then, the new program can be sent over TCP from
+any computer by connecting the same access point.
 
 The left node, includes the LCD display to enbale a basic UI for adjusting the settings.
 The right node, includes the trackball for mouse inputs.
