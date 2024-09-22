@@ -312,6 +312,7 @@ static void stop_system() {
   cyw43_arch_disable_sta_mode();
   hci_power_control(HCI_POWER_OFF);
   cyw43_arch_deinit();
+  gpio_put(kbd_hw.led.gpio, 0);
   while (true)
     sleep_ms(60000);
 }
@@ -348,7 +349,9 @@ static void bt_poll_handler(struct btstack_timer_source *timer) {
     ble_process(0, comm_consume, comm_produce); // comm_id ignored
 
     btstack_run_loop_set_timer(timer, 5); // repeat after 5 ms
-    if (!is_ap_long_lost())
+    if (is_ap_long_lost())
+      btstack_run_loop_trigger_exit();
+    else
       btstack_run_loop_add_timer(timer);
 #endif
   }

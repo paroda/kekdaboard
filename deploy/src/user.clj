@@ -53,7 +53,7 @@
       (println "Finished deploy")
       (flush))))
 
-(comment
+(comment ;; deploy
 
   (deploy "192.168.4.1" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_ap.bin")
 
