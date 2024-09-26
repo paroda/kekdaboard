@@ -511,7 +511,7 @@ void core1_main() {
     kbd_system.ap_connected = board_millis() < (c->state_ts / 1000) + 1000;
 
     // use board led for ap connection status
-    set_led(&kbd_system.ledB, kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_LOW);
+    set_led(&kbd_system.ledB, kbd_system.ap_connected ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_FAST);
 
 #endif
 

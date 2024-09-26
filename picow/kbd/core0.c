@@ -348,11 +348,12 @@ static void bt_poll_handler(struct btstack_timer_source *timer) {
     key_scan_task();
     ble_process(0, comm_consume, comm_produce); // comm_id ignored
 
-    btstack_run_loop_set_timer(timer, 5); // repeat after 5 ms
-    if (is_ap_long_lost())
+    if (is_ap_long_lost()) {
       btstack_run_loop_trigger_exit();
-    else
+    } else {
+      btstack_run_loop_set_timer(timer, 5); // repeat after 5 ms
       btstack_run_loop_add_timer(timer);
+    }
 #endif
   }
 
