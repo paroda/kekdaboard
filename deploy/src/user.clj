@@ -55,6 +55,13 @@
 
 (comment ;; deploy
 
+  "NOTE:
+Initial deployment:
+   1. copy the pico-fota-bootloader.uf2 to picow usb drive
+   2. copy the kbd_(ap|left|right).uf2 to picow usb drive
+
+Thereafter, this wifi download method can be used to update the picow."
+
   (deploy "192.168.4.1" 82 "/home/dipu/my/pico/kbd/picow/build/kbd/kbd_ap.bin")
 
   (do

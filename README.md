@@ -85,22 +85,14 @@ sudo pacman -Syu base-devel cmake
 sudo pacman -Sy arm-none-eabi-binutils arm-none-eabi-gcc arm-none-eabi-newlib
 ```
 
-## PICO SDK
+## Submodules
 
-Add the PICO SDK as git submodules. And update the submodules within it.
-
-```sh
-git submodule add https://github.com/raspberrypi/pico-sdk pico-sdk
-cd pico-sdk
-git submodule update --init
-```
-
-## PICO FOTA BOOTLOADER
-
-It uses pico_fota_bootloader to wireless update the program. Add that submodule as well.
+Download the submodules
+- [pico-sdk](https://github.com/raspberrypi/pico-sdk)
+- [pico_fota_bootloader](https://github.com/JZimnol/pico_fota_bootloader)
 
 ``` sh
-git submodule add https://github.com/JZimnol/pico_fota_bootloader pico_fota_bootloader
+git submodule update --init --recursive
 ```
 
 # TODO
