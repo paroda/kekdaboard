@@ -2,7 +2,7 @@
 #define _DATA_MODEL_H
 
 #include "hw_config.h"
-#include "main.h"
+
 #include "screen_model.h"
 #include "tcp_server.h"
 #include "util/pixel_anim.h"

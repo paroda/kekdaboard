@@ -1,23 +1,7 @@
 #ifndef _HW_MODEL_H
 #define _HW_MODEL_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "pico/stdlib.h"
-
-#include "main.h"
 #include "hw_config.h"
-
-#include "hardware/spi.h"
-#include "hardware/gpio.h"
-
-#ifdef KBD_NODE_LEFT
-#include "hardware/i2c.h"
-#endif
-
-#include "screen_model.h"
-#include "util/master_spi.h"
 
 #ifdef KBD_NODE_AP
 #include "key_layout.h"

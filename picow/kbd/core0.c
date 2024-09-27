@@ -3,18 +3,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "hw_config.h"
+#include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include "btstack.h"
 
-#include "ble_comm.h"
 #include "data_model.h"
 #include "hw_model.h"
-#include "util/key_scan.h"
+
+#include "ble_comm.h"
 #include "util/shared_buffer.h"
 
-#ifdef KBD_NODE_AP
-#include "usb_hid.h"
+#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+#include "util/key_scan.h"
 #endif
 
 static void toggle_led(void *param) {

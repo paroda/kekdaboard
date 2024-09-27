@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pico_fota_bootloader.h"
+#include "pico/stdlib.h"
 
 #include "data_model.h"
 #include "hw_model.h"
@@ -367,6 +367,15 @@ static void set_led(volatile kbd_led_state_t *led, kbd_led_state_t value) {
 }
 
 void core1_main() {
+#ifdef KBD_NODE_AP
+  // load FLASH DATASETS
+  init_flash_datasets(kbd_system.core1.flash_datasets);
+  init_config_screen_data();
+  load_flash_datasets(kbd_system.core1.flash_datasets);
+
+  usb_hid_init();
+#endif
+
 #ifdef KBD_NODE_AP
   kbd_system.led_left = kbd_led_state_BLINK_FAST;
   kbd_system.led_right = kbd_led_state_BLINK_FAST;

@@ -1,10 +1,10 @@
 #ifndef _HW_CONFIG_H
 #define _HW_CONFIG_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <stdint.h>  // common include
+#include <stdbool.h> // common include
 
-#include "main.h"
+#include "main.h"    // common include
 
 #define hw_ap_name "kekdaboard"
 #define hw_ap_password "3picowkbd"

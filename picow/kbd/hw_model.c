@@ -6,6 +6,8 @@
 
 #include "hw_model.h"
 
+#include "screen_model.h"
+
 kbd_hw_t kbd_hw;
 
 uint32_t board_millis() { return us_to_ms(time_us_64()); }
