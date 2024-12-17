@@ -9,3 +9,4 @@ a.out
 /pico/*/generated/
 /picow/*/generated/
 /deploy/.nrepl-port
+/deploy/bin/
