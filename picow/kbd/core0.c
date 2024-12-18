@@ -335,6 +335,7 @@ static void wifi_task() {
 static void bt_poll_handler(struct btstack_timer_source *timer) {
   if (kbd_system.firmware_downloading) {
     btstack_run_loop_set_timer(timer, 1); // wifi is primary
+    btstack_run_loop_add_timer(timer);
   } else {
     led_task();
 
