@@ -2,6 +2,8 @@
 
 #include "class/hid/hid.h"
 
+/* #define KBD_NODE_AP // this file is only valid for AP */
+
 #include "data_model.h"
 #include "input_processor.h"
 

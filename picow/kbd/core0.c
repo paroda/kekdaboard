@@ -196,7 +196,8 @@ static uint8_t comm_produce(uint8_t comm_id, uint8_t *buff) {
 static void key_scan_task() {
   // scan key presses with kbd_hw.ks and save to core0.key_press
   key_scan_update(kbd_hw.ks);
-  memcpy(kbd_system.core0.key_press, kbd_hw.ks->keys, hw_row_count);
+  memcpy(kbd_system.core0.key_press, kbd_hw.ks->keys, hw_row_count); // for comm
+  write_shared_buffer(kbd_system.sb_key_press, time_us_64(), kbd_hw.ks->keys); // for pixel anim
 }
 
 static uint8_t comm_rcv_req_id = 0; // last request received

@@ -3,12 +3,16 @@
 #include <string.h>
 
 #include "data_model.h"
+#include "hw_config.h"
+#include "util/shared_buffer.h"
 
 kbd_system_t kbd_system = {.core1 =
                                {/// CORE 1 ///
 #ifdef KBD_NODE_AP
                                 .left_key_press = {0},  // default to 0
                                 .right_key_press = {0}, // default to 0
+#else
+                                .key_press = {0}, // default to 0
 #endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
@@ -132,6 +136,8 @@ kbd_system_t kbd_system = {.core1 =
 #ifdef KBD_NODE_AP
                            .sb_left_key_press = NULL,
                            .sb_right_key_press = NULL,
+#else
+                           .sb_key_press = NULL,
 #endif
 
 #ifdef KBD_NODE_AP
@@ -162,6 +168,8 @@ void init_data_model() {
 #ifdef KBD_NODE_AP
   kbd_system.sb_left_key_press = new_shared_buffer(hw_row_count, spin_lock);  // 1 byte per row
   kbd_system.sb_right_key_press = new_shared_buffer(hw_row_count, spin_lock); // 1 byte per row
+#else
+  kbd_system.sb_key_press = new_shared_buffer(hw_row_count, spin_lock); // 1 byte per row
 #endif
 
 #ifdef KBD_NODE_AP

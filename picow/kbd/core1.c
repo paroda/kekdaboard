@@ -410,6 +410,7 @@ void core1_main() {
   uint32_t tb_publish_last_ms = ts + 2;
 #endif
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+  uint64_t ks_ts = ts;
   uint32_t pixel_last_ms = ts;
 #endif
 
@@ -521,6 +522,11 @@ void core1_main() {
     set_led(&kbd_system.led_right, kbd_system.right_active ? kbd_led_state_BLINK_NORMAL : kbd_led_state_BLINK_FAST);
 
 #else // LEFT/RIGHT
+
+    // note the key scans from core0, for pixel anim style KeyPress
+    if (kbd_system.sb_key_press->ts > ks_ts) {
+      read_shared_buffer(kbd_system.sb_key_press, &ks_ts, c->key_press);
+    }
 
     // set key switch leds, @ 50 ms
     do_if_elapsed(&pixel_last_ms, 50, NULL, pixel_task);

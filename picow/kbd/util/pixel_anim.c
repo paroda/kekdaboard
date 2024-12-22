@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "data_model.h"
 #include "pixel_anim.h"
+
+static uint8_t pixel_key_layout[hw_row_count][hw_col_count] = hw_key_led_mapping;
 
 static bool flag_reset = false;
 
@@ -86,6 +89,45 @@ static void anim_fade(uint32_t *colors, uint8_t count, uint32_t color, uint8_t c
   }
 }
 
+static uint8_t pixel_key_layout_read(uint8_t *key_press, uint8_t max_count) {
+  int row, col, k = 0;
+  uint8_t v;
+
+  for (row = 0; k < max_count && row < hw_row_count; row++) {
+    for (col = hw_col_count - 1, v = kbd_system.core1.key_press[row]; v > 0 && k < max_count && col >= 0;
+         col--, v >>= 1) {
+      if (v & 1)
+        key_press[k++] = pixel_key_layout[row][col];
+    }
+  }
+  return k;
+}
+
+static void anim_key_press(uint32_t *colors, uint8_t count, uint32_t color, uint8_t cycles) {
+  uint8_t i, r, g, b, r1, g1, b1;
+  cycles = cycles >= 10 ? cycles : 20; // minimum 10, default 20, around 1 second
+  // fade off any pixel currently on
+  to_rgb(color, &r, &g, &b);
+  r = r < cycles ? 1 : r / cycles;
+  g = g < cycles ? 1 : g / cycles;
+  b = b < cycles ? 1 : b / cycles;
+  for (i = 0; i < count; i++) {
+    if (colors[i]) {
+      to_rgb(colors[i], &r1, &g1, &b1);
+      r1 = r1 < r ? 0 : r1 - r;
+      g1 = g1 < g ? 0 : g1 - g;
+      b1 = b1 < b ? 0 : b1 - b;
+      from_rgb(colors + i, r1, g1, b1);
+    }
+  }
+  // set the pixel on for currently pressed keys
+  uint8_t key_press[8] = {0};
+  uint8_t n = pixel_key_layout_read(key_press, 8);
+  for (i = 0; i < n; i++) {
+    colors[key_press[i]] = color;
+  }
+}
+
 static void from_spectrum(uint32_t *c, uint32_t *spectrum, uint8_t bandcount, uint8_t bandwidth, uint32_t pos) {
   uint8_t i, j, k, r0, g0, b0, r1, g1, b1;
   i = pos / bandwidth;
@@ -145,6 +187,9 @@ void pixel_anim_update(uint32_t *colors, uint8_t count, uint32_t color, pixel_an
     break;
   case pixel_anim_style_FADE:
     anim_fade(colors, count, color, cycles);
+    break;
+  case pixel_anim_style_KEY_PRESS:
+    anim_key_press(colors, count, color, cycles);
     break;
   case pixel_anim_style_ROW_WAVE:
     anim_row_wave(colors, count, cycles);

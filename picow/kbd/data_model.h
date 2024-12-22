@@ -7,6 +7,7 @@
 #include "tcp_server.h"
 #include "util/pixel_anim.h"
 #include "util/shared_buffer.h"
+#include <stdint.h>
 
 #ifdef KBD_NODE_AP
 #include "key_layout.h"
@@ -205,6 +206,8 @@ typedef struct {
 #ifdef KBD_NODE_AP
   uint8_t left_key_press[hw_row_count];
   uint8_t right_key_press[hw_row_count];
+#else
+  uint8_t key_press[hw_row_count]; // for pixel anim
 #endif
 
 #if defined(KBD_NODE_AP) || defined(KBD_NODE_RIGHT)
@@ -326,6 +329,8 @@ typedef struct {
 #ifdef KBD_NODE_AP
   shared_buffer_t *sb_left_key_press;
   shared_buffer_t *sb_right_key_press;
+#else
+  shared_buffer_t *sb_key_press; // needed for pixel anim
 #endif
 
 #ifdef KBD_NODE_AP

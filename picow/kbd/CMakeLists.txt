@@ -34,7 +34,6 @@ add_executable(kbd_ap
   util/master_spi.c
   util/flash_store.c
   util/flash_w25qxx.c
-  util/pixel_anim.c
 )
 
 target_compile_definitions(kbd_ap PRIVATE
