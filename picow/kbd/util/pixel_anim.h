@@ -8,6 +8,7 @@ typedef enum {
     pixel_anim_style_FADE,
     pixel_anim_style_KEY_PRESS,
     pixel_anim_style_ROW_WAVE,
+    pixel_anim_style_TRAIN,
     pixel_anim_style_COUNT
 } pixel_anim_style_t;
 
