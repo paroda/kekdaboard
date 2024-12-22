@@ -313,12 +313,13 @@ void process_requests() {
 
 #endif
 
+#ifdef KBD_NODE_AP
+
 void validate_comm_state(uint8_t index) {
   if (kbd_system.comm_state[index] == kbd_comm_state_reset) {
     kbd_system_core1_t *c = &kbd_system.core1;
     uint8_t buf[KBD_TASK_SIZE] = {0};
 
-#ifdef KBD_NODE_AP
     // switch to welcome screen
     kbd_system.screen = kbd_info_screen_welcome;
     reset_screen = true;
@@ -344,7 +345,19 @@ void validate_comm_state(uint8_t index) {
 
     if (index == 1)
       memset(c->right_flash_data_pos, 0, KBD_CONFIG_SCREEN_COUNT);
+
+    // restore comm
+    kbd_system.comm_state[index] = kbd_comm_state_init;
+  }
+}
+
 #else
+
+void validate_comm_state() {
+  if (kbd_system.comm_state == kbd_comm_state_reset) {
+    kbd_system_core1_t *c = &kbd_system.core1;
+    uint8_t buf[KBD_TASK_SIZE] = {0};
+
     c->task_request_ts = 0;
     c->task_request[0] = 0;
     c->task_response_ts = 0;
@@ -352,12 +365,13 @@ void validate_comm_state(uint8_t index) {
 
     write_shared_buffer(kbd_system.sb_task_request, 0, buf);
     write_shared_buffer(kbd_system.sb_task_response, 0, buf);
-#endif
 
     // restore comm
-    kbd_system.comm_state[index] = kbd_comm_state_init;
+    kbd_system.comm_state = kbd_comm_state_init;
   }
 }
+
+#endif
 
 ////// MAIN
 
@@ -400,9 +414,7 @@ void core1_main() {
 #endif
 
 #ifdef KBD_NODE_RIGHT
-
   kbd_tb_motion_t tbm = {.has_motion = false, .on_surface = false, .dx = 0, .dy = 0};
-
 #endif
 
 #if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
@@ -433,7 +445,7 @@ void core1_main() {
 #ifdef KBD_NODE_LEFT
 
     // reset comm if needed
-    validate_comm_state(0);
+    validate_comm_state();
 
     // get date & and temperature, once a second
     do_if_elapsed(&rtc_last_ms, 1000, NULL, rtc_task);
@@ -455,7 +467,7 @@ void core1_main() {
 #ifdef KBD_NODE_RIGHT
 
     // reset comm if needed
-    validate_comm_state(1);
+    validate_comm_state();
 
     // scan track ball scroll (capture), @ 5 ms
     // scan at a high rate to eliminate trackball register overflow

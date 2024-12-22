@@ -297,7 +297,11 @@ typedef struct {
   volatile kbd_usb_hid_state_t usb_hid_state;
   volatile uint8_t backlight; // 0-100 %
 
+#ifdef KBD_NODE_AP
   volatile kbd_comm_state_t comm_state[2]; // 0-left, 1-right
+#else
+  volatile kbd_comm_state_t comm_state;
+#endif
 
 #ifdef KBD_NODE_AP
   volatile kbd_led_state_t led_left;  // left node indicator

@@ -204,7 +204,7 @@ static uint8_t comm_ack_res_id = 0; // last response acknowledged
 
 static void comm_consume(uint8_t comm_id, uint8_t *buff, uint8_t len) {
   (void)comm_id;
-  volatile kbd_comm_state_t *comm_state = kbd_system.comm_state;
+  volatile kbd_comm_state_t *comm_state = &kbd_system.comm_state;
   if (len < 1)
     return;
   update_comm_state(comm_state, (kbd_comm_state_t)buff[0]);
@@ -244,7 +244,7 @@ static void comm_consume(uint8_t comm_id, uint8_t *buff, uint8_t len) {
 
 static uint8_t comm_produce(uint8_t comm_id, uint8_t *buff) {
   (void)comm_id;
-  kbd_comm_state_t comm_state = *kbd_system.comm_state;
+  kbd_comm_state_t comm_state = kbd_system.comm_state;
   uint8_t len = 0;
   // while in reset mode, nothing to send
   if (comm_state == kbd_comm_state_reset)

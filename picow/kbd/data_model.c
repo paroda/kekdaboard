@@ -102,7 +102,12 @@ kbd_system_t kbd_system = {.core1 =
                            .screen = kbd_info_screen_welcome,
                            .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,
                            .backlight = 30, // 30%
+
+#ifdef KBD_NODE_AP
                            .comm_state = {kbd_comm_state_init, kbd_comm_state_init},
+#else
+                           .comm_state = kbd_comm_state_init,
+#endif
 
 #ifdef KBD_NODE_AP
                            .led_left = kbd_led_state_ON,
