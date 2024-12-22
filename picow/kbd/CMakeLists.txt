@@ -118,7 +118,7 @@ pico_generate_pio_header(kbd_left
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
-pico_btstack_make_gatt_header(kbd_left PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server_left.gatt")
+pico_btstack_make_gatt_header(kbd_left PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server.gatt")
 
 target_include_directories(kbd_left PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}
@@ -193,7 +193,7 @@ pico_generate_pio_header(kbd_right
   ${CMAKE_CURRENT_LIST_DIR}/util/led_pixel.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated
 )
 
-pico_btstack_make_gatt_header(kbd_right PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server_right.gatt")
+pico_btstack_make_gatt_header(kbd_right PRIVATE "${CMAKE_CURRENT_LIST_DIR}/ble_server.gatt")
 
 target_include_directories(kbd_right PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}

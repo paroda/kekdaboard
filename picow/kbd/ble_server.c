@@ -5,26 +5,19 @@
 #include "pico/stdlib.h"
 
 #include "ble_comm.h"
+#include "ble_server.h" // generated from ble_server.gatt, see CMakeLists.txt
 
 #ifdef KBD_NODE_LEFT
-#include "ble_server_left.h" // generated from ble_server.gatt, see CMakeLists.txt
 #define COMM_ID BLE_COMM_LEFT_ID
-#define SVC 0x10
+#else
+#define COMM_ID BLE_COMM_RIGHT_ID
+#endif
+
+// create shorter alias for just convenience
 #define ATT_RX_CCH ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE
 #define ATT_RX_VH ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE
 #define ATT_TX_CCH ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE
 #define ATT_TX_VH ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE
-#endif
-
-#ifdef KBD_NODE_RIGHT
-#include "ble_server_right.h" // generated from ble_server.gatt, see CMakeLists.txt
-#define COMM_ID BLE_COMM_RIGHT_ID
-#define SVC 0x20
-#define ATT_RX_CCH ATT_CHARACTERISTIC_0000FF21_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE
-#define ATT_RX_VH ATT_CHARACTERISTIC_0000FF21_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE
-#define ATT_TX_CCH ATT_CHARACTERISTIC_0000FF22_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE
-#define ATT_TX_VH ATT_CHARACTERISTIC_0000FF22_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE
-#endif
 
 // My state
 typedef struct {
@@ -41,7 +34,7 @@ const uint8_t adv_data[] = {
     BLUETOOTH_DATA_TYPE_FLAGS,
     0x06,
     // Name
-    0x0b,
+    0x0a,
     BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME,
     'k',
     'e',
@@ -52,14 +45,10 @@ const uint8_t adv_data[] = {
     'o',
     'd',
     'e',
-    // one extra letter for id
-    COMM_ID,
-    // Incomplete List of 16-bit Service Class UUIDs -- FF10 - only valid for
-    // testing!
-    0x03,
-    BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS,
-    SVC,
-    0xff,
+    // Device ID - one letter to identify the node - L or R
+    0x02,
+    BLUETOOTH_DATA_TYPE_DEVICE_ID,
+    COMM_ID
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 

@@ -14,11 +14,8 @@ typedef struct {
   bd_addr_t addr;
   bd_addr_type_t addr_type;
   hci_con_handle_t con_handle;
-  uint8_t *service_uuid;
   gatt_client_service_t service;
-  uint8_t *rx_uuid;
   gatt_client_characteristic_t rx;
-  uint8_t *tx_uuid;
   gatt_client_characteristic_t tx;
   btstack_context_callback_registration_t write;
   ble_comm_t comm;
@@ -32,15 +29,12 @@ static char *const ble_server_name = "kekdanode";
 
 // On the GATT Server, RX Characteristic is used for receive data via Write, and
 // TX Characteristic is used to send data via Notifications
-static uint8_t ble_service_uuid[2][16] = {
-    {0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB},
-    {0x00, 0x00, 0xFF, 0x20, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}};
-static uint8_t ble_characteristic_rx_uuid[2][16] = {
-    {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB},
-    {0x00, 0x00, 0xFF, 0x21, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}};
-static uint8_t ble_characteristic_tx_uuid[2][16] = {
-    {0x00, 0x00, 0xFF, 0x12, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB},
-    {0x00, 0x00, 0xFF, 0x22, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}};
+static uint8_t ble_service_uuid[16] = {0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00,
+                                       0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t ble_characteristic_rx_uuid[16] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00,
+                                                 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t ble_characteristic_tx_uuid[16] = {0x00, 0x00, 0xFF, 0x12, 0x00, 0x00, 0x10, 0x00,
+                                                 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -75,9 +69,9 @@ static ble_client_t *find_client_by_con_handle(hci_con_handle_t con_handle) {
   return NULL;
 }
 
-static ble_client_t *find_client_by_id(uint8_t id) {
+static ble_client_t *find_client_by_id(uint8_t comm_id) {
   for (int i = 0; i < MAX_CLIENTS; i++)
-    if (ble_clients[i].comm.id == id)
+    if (ble_clients[i].comm.id == comm_id)
       return ble_clients + i;
   return NULL;
 }
@@ -91,6 +85,8 @@ ble_comm_t *ble_find_comm_by_id(uint8_t comm_id) {
 static uint8_t identify_node(const char *name, uint8_t adv_len, const uint8_t *adv_data) {
   // get advertisement from report event
   uint16_t name_len = (uint8_t)strlen(name);
+  uint8_t name_matched = 0;
+  uint8_t node_id = 0;
 
   // iterate over advertisement data
   ad_context_t context;
@@ -101,17 +97,18 @@ static uint8_t identify_node(const char *name, uint8_t adv_len, const uint8_t *a
     switch (data_type) {
     case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
     case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-      // compare prefix
-      if (data_size != name_len + 1) // one more for suffix(id)
-        break;
-      if (memcmp(data, name, name_len) == 0)
-        return data[name_len]; // return the suffix
+      // compare name
+      if ((data_size == name_len) && (memcmp(data, name, name_len) == 0))
+        name_matched = 1;
+      break;
+    case BLUETOOTH_DATA_TYPE_DEVICE_ID:
+      node_id = data[0];
       break;
     default:
       break;
     }
   }
-  return 0;
+  return name_matched ? node_id : 0;
 }
 
 void ble_initiate_send(uint8_t comm_id) {
@@ -186,14 +183,14 @@ static void gatt_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         // printf("Get RX characteristic, 0x%04x\n", client->con_handle);
         client->comm.state = ble_state_RX;
         gatt_client_discover_characteristics_for_service_by_uuid128(gatt_event_handler, client->con_handle,
-                                                                    &client->service, client->rx_uuid);
+                                                                    &client->service, ble_characteristic_rx_uuid);
         break;
       case ble_state_RX:
         // RX query complete, look for TX characteristic
         // printf("Get TX characteristic, 0x%04x\n", client->con_handle);
         client->comm.state = ble_state_TX;
         gatt_client_discover_characteristics_for_service_by_uuid128(gatt_event_handler, client->con_handle,
-                                                                    &client->service, client->tx_uuid);
+                                                                    &client->service, ble_characteristic_tx_uuid);
         break;
       case ble_state_TX:
         // TX query complete, listen for notification
@@ -296,7 +293,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
       client->comm.state = ble_state_SERVICE;
       client->con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
       // printf("Connected to node %s, 0x%04x searching service\n", bd_addr_to_str(client->addr), client->con_handle);
-      gatt_client_discover_primary_services_by_uuid128(gatt_event_handler, client->con_handle, client->service_uuid);
+      gatt_client_discover_primary_services_by_uuid128(gatt_event_handler, client->con_handle, ble_service_uuid);
       break;
     default:
       break;
@@ -327,9 +324,6 @@ int ble_init() {
     ble_client_t *client = ble_clients + i;
     init_client(client);
     client->comm.id = ble_client_ids[i];
-    client->service_uuid = ble_service_uuid[i];
-    client->rx_uuid = ble_characteristic_rx_uuid[i];
-    client->tx_uuid = ble_characteristic_tx_uuid[i];
   }
 
   l2cap_init();
