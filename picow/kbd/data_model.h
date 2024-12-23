@@ -245,7 +245,7 @@ typedef struct {
   uint8_t temperature;
 #endif
 
-  // ap - for processing, left - for display, right - for scanning
+  // ap - for processing(input/screen-event), left - for display, right - for scanning
   kbd_tb_config_t tb_config;
   kbd_pixel_config_t pixel_config;
 

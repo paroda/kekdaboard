@@ -13,8 +13,27 @@
 #include "ble_comm.h"
 #include "util/shared_buffer.h"
 
-#if defined(KBD_NODE_LEFT) || defined(KBD_NODE_RIGHT)
+#ifdef KBD_NODE_AP
+#include "usb/usb_hid.h" // using set_core0_debug()
+#else
 #include "util/key_scan.h"
+#endif
+
+#ifdef KBD_NODE_AP
+static void debug_inc_counter(uint8_t index) {
+  static uint32_t ts = 0;
+  static uint32_t counters[8] = {0};
+  if(index>=8) return;
+  uint32_t ms = board_millis();
+  if (ms>ts+10000) {
+    ts = ms;
+    for(uint8_t i=0;i<8;i++) {
+      set_core0_debug(i, counters[i]);
+      counters[i]=0;
+    }
+  }
+  counters[index]++;
+}
 #endif
 
 static void toggle_led(void *param) {
@@ -111,6 +130,7 @@ static uint8_t comm_ack_req_id[2] = {0, 0}; // last request acknowledged
 static uint8_t comm_rcv_res_id[2] = {0, 0}; // last response received
 
 static void comm_consume(uint8_t comm_id, uint8_t *buff, uint8_t len) {
+  debug_inc_counter(1);
   uint8_t index = comm_id == BLE_COMM_LEFT_ID ? 0 : 1;
   volatile kbd_comm_state_t *comm_state = kbd_system.comm_state + index;
   if (len < 1)
@@ -154,6 +174,7 @@ static void comm_consume(uint8_t comm_id, uint8_t *buff, uint8_t len) {
 }
 
 static uint8_t comm_produce(uint8_t comm_id, uint8_t *buff) {
+  debug_inc_counter(2);
   uint8_t index = comm_id == BLE_COMM_LEFT_ID ? 0 : 1;
   kbd_comm_state_t comm_state = kbd_system.comm_state[index];
   uint8_t len = 0;
@@ -334,6 +355,10 @@ static void wifi_task() {
 }
 
 static void bt_poll_handler(struct btstack_timer_source *timer) {
+#ifdef KBD_NODE_AP
+  debug_inc_counter(0);
+#endif
+
   if (kbd_system.firmware_downloading) {
     btstack_run_loop_set_timer(timer, 1); // wifi is primary
     btstack_run_loop_add_timer(timer);

@@ -104,19 +104,38 @@ static uint8_t pixel_key_layout_read(uint8_t *key_press, uint8_t max_count) {
 }
 
 static void anim_key_press(uint32_t *colors, uint8_t count, uint32_t color, uint8_t cycles) {
-  uint8_t i, r, g, b, r1, g1, b1;
+  uint8_t i, x, r, g, b, d, r1, g1, b1;
   cycles = cycles >= 10 ? cycles : 20; // minimum 10, default 20, around 1 second
   // fade off any pixel currently on
   to_rgb(color, &r, &g, &b);
-  r = r < cycles ? 1 : r / cycles;
-  g = g < cycles ? 1 : g / cycles;
-  b = b < cycles ? 1 : b / cycles;
+  if (!(r || g || b)) {
+    for (i = 0; i < count; i++)
+      colors[i] = 0;
+    return;
+  }
+  x = r > g ? (r > b ? 0 : 2) : (g > b ? 1 : 2); // 0:r, 1:g, 2:b
+  d = r == 0 ? r : (r == 1 ? g : b);
+  d = d < cycles ? 1 : d / cycles;
   for (i = 0; i < count; i++) {
     if (colors[i]) {
       to_rgb(colors[i], &r1, &g1, &b1);
-      r1 = r1 < r ? 0 : r1 - r;
-      g1 = g1 < g ? 0 : g1 - g;
-      b1 = b1 < b ? 0 : b1 - b;
+      switch (x) {
+      case 0:
+        r1 = r1 > d ? r1 - d : 0;
+        g1 = g * r1 / r;
+        b1 = b * r1 / r;
+        break;
+      case 1:
+        g1 = g1 > d ? g1 - d : 0;
+        b1 = b * g1 / g;
+        r1 = r * g1 / g;
+        break;
+      case 2:
+        b1 = b1 > d ? b1 - d : 0;
+        r1 = r * b1 / b;
+        g1 = g * b1 / b;
+        break;
+      }
       from_rgb(colors + i, r1, g1, b1);
     }
   }

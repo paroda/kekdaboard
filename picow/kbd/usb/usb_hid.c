@@ -20,12 +20,13 @@ static struct {
 } tud_fail_counter;
 
 static struct {
-    volatile uint32_t values[8];
-    // 0 - max loop counter for 50ms led task
-    // 1 - comm_task count per second
-    // 2 - max_poll_ms in previous 10 seconds
-    // 3 - poll_ms (avg) in previous 10 seconds
-    // 4 - poll_count in previous 10 seconds
+  // these are set from core0, while usb is primarily run on core1
+  // hence only read here. no writing done to minimize corruption
+  volatile uint32_t values[8];
+  // all these couns are in AP in only
+  // 0 - bt_poll_handler() call count in 10 seconds
+  // 1 - comm_consume() call count in 10 seconds
+  // 2 - comm_produce() call count in 10 seconds
 } core0_debug;
 
 void set_core0_debug(uint8_t index, uint32_t value) {
