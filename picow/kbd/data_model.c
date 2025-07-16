@@ -102,6 +102,7 @@ kbd_system_t kbd_system = {.core1 =
 
                            .firmware_downloading = false,
 
+                           .tb_on = true,
                            .pixels_on = false,
                            .screen = kbd_info_screen_welcome,
                            .usb_hid_state = kbd_usb_hid_state_UNMOUNTED,

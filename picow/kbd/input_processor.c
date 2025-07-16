@@ -5,6 +5,7 @@
 /* #define KBD_NODE_AP // this file is only valid for AP */
 
 #include "data_model.h"
+#include "kbd_events.h"
 #include "input_processor.h"
 
 #define KEY_PRESS_MAX 16
@@ -31,12 +32,13 @@ static uint8_t key_layout_read(const uint8_t* key_press[KEY_PRESS_MAX]) {
     return k;
 }
 
-#define TRACK_KEY_COUNT 10
+#define TRACK_KEY_COUNT 11
 
 // keycodes tracked with new_key_press, old_key_press, cur_key_press
 uint8_t track_keys[TRACK_KEY_COUNT] = {
     KBD_KEY_SUN,
     KBD_KEY_BACKLIGHT,
+    KBD_KEY_TB,
     KBD_KEY_PIXELS,
     HID_KEY_ARROW_UP,
     HID_KEY_ARROW_DOWN,
@@ -50,6 +52,7 @@ uint8_t track_keys[TRACK_KEY_COUNT] = {
 typedef struct {
     uint8_t sun;
     uint8_t backlight;
+    uint8_t tb;
     uint8_t pixels;
     uint8_t up;
     uint8_t down;
@@ -125,6 +128,9 @@ static void parse_code(uint8_t code, uint8_t base_code,
         switch(code) {
         case KBD_KEY_BACKLIGHT:
             cur_key_press.backlight = 1;
+            break;
+        case KBD_KEY_TB:
+            cur_key_press.tb = 1;
             break;
         case KBD_KEY_PIXELS:
             cur_key_press.pixels = 1;
@@ -297,10 +303,17 @@ kbd_event_t execute_input_processor() {
     // set the hid report
     hid_report_out->has_events = has_events;
     hid_report_out->keyboard = outk;
-    outm.deltaX = add_cap16_value(outm.deltaX, hid_report_out->mouse.deltaX);
-    outm.deltaY = add_cap16_value(outm.deltaY, hid_report_out->mouse.deltaY);
-    outm.scrollX = add_cap16_value(outm.scrollX, hid_report_out->mouse.scrollX);
-    outm.scrollY = add_cap16_value(outm.scrollY, hid_report_out->mouse.scrollY);
+    if(kbd_system.tb_on) {
+        outm.deltaX = add_cap16_value(outm.deltaX, hid_report_out->mouse.deltaX);
+        outm.deltaY = add_cap16_value(outm.deltaY, hid_report_out->mouse.deltaY);
+        outm.scrollX = add_cap16_value(outm.scrollX, hid_report_out->mouse.scrollX);
+        outm.scrollY = add_cap16_value(outm.scrollY, hid_report_out->mouse.scrollY);
+    } else {
+        outm.deltaX = 0;
+        outm.deltaY = 0;
+        outm.scrollX = 0;
+        outm.scrollY = 0;
+    }
     hid_report_out->mouse = outm;
 
     // screen change event
@@ -316,6 +329,9 @@ kbd_event_t execute_input_processor() {
 
     if(new_key_press.pixels)
         return kbd_led_pixels_TOGGLE;
+
+    if(new_key_press.tb)
+        return kbd_tb_TOGGLE;
 
     return kbd_event_NONE;
 }

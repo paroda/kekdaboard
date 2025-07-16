@@ -4,6 +4,9 @@
 typedef enum {
     kbd_event_NONE = 0,
 
+    // trackball adjust event
+    kbd_tb_TOGGLE,
+
     // backlight adjust events
     kbd_backlight_event_HIGH,
     kbd_backlight_event_LOW,

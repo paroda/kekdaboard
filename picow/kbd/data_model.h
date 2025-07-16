@@ -132,10 +132,11 @@ typedef enum {
   kbd_led_state_BLINK_FAST    // 100, 100
 } kbd_led_state_t;
 
-#define KBD_FLAG_CAPS_LOCK 0b10000000
-#define KBD_FLAG_NUM_LOCK 0b01000000
+#define KBD_FLAG_CAPS_LOCK   0b10000000
+#define KBD_FLAG_NUM_LOCK    0b01000000
 #define KBD_FLAG_SCROLL_LOCK 0b00100000
-#define KBD_FLAG_PIXELS_ON 0b00010000
+#define KBD_FLAG_PIXELS_ON   0b00010000
+#define KBD_FLAG_TB_ON       0b00001000
 
 typedef struct {
   // be careful about the size due to packing/alignment
@@ -295,6 +296,7 @@ typedef struct {
   kbd_system_core0_t core0;
   kbd_system_core1_t core1;
 
+  volatile bool tb_on;
   volatile bool pixels_on;
   volatile kbd_screen_t screen;
   volatile kbd_usb_hid_state_t usb_hid_state;

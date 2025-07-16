@@ -116,10 +116,14 @@ void tb_scan_task_capture(void *param) {
 
   has_motion = tb_check_motion(kbd_hw.tb, &on_surface, &dx, &dy);
 
+  ds->on_surface = on_surface;
+  if(on_surface) {
+    ds->dx = add_cap16_value(ds->dx, dx);
+    ds->dy = add_cap16_value(ds->dy, dy);
+  } else {
+    has_motion = false;
+  }
   ds->has_motion = ds->has_motion || has_motion;
-  ds->on_surface = ds->on_surface || on_surface;
-  ds->dx = add_cap16_value(ds->dx, dx);
-  ds->dy = add_cap16_value(ds->dy, dy);
 }
 
 void tb_scan_task_publish(void *param) {
@@ -158,6 +162,9 @@ void process_idle() {
 
 kbd_event_t process_basic_event(kbd_event_t event) {
   switch (event) {
+  case kbd_tb_TOGGLE:
+    kbd_system.tb_on = !kbd_system.tb_on;
+    return kbd_event_NONE;
   case kbd_backlight_event_HIGH:
     kbd_system.backlight = kbd_system.backlight <= 90 ? kbd_system.backlight + 10 : 100;
     return kbd_event_NONE;
@@ -259,6 +266,10 @@ void process_inputs(void *param) {
     state->flags |= KBD_FLAG_PIXELS_ON;
   else
     state->flags &= (~KBD_FLAG_PIXELS_ON);
+  if(kbd_system.tb_on)
+    state->flags |= KBD_FLAG_TB_ON;
+  else
+    state->flags &= (~KBD_FLAG_TB_ON);
 
   // update the state if changed
   sb = kbd_system.sb_state;
@@ -294,6 +305,7 @@ void process_requests() {
     read_shared_buffer(kbd_system.sb_state, &c->state_ts, &c->state);
 
     kbd_system.backlight = c->state.backlight;
+    kbd_system.tb_on = c->state.flags & KBD_FLAG_TB_ON;
     kbd_system.pixels_on = c->state.flags & KBD_FLAG_PIXELS_ON;
     kbd_system.usb_hid_state = c->state.usb_hid_state;
     kbd_system.screen = c->state.screen;

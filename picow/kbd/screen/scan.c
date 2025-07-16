@@ -152,6 +152,10 @@ static void update_screen() {
       }
   }
 
+  cv = kbd_system.tb_on ? cv1 : cv0; // show trackball enabled/disabled
+  lcd_display_canvas(kbd_hw.lcd, 10, 135, cv);
+  lcd_display_canvas(kbd_hw.lcd, 220, 135, cv);
+
   kbd_tb_motion_t tbm;
   memcpy(&tbm, req + 4 + hw_row_count + hw_row_count, sizeof(kbd_tb_motion_t));
 
